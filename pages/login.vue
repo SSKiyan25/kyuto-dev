@@ -1,6 +1,11 @@
+<script lang="ts">
+  import { GoogleAuthProvider } from "firebase/auth";
+
+  export const googleAuthProvider = new GoogleAuthProvider();
+</script>
+
 <script setup lang="ts">
-  import { useGoogleLogin } from "~/composables/auth/useGoogle";
-  import { signInWithEmailAndPassword } from "firebase/auth";
+  import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
 
   definePageMeta({
     layout: "no-nav",
@@ -30,7 +35,23 @@
   });
 
   const signInWithGoogle = async () => {
-    await useGoogleLogin();
+    const loading = useSonner.loading("Loading...", {
+      description: "We are signing you in",
+    });
+    try {
+      await signInWithPopup(auth!, googleAuthProvider);
+      useSonner.success("Signed in successfully!", {
+        id: loading,
+      });
+      // redirect to the dashboard
+      return await navigateTo("/", { replace: true });
+    } catch (error: any) {
+      // show error
+      console.log(error.message);
+      useSonner.error(error.message, {
+        id: loading,
+      });
+    }
   };
   const user = useCurrentUser();
   console.log("Check user: ", user);
@@ -91,23 +112,13 @@
                 />
                 <UiButton type="submit" class="w-full"> Sign In </UiButton>
               </fieldset>
+              <div class="pt-4">
+                <UiDivider label="or continue with" class="pb-4" />
+                <UiButton @click="signInWithGoogle" type="button" class="w-full" variant="outline">
+                  <Icon name="logos:google-icon" /> Sign in with Google
+                </UiButton>
+              </div>
             </form>
-            <div class="relative">
-              <div class="absolute inset-0 flex items-center">
-                <span class="w-full border-t" />
-              </div>
-              <div class="relative flex justify-center pt-8 text-xs uppercase">
-                <span class="bg-background px-2 text-muted-foreground"> Or continue with </span>
-              </div>
-              <UiButton
-                @click="signInWithGoogle"
-                type="button"
-                class="mt-4 w-full"
-                variant="outline"
-              >
-                <Icon name="logos:google-icon" /> Sign in with Google
-              </UiButton>
-            </div>
           </div>
           <!---->
           <p class="px-8 text-center text-sm text-muted-foreground">
