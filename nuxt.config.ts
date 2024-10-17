@@ -12,6 +12,7 @@ export default defineNuxtConfig({
     "@vee-validate/nuxt",
     "@morev/vue-transitions/nuxt",
     "@samk-dev/nuxt-vcalendar",
+    "@pinia/nuxt",
   ],
 
   tailwindcss: { exposeConfig: true },
