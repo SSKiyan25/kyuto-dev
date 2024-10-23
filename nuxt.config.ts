@@ -14,6 +14,8 @@ export default defineNuxtConfig({
     "@samk-dev/nuxt-vcalendar",
     "@pinia/nuxt",
     "pinia-plugin-persistedstate/nuxt",
+    "vue3-carousel-nuxt",
+    "v-wave/nuxt",
   ],
 
   tailwindcss: { exposeConfig: true },

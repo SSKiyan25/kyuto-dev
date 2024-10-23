@@ -213,34 +213,6 @@
             />
             <span class="text-sm font-semibold"></span>
           </fieldset>
-          <!-- <UiDropfile
-            @dropped="images = $event"
-            accept="images/*"
-            subtext="Limited to 5 Images"
-            :disabled="images.length > 6"
-          /> -->
-          <!-- <div class="" v-if="images && images.length">
-            <div
-              v-for="(image, i) in images"
-              :key="image.name"
-              class="group mb-2 flex h-12 items-center justify-between rounded border px-3 py-3"
-            >
-              <div class="flex grow items-center gap-3">
-                <Icon name="lucide:image" class="mr-3 h-5 w-5 opacity-60" />
-                <p class="w-[80%] truncate text-sm">{{ image.name }}</p>
-                <p
-                  class="ml-auto whitespace-nowrap text-xs text-muted-foreground/60 transition group-hover:hidden"
-                >
-                  {{ formatFileSize(image.size) }}
-                </p>
-              </div>
-              <div class="hidden transition group-hover:block">
-                <UiButton @click.prevent="removeImage(i)" size="icon-sm" variant="outline">
-                  <Icon name="lucide:x" class="h-3.5 w-3.5" />
-                </UiButton>
-              </div>
-            </div>
-          </div> -->
         </div>
       </div>
       <!-- Submit -->

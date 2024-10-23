@@ -1,6 +1,6 @@
 <template>
-  <header>
-    <UiNavbar sticky class="z-20 border-b bg-primary text-primary-foreground backdrop-blur">
+  <div>
+    <UiNavbar sticky class="z-50 border-b bg-primary text-primary-foreground backdrop-blur">
       <UiContainer class="flex h-16 w-full items-center justify-between md:h-20">
         <div class="flex items-center gap-0">
           <NuxtLink to="/" class="flex items-center gap-3">
@@ -15,9 +15,31 @@
           </NuxtLink>
         </div>
 
-        <div class="hidden w-1/2 items-center gap-3 md:flex">
+        <div class="relative hidden w-1/2 items-center gap-3 md:flex">
           <div class="flex w-full items-center justify-center">
-            <UiInput icon="lucide:search" placeholder="Type a product..." />
+            <!-- Search -->
+            <UiCommand class="rounded-lg border shadow-sm">
+              <UiCommandInput placeholder="Type a command or search..." showCancel type="string" />
+              <UiCommandList class="absolute mt-12 w-10/12 rounded-sm bg-secondary shadow">
+                <!-- <UiCommandEmpty>No results found.</UiCommandEmpty> -->
+                <!-- <template v-for="(item, label, i) in items" :key="i">
+                  <UiCommandGroup :heading="label">
+                    <UiCommandItem
+                      v-for="(child, k) in item"
+                      :key="k"
+                      :text="child.label"
+                      :icon="child.icon"
+                      :value="child.label"
+                      @select="
+                        child.perform?.();
+                        $event.preventDefault();
+                      "
+                    />
+                  </UiCommandGroup>
+                  <UiCommandSeparator class="last:hidden" />
+                </template> -->
+              </UiCommandList>
+            </UiCommand>
           </div>
           <div class="pl-2 text-xl">|</div>
           <div v-if="user" class="flex flex-row items-center gap-4">
@@ -128,7 +150,7 @@
         </div>
       </UiContainer>
     </UiNavbar>
-  </header>
+  </div>
 </template>
 
 <script lang="ts" setup>
@@ -147,4 +169,6 @@
     await signOut(auth!);
     navigateTo("/login");
   };
+
+  const search = ref("");
 </script>

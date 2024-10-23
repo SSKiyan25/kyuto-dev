@@ -1,13 +1,13 @@
 <script setup lang="ts">
   useHead({
-    title: "Verch",
+    title: "Verch | Official Website for Merchandises",
     link: [
       {
         rel: "icon",
         type: "image/webp",
-        href: "/logo-verch.webp"
-      }
-    ]
+        href: "/logo-verch.webp",
+      },
+    ],
   });
 </script>
 

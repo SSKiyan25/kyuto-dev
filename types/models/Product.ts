@@ -11,8 +11,10 @@ export interface Product {
   totalSales: number;
   views: number;
   isArchived: boolean;
+  isDiscounted: boolean;
   featuredPhoto: string;
   photos: string[];
+  variations: Variation[];
 }
 export interface Variation {
   productID: string;

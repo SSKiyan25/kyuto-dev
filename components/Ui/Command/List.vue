@@ -23,4 +23,22 @@
   const styles = tv({
     base: "max-h-[300px] overflow-y-auto overflow-x-hidden",
   });
+
+  const isInputVisible = ref(true);
+  const commandInputContainer = ref(null);
+
+  const handleClickOutside = (event: MouseEvent) => {
+    const container = commandInputContainer.value as HTMLElement | null;
+    if (container && !container.contains(event.target as Node)) {
+      isInputVisible.value = false;
+    }
+  };
+
+  onMounted(() => {
+    document.addEventListener("click", handleClickOutside);
+  });
+
+  onBeforeUnmount(() => {
+    document.removeEventListener("click", handleClickOutside);
+  });
 </script>
