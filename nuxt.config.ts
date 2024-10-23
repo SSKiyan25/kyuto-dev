@@ -13,6 +13,7 @@ export default defineNuxtConfig({
     "@morev/vue-transitions/nuxt",
     "@samk-dev/nuxt-vcalendar",
     "@pinia/nuxt",
+    "pinia-plugin-persistedstate/nuxt",
   ],
 
   tailwindcss: { exposeConfig: true },
@@ -30,6 +31,7 @@ export default defineNuxtConfig({
   vuefire: {
     auth: {
       enabled: true, //sessionCookie: true
+      persistence: ["indexedDBLocal"],
     },
 
     config: {
@@ -41,6 +43,10 @@ export default defineNuxtConfig({
       appId: process.env.NUXT_PUBLIC_APP_ID,
       measurementId: process.env.NUXT_PUBLIC_MEASUREMENT_ID,
     },
+  },
+
+  pinia: {
+    storesDirs: ["./stores/**", "./custom-folder/stores/**"],
   },
 
   build: {

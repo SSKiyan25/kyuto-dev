@@ -1,4 +1,5 @@
 <script setup lang="ts">
+  import { useOrganizationValues } from "~/composables/organization/useOrganizationValues";
   import type { ColumnDef, Table } from "@tanstack/vue-table";
   import type { Crumbs } from "~/components/Ui/Breadcrumbs.vue";
 
@@ -6,6 +7,7 @@
     layout: "organization",
     middleware: ["auth"],
   });
+  const { organizationData, organizationLoading, organizationID } = useOrganizationValues();
 
   const crumbs: Crumbs[] = [
     { label: "Dashboard", link: "/organization/dashboard" },
@@ -188,7 +190,7 @@
             </UiDropdownMenuRadioGroup>
           </UiDropdownMenuContent>
         </UiDropdownMenu>
-        <UiButton to="/organization/products/add/[id]" class="flex flex-row items-center">
+        <UiButton to="/organization/products/add" class="flex flex-row items-center">
           <Icon name="lucide:circle-plus" class="size-4" />Add Product
         </UiButton>
       </div>

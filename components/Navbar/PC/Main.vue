@@ -46,7 +46,7 @@
                   <UiNavigationMenuTrigger>
                     <div class="flex flex-row items-center gap-2 text-secondary-foreground/70">
                       <Icon name="lucide:user" class="h-6 w-6 cursor-pointer hover:shadow-md" />
-                      <span>User</span>
+                      <span>{{ userData.username || "User" }}</span>
                     </div>
                   </UiNavigationMenuTrigger>
                   <UiNavigationMenuContent>
@@ -89,24 +89,27 @@
                           <Icon name="lucide:move-up-right" class="h-2 w-2 opacity-70" />
                         </div>
                       </NuxtLink>
-                      <UiDivider class="py-2" />
-                      <!-- Organization Dashboard -->
-                      <NuxtLink to="/organization/dashboard">
-                        <div
-                          class="flex flex-row items-center justify-start rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
-                        >
-                          <Icon name="lucide:store" class="h-4 w-4" />
-                          <div class="pl-2">Manage Store</div>
-                        </div>
-                      </NuxtLink>
-                      <NuxtLink to="/organization/dashboard">
-                        <div
-                          class="flex flex-row items-center justify-start rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
-                        >
-                          <Icon name="lucide:shopping-bag" class="h-4 w-4" />
-                          <div class="pl-2">Manage Orders</div>
-                        </div>
-                      </NuxtLink>
+                      <div v-if="userData.organization">
+                        <UiDivider class="py-2" />
+                        <!-- Organization Dashboard -->
+
+                        <NuxtLink :to="`/organization/${organizationID}`">
+                          <div
+                            class="flex flex-row items-center justify-start rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
+                          >
+                            <Icon name="lucide:store" class="h-4 w-4" />
+                            <div class="pl-2">Manage Store</div>
+                          </div>
+                        </NuxtLink>
+                        <NuxtLink :to="`/organization/${organizationID}`">
+                          <div
+                            class="flex flex-row items-center justify-start rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
+                          >
+                            <Icon name="lucide:shopping-bag" class="h-4 w-4" />
+                            <div class="pl-2">Manage Orders</div>
+                          </div>
+                        </NuxtLink>
+                      </div>
                       <UiDivider class="py-2" />
                       <!-- Logout -->
                       <UiButton @click="logout" size="sm" class="flex w-full flex-row items-center">
@@ -129,7 +132,12 @@
 </template>
 
 <script lang="ts" setup>
+  import { useOrganizationValues } from "~/composables/organization/useOrganizationValues";
+  import { useUserValues } from "~/composables/user/useUserValues";
   import { signOut } from "firebase/auth";
+
+  const { organizationID } = useOrganizationValues();
+  const { userData } = useUserValues();
 
   const cartNum = ref(1);
 
@@ -137,6 +145,6 @@
   const auth = useFirebaseAuth();
   const logout = async () => {
     await signOut(auth!);
-    navigateTo("/");
+    navigateTo("/login");
   };
 </script>

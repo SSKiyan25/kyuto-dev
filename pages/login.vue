@@ -1,11 +1,6 @@
-<script lang="ts">
-  import { GoogleAuthProvider } from "firebase/auth";
-
-  export const googleAuthProvider = new GoogleAuthProvider();
-</script>
-
 <script setup lang="ts">
-  import { signInWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+  import { signInWithGoogle } from "~/composables/auth/useGoogle";
+  import { signInWithEmailAndPassword } from "firebase/auth";
 
   definePageMeta({
     layout: "no-nav",
@@ -18,6 +13,7 @@
   });
 
   const submit = handleSubmit(async (values) => {
+    console.log("Form successfully submitted with values: ", values);
     const loading = useSonner.loading("Loading...", {
       description: "Signed in successfully!",
     });
@@ -33,28 +29,6 @@
       useSonner.error(error.message, { id: loading });
     }
   });
-
-  const signInWithGoogle = async () => {
-    const loading = useSonner.loading("Loading...", {
-      description: "We are signing you in",
-    });
-    try {
-      await signInWithPopup(auth!, googleAuthProvider);
-      useSonner.success("Signed in successfully!", {
-        id: loading,
-      });
-      // redirect to the dashboard
-      return await navigateTo("/", { replace: true });
-    } catch (error: any) {
-      // show error
-      console.log(error.message);
-      useSonner.error(error.message, {
-        id: loading,
-      });
-    }
-  };
-  const user = useCurrentUser();
-  console.log("Check user: ", user);
 </script>
 
 <template>
@@ -114,7 +88,12 @@
               </fieldset>
               <div class="pt-4">
                 <UiDivider label="or continue with" class="pb-4" />
-                <UiButton @click="signInWithGoogle" type="button" class="w-full" variant="outline">
+                <UiButton
+                  @click="signInWithGoogle(auth)"
+                  type="button"
+                  class="w-full"
+                  variant="outline"
+                >
                   <Icon name="logos:google-icon" /> Sign in with Google
                 </UiButton>
               </div>

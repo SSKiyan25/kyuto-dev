@@ -11,4 +11,21 @@ export interface Product {
   totalSales: number;
   views: number;
   isArchived: boolean;
+  featuredPhoto: string;
+  photos: string[];
+}
+export interface Variation {
+  productID: string;
+  value: string;
+  isAvailable: boolean;
+  stocks: number;
+  currentPrice: number;
+}
+
+export interface PriceHistory {
+  variationID: string;
+  price: number;
+  discountPrice: number;
+  dateCreated: Date;
+  dateModified: Date;
 }

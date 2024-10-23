@@ -27,6 +27,7 @@
     "nuxt": "^3.13.0",
     "nuxt-vuefire": "^1.0.4",
     "pinia": "^2.2.4",
+    "pinia-plugin-persistedstate": "^4.1.1",
     "radix-vue": "^1.9.7",
     "tailwind-variants": "^0.2.1",
     "vaul-vue": "^0.2.0",
