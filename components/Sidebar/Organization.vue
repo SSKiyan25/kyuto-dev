@@ -34,11 +34,9 @@
                   size="default"
                   variant="ghost"
                   class="justify-start gap-4 px-3"
-                  @click="setMiniBarItems(n.items)"
                 >
                   <Icon v-if="n.icon" :name="n.icon" class="size-4" />
                   <span>{{ n.title }}</span>
-                  <Icon v-if="n.items" name="lucide:chevron-right" class="ml-auto size-4" />
                 </UiButton>
               </template>
             </nav>
@@ -84,9 +82,12 @@
 </template>
 
 <script lang="ts" setup>
+  import { useOrganizationValues } from "~/composables/organization/useOrganizationValues";
   import { signOut } from "firebase/auth";
 
   const auth = useFirebaseAuth();
+
+  const { organizationID } = useOrganizationValues();
   const logout = async () => {
     await signOut(auth!);
     navigateTo("/");
@@ -106,25 +107,24 @@
     email: "muzcad@he.tg",
   };
 
+  const dashboardLink = computed(() => {
+    return `/organization/${organizationID.value}`;
+  });
+
+  console.log(dashboardLink.value);
   const topNav = [
-    { title: "Dashboard", icon: "lucide:home", link: "/organization/dashboard" },
-    { title: "Analytics", icon: "lucide:bar-chart-3", link: "#" },
+    { title: "Organization", icon: "lucide:home", link: "#" },
+    { title: "Dashboard", icon: "lucide:bar-chart-3", link: "/organization/dashboard" },
     { title: "Inbox", icon: "lucide:inbox", link: "#" },
     { title: "Products", icon: "lucide:package", link: "/organization/products" },
-    { title: "Orders", icon: "lucide:list-checks", link: "#" },
-    { title: "Users", icon: "lucide:users", link: "#" },
+    { title: "Orders", icon: "lucide:list-checks", link: "/organization/orders" },
+    { title: "Members", icon: "lucide:users", link: "#" },
   ];
   const bottomNav = [
     { title: "Support", icon: "lucide:life-buoy", link: "#" },
     {
       title: "Settings",
       icon: "lucide:settings-2",
-      items: [
-        { title: "Profile", link: "#", icon: "lucide:user" },
-        { title: "Account", link: "#", icon: "lucide:settings" },
-        { title: "Security", link: "#", icon: "lucide:shield" },
-        { title: "Billing", link: "#", icon: "lucide:credit-card" },
-      ],
     },
   ];
 

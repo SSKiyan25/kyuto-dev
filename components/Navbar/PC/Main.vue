@@ -119,9 +119,9 @@
                       </NuxtLink>
                       <div v-if="userData.organization">
                         <UiDivider class="py-2" />
-                        <!-- Organization Dashboard -->
 
-                        <NuxtLink :to="`/organization/${organizationID}`">
+                        <!-- Organization Dashboard -->
+                        <NuxtLink to="/organization/dashboard">
                           <div
                             class="flex flex-row items-center justify-start rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
                           >
@@ -129,7 +129,7 @@
                             <div class="pl-2">Manage Store</div>
                           </div>
                         </NuxtLink>
-                        <NuxtLink :to="`/organization/${organizationID}`">
+                        <NuxtLink to="/organization/orders">
                           <div
                             class="flex flex-row items-center justify-start rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
                           >

@@ -195,7 +195,7 @@
         </UiButton>
       </div>
     </div>
-    <div class="flex min-h-[36rem] w-full flex-col items-start bg-muted p-4 shadow">
+    <div class="flex h-auto w-full flex-col items-start bg-muted p-4 shadow">
       <div class="flex flex-col items-start gap-1">
         <span class="text-2xl font-semibold">Products</span>
         <p class="text-sm opacity-60">Manage your products and view their sales performance.</p>
