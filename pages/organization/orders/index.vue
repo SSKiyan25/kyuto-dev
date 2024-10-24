@@ -69,7 +69,7 @@
   type Payment = {
     id: string;
     amount: number;
-    status: "pending" | "processing" | "success" | "failed";
+    status: "pending" | "processing" | "success" | "cancelled" | "refunded";
     email: string;
   };
 
@@ -101,7 +101,7 @@
     {
       id: "bhqecj4p",
       amount: 721,
-      status: "failed",
+      status: "refunded",
       email: "carmella@hotmail.com",
     },
     {
@@ -113,7 +113,7 @@
     {
       id: "bhqecj4p",
       amount: 721,
-      status: "failed",
+      status: "cancelled",
       email: "gi@po.tz",
     },
   ];
