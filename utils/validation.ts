@@ -26,12 +26,12 @@ export const AddProductSchema = object({
   name: string()
     .required()
     .label("Name")
-    .max(36)
+    .max(72)
     .matches(/^[^<@#`]*$/, "Product Name cannot contain the characters <, @, `, or #"),
   category: string().required().label("Category"),
   description: string()
     .label("Description")
-    .max(100)
+    .max(200)
     .matches(/^[^<@#`]*$/, "Description cannot contain the characters <, @, `, or #"),
   status: string().required().label("Set Status"),
   featured_image: mixed()

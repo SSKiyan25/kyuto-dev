@@ -201,6 +201,9 @@
             </div>
           </NuxtLink>
         </div>
+        <div class="flex w-full items-end justify-end">
+          <UiPagination :total="100" :sibling-count="1"></UiPagination>
+        </div>
       </div>
       <div class="min-h-lvh"></div>
     </div>

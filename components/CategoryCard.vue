@@ -6,7 +6,7 @@
 </script>
 <template>
   <div
-    class="flex h-20 w-[5rem] cursor-pointer flex-col items-center justify-center rounded-sm border bg-white hover:border-2 hover:shadow-lg md:h-40 md:w-[9.9rem]"
+    class="flex h-24 w-[5rem] cursor-pointer flex-col items-center justify-center rounded-sm border bg-white hover:border-2 hover:shadow-lg md:h-40 md:w-[9.9rem]"
   >
     <div class="h-20 w-20 overflow-hidden md:h-40 md:w-40">
       <img
