@@ -189,7 +189,7 @@
                 </div>
               </div>
               <div class="flex w-full flex-col items-start pt-1">
-                <span class="text-sm text-muted-foreground">P{{ product.price }}</span>
+                <span class="text-sm text-muted-foreground">₱{{ product.price }}</span>
                 <p class="w-full truncate pt-2">
                   {{ product.name }}
                 </p>

@@ -1,4 +1,4 @@
-import { array, mixed, number, object, string } from "yup";
+import { array, mixed, object, string } from "yup";
 
 export const LoginSchema = object({
   email: string().required().label("Email").email(),

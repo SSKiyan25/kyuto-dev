@@ -19,7 +19,7 @@
           <div class="flex w-full items-center justify-center">
             <!-- Search -->
             <UiCommand class="rounded-lg border shadow-sm">
-              <UiCommandInput placeholder="Type a command or search..." showCancel type="string" />
+              <UiCommandInput placeholder="Search Anything..." showCancel type="string" />
               <UiCommandList class="absolute mt-12 w-10/12 rounded-sm bg-secondary shadow">
                 <!-- <UiCommandEmpty>No results found.</UiCommandEmpty> -->
                 <!-- <template v-for="(item, label, i) in items" :key="i">
@@ -44,23 +44,29 @@
           <div class="pl-2 text-xl">|</div>
           <div v-if="user" class="flex flex-row items-center gap-4">
             <!-- Cart -->
-            <UiSheet>
+            <UiButton :to="`/user/cart/${user.uid}`">
+              <UiChip class="bg-red-700 text-white" size="lg" :text="cartNum?.toString()">
+                <Icon name="lucide:shopping-cart" class="h-6 w-6 cursor-pointer hover:shadow-md" />
+              </UiChip>
+            </UiButton>
+            <!-- <UiSheet>
               <UiSheetTrigger asChild>
-                <UiChip class="bg-desctructive text-white" size="lg" :text="cartNum?.toString()">
-                  <UiFancyIcon
-                    icon="lucide:shopping-cart"
-                    type="dark"
-                    class="h-10 w-12 cursor-pointer hover:shadow-md"
-                  />
-                </UiChip>
+                <UiButton>
+                  <UiChip class="bg-red-700 text-white" size="lg" :text="cartNum?.toString()">
+                    <Icon
+                      name="lucide:shopping-cart"
+                      class="h-6 w-6 cursor-pointer hover:shadow-md"
+                    />
+                  </UiChip>
+                </UiButton>
               </UiSheetTrigger>
-              <UiSheetContent side="right" title="Cart">
+              <UiSheetContent side="right" title="Cart" description="Shop more! Please >.<">
                 <template #content>
                   <UiDivider class="pb-6 pt-2" />
                   Testing
                 </template>
               </UiSheetContent>
-            </UiSheet>
+            </UiSheet> -->
             <!-- User -->
             <UiNavigationMenu>
               <UiNavigationMenuList>

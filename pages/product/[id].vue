@@ -47,7 +47,7 @@
             <div class="flex flex-row flex-wrap gap-4 px-4 pt-4">
               <div v-for="(vari, i) in product.variations" :key="i">
                 <UiButton class="cursor-default opacity-90">
-                  {{ vari.value }} | P{{ vari.currentPrice }}
+                  {{ vari.value }} | ₱{{ vari.currentPrice }}
                 </UiButton>
               </div>
             </div>
@@ -163,8 +163,6 @@
 </template>
 
 <script lang="ts" setup>
-  import { useProduct } from "~/composables/useProduct";
-  import { computed, ref } from "vue";
   import { Carousel, Slide } from "vue3-carousel";
   import type { Crumbs } from "~/components/Ui/Breadcrumbs.vue";
 
