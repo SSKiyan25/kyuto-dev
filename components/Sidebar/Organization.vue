@@ -1,15 +1,31 @@
 <template>
   <aside class="fixed flex shadow-lg">
-    <UiScrollArea class="z-10 h-screen w-[300px] border-r bg-primary text-primary-foreground">
+    <UiScrollArea
+      v-if="!isSidebarHidden"
+      class="z-10 h-screen w-[300px] border-r bg-primary text-primary-foreground"
+    >
+      <!-- Sidebar content -->
       <div class="flex h-screen flex-col pt-7">
-        <NuxtLink to="/" class="flex w-full items-center gap-3 px-5">
-          <UiAvatar
-            src="/logo-verch-2.png"
-            alt="Company Logo"
-            class="size-7 rounded object-contain"
-          />
-          <span class="text-xl font-bold">Verch</span>
-        </NuxtLink>
+        <div class="flex flex-row items-center">
+          <UiButton
+            @click="toggleSidebar"
+            :class="{
+              'ml-2 rounded px-2 opacity-90 hover:text-secondary-foreground hover:shadow-sm':
+                !isSidebarHidden,
+              'bg-primary text-primary-foreground': isSidebarHidden,
+            }"
+          >
+            <Icon name="lucide:menu" class="size-8" />
+          </UiButton>
+          <NuxtLink to="/" class="flex w-full items-center gap-1 px-2">
+            <UiAvatar
+              src="/logo-verch-2.png"
+              alt="Company Logo"
+              class="size-7 rounded object-contain"
+            />
+            <span class="pt-2 text-xl font-bold">Verch</span>
+          </NuxtLink>
+        </div>
         <UiDivider class="my-6 px-4" />
         <div class="flex h-full grow flex-col px-5 pb-8">
           <div class="mb-10 flex flex-col gap-10">
@@ -82,25 +98,25 @@
 </template>
 
 <script lang="ts" setup>
+  import { useSidebarState } from "~/composables/misc/useSidebar";
   import { useOrganizationValues } from "~/composables/organization/useOrganizationValues";
   import { signOut } from "firebase/auth";
 
-  const auth = useFirebaseAuth();
+  const currentUser = useCurrentUser();
+  const router = useRouter();
+  const route = useRoute();
 
+  const auth = useFirebaseAuth();
   const { organizationID } = useOrganizationValues();
   const logout = async () => {
     await signOut(auth!);
     navigateTo("/");
   };
+
   const showMiniSidebar = ref<boolean>(false);
   const miniSidebarItems = ref<Array<any>>();
   const sideBarRef = ref<any>();
-  const route = useRoute();
-
-  onClickOutside(sideBarRef, () => {
-    showMiniSidebar.value = false;
-    miniSidebarItems.value = [];
-  });
+  const { isSidebarHidden, toggleSidebar } = useSidebarState();
 
   const user = {
     username: "Jane Doe",
@@ -128,13 +144,11 @@
     },
   ];
 
-  const setMiniBarItems = (items?: any) => {
-    if (!items) return (showMiniSidebar.value = false);
-    miniSidebarItems.value = items;
-    showMiniSidebar.value = true;
-  };
-
   const isActiveItem = (link: string) => {
     return route.path === link;
+  };
+
+  const isInnerPage = (link: string) => {
+    return route.path.includes(link);
   };
 </script>

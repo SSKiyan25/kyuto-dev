@@ -1,17 +1,18 @@
 export default defineNuxtRouteMiddleware(async (to) => {
-  // Wait for the currentUser to be resolved
-  const user = await new Promise((resolve) => {
-    getCurrentUser().then((user) => {
-      resolve(user);
-    });
-  });
+  const currentUser = useCurrentUser();
 
-  if (!user) {
-    return await navigateTo({
-      path: "/login",
-      query: {
-        redirect: to.fullPath,
-      },
+  if (currentUser.value === undefined) {
+    return navigateTo({
+      path: "/loading",
+      query: { redirect: to.fullPath },
     });
   }
+
+  // Once Firebase is ready, check if the user is authenticated
+  // if (!currentUser.value) {
+  //   return navigateTo({
+  //     path: "/login",
+  //     query: { redirect: to.fullPath },
+  //   });
+  // }
 });

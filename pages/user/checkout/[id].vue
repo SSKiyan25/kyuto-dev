@@ -7,13 +7,13 @@
       <UiCard class="">
         <UiStepper
           v-model="stepper"
-          class="flex w-full items-start justify-between gap-2 border-b p-6"
+          class="flex w-full items-start justify-center gap-2 border-b p-6"
         >
           <UiStepperItem
             v-for="step in steps"
             :key="step.step"
             v-slot="{ state }"
-            class="group relative w-full"
+            class="group relative w-3/4"
             :step="step.step"
             :class="[isLastItem(step.step) && 'w-fit']"
           >
@@ -43,11 +43,9 @@
               >
               <UiStepperSeparator
                 v-if="step.step != steps[steps.length - 1].step"
-                class="h-0.5 shrink-0 grow rounded-full bg-muted group-data-[state=completed]:bg-primary"
+                class="h-0.5 grow rounded-full bg-muted group-data-[state=completed]:bg-primary"
               />
-              <!-- <VisuallyHidden as-child>
-                <UiStepperDescription></UiStepperDescription>
-              </VisuallyHidden> -->
+              <UiStepperDescription></UiStepperDescription>
             </UiStepperTrigger>
           </UiStepperItem>
         </UiStepper>
@@ -69,6 +67,17 @@
           </TransitionSlide>
         </div>
       </UiCard>
+      <UiCardFooter class="flex items-center justify-between gap-5">
+        <UiButton :disabled="!canGoBack" variant="outline" size="sm" @click="goBack">Back</UiButton>
+        <div class="flex items-center gap-3">
+          <UiButton v-if="stepper != 3" :disabled="!canGoNext" size="sm" @click="goNext"
+            >Next</UiButton
+          >
+          <UiButton v-if="stepper == 3" size="sm" @click="useSonner.success('Order submitted')"
+            >Submit</UiButton
+          >
+        </div>
+      </UiCardFooter>
     </UiContainer>
   </div>
 </template>

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+  import { useSidebar } from "~/composables/misc/useSidebar";
+
   useHead({
     title: "Verch | Official Website for Merchandises",
     link: [
@@ -9,6 +11,8 @@
       },
     ],
   });
+
+  useSidebar();
 </script>
 
 <template>
