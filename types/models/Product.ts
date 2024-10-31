@@ -1,5 +1,6 @@
 export interface Product {
   accountID: string;
+  organizationID: string;
   organization: string;
   name: string;
   category: string;

@@ -7,7 +7,7 @@
     layout: "organization",
     middleware: ["auth"],
   });
-  const { organizationData, organizationLoading, organizationID } = useOrganizationValues();
+  const { organizationData, organizationLoading, organizationID } = await useOrganizationValues();
 
   const crumbs: Crumbs[] = [
     { label: "Dashboard", link: "/organization/dashboard" },
@@ -149,7 +149,7 @@
         <UiDropdownMenu>
           <UiDropdownMenuTrigger as-child>
             <UiButton size="sm" variant="secondary" class="flex flex-row items-center"
-              >Show:
+              >Show: <span class="font-medium opacity-70">{{ filterBy }}</span>
               <Icon name="lucide:chevron-down" class="ml-2 h-4 w-4" />
             </UiButton>
           </UiDropdownMenuTrigger>

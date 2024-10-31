@@ -1,10 +1,11 @@
 <script lang="ts" setup>
   import { useAddProduct } from "~/composables/organization/product/useAddProduct";
+  import { useOrganizationValues } from "~/composables/organization/useOrganizationValues";
+  import { useUserValues } from "~/composables/user/useUserValues";
   import type { Crumbs } from "~/components/Ui/Breadcrumbs.vue";
 
-  console.log("Script setup running");
   definePageMeta({
-    layout: "organization",
+    layout: "no-nav",
     middleware: ["auth"],
   });
 
@@ -17,9 +18,16 @@
   const categories = ["T-shirt", "Hoodie", "Lanyard", "Sticker", "Others"];
   const status = ["Draft", "Publish"];
   const variations = ref([{ value: "None", price: 1, stocks: 0, price_discount: 0 }]);
+  const loading = ref(false);
+  const router = useRouter();
+  const toast = useToast();
 
   const addVariation = () => {
-    variations.value.push({ value: "", price: 1, stocks: 0, price_discount: 0 });
+    if (variations.value.length < 10) {
+      variations.value.push({ value: "", price: 1, stocks: 0, price_discount: 0 });
+    } else {
+      alert("You can only add up to 10 variations.");
+    }
   };
 
   const removeVariation = (index: number) => {
@@ -28,31 +36,48 @@
   };
 
   // Form Functions
-  const { handleSubmit, isSubmitting } = useForm({
+  const { userData } = await useUserValues();
+  console.log("userData: ", userData);
+  const { organizationID, organizationData } = await useOrganizationValues();
+  console.log("organizationData", organizationData);
+  const { handleSubmit, isSubmitting, resetForm } = useForm({
     validationSchema: toTypedSchema(AddProductSchema),
   });
-  console.log("Script setup running");
+  const organizationName = ref("defaultOrganizationName");
+
+  watchEffect(() => {
+    if (organizationData.value.length > 0) {
+      organizationName.value = organizationData.value[0].name;
+    }
+  });
+  console.log("organizationID: ", organizationID.value);
+  console.log("organizationName: ", organizationName.value);
 
   const submit = handleSubmit(async (values) => {
     console.log("Form successfully submitted with values: ", values);
-
-    const mockProduct = {
-      name: values.name,
-      category: values.category,
-      description: values.description,
-      status: values.status,
-      featuredImage: values.featured_image,
-      images: values.images,
-      variations: values.variations,
-    };
-
-    console.log("Mock Product:", mockProduct);
+    loading.value = true;
+    await useAddProduct(values, organizationID.value, organizationName.value);
+    loading.value = false;
+    resetForm();
+    variations.value = [{ value: "None", price: 1, stocks: 0, price_discount: 0 }];
+    // Clear file inputs
+    document
+      .querySelectorAll('input[type="file"]')
+      .forEach((input) => ((input as HTMLInputElement).value = ""));
+    // Show success toast
+    toast.toast({
+      title: "Product Added",
+      description: "Your product has been added successfully.",
+      variant: "success",
+      icon: "lucide:badge-check",
+    });
+    // Navigate back to products page
+    router.push("/organization/products/");
   });
-  console.log("Form setup complete");
 </script>
 
 <template>
-  <div class="mb-32 flex h-screen w-full flex-col items-start py-8 pl-8">
+  <div class="mb-32 flex h-screen w-full flex-col items-start py-20 pl-20">
     <div><UiBreadcrumbs class="justify-center" :items="crumbs" /></div>
     <form @submit.prevent="submit">
       <!-- Product Details -->
@@ -71,7 +96,7 @@
             <UiVeeInput
               name="name"
               label="Name"
-              placeholder="Limited to 36 Characters"
+              placeholder="Limited to 72 Characters"
               class="w-11/12"
               required
             />
@@ -136,6 +161,7 @@
               <div class="flex w-11/12 sm:col-span-3">
                 <UiVeeNumberField
                   :min="1"
+                  :max="10000"
                   label="Price"
                   :name="'variations[' + index + '].price'"
                   v-model="variation.price"
@@ -147,6 +173,7 @@
               <div class="flex w-11/12 sm:col-span-2">
                 <UiVeeNumberField
                   :min="0"
+                  :max="10000"
                   label="Stocks"
                   :name="'variations[' + index + '].stocks'"
                   v-model="variation.stocks"
@@ -157,6 +184,7 @@
               <div class="flex w-11/12 sm:col-span-2">
                 <UiVeeNumberField
                   :min="0"
+                  :max="10000"
                   label="Discount Price"
                   :name="'variations[' + index + '].price_discount'"
                   v-model="variation.price_discount"
@@ -175,8 +203,9 @@
               </div>
             </div>
             <UiDivider class="mb-4 mt-6" />
-            <div class="flex justify-center">
-              <UiButton variant="outline" @click.prevent="addVariation">
+            <div class="flex flex-col items-center justify-center gap-2">
+              <span class="text-[12px] text-muted-foreground"> Limited to 10 Variations</span>
+              <UiButton variant="outline" @click.prevent="addVariation" class="w-1/4">
                 <Icon name="lucide:badge-plus" class="size-4" />
                 Add Variation
               </UiButton>
@@ -202,14 +231,14 @@
               label="Upload Featured Image"
               name="featured_image"
               accept="image/*"
-              hint="Max file size: 25MB"
+              hint="Max file size: 10MB"
             />
             <UiVeeFileInput
               multiple
               label="Upload Other Images"
               name="images"
               accept="image/*"
-              hint="Max file size: 25MB"
+              hint="Max file size: 10MB"
             />
             <span class="text-sm font-semibold"></span>
           </fieldset>
@@ -223,5 +252,16 @@
         </div>
       </div>
     </form>
+  </div>
+
+  <div
+    v-if="loading"
+    class="fixed inset-0 z-50 flex min-h-screen w-full items-center justify-center bg-secondary/40 backdrop-blur"
+  >
+    <div class="flex flex-col items-center justify-center gap-4">
+      <Icon name="lucide:loader-circle" class="size-16 animate-spin text-primary" />
+      <span class="text-sm text-muted-foreground"> Test</span>
+      Adding Product...
+    </div>
   </div>
 </template>

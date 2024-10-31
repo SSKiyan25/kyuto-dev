@@ -37,7 +37,7 @@ export const AddProductSchema = object({
   featured_image: mixed()
     .required("Featured image is required")
     .test("fileSize", "File size is too large", (value) => {
-      return isFile(value) ? value.size <= 25 * 1024 * 1024 : true; // 25MB
+      return isFile(value) ? value.size <= 10 * 1024 * 1024 : true; // 10MB
     })
     .test("fileType", "Unsupported file format", (value) => {
       return isFile(value) ? ["image/jpeg", "image/png", "image/gif"].includes(value.type) : true;
@@ -46,7 +46,7 @@ export const AddProductSchema = object({
     .of(
       mixed()
         .test("fileSize", "File size is too large", (value) => {
-          return isFile(value) ? value.size <= 25 * 1024 * 1024 : true; // 25MB
+          return isFile(value) ? value.size <= 10 * 1024 * 1024 : true; // 10MB
         })
         .test("fileType", "Unsupported file format", (value) => {
           return isFile(value)
@@ -55,5 +55,9 @@ export const AddProductSchema = object({
         })
     )
     .max(5, "You can upload up to 5 images"),
-  variations: array().of(mixed()).required().min(1, "At least one variation is required"),
+  variations: array()
+    .of(mixed())
+    .required()
+    .min(1, "At least one variation is required")
+    .max(10, "You can add up to 10 variations only"),
 });

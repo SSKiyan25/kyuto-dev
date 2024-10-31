@@ -2,7 +2,7 @@
   <aside class="fixed flex shadow-lg">
     <UiScrollArea
       v-if="!isSidebarHidden"
-      class="z-10 h-screen w-[300px] border-r bg-primary text-primary-foreground"
+      class="z-50 h-screen w-[300px] border-r bg-primary text-primary-foreground"
     >
       <!-- Sidebar content -->
       <div class="flex h-screen flex-col pt-7">
@@ -100,14 +100,14 @@
 <script lang="ts" setup>
   import { useSidebarState } from "~/composables/misc/useSidebar";
   import { useOrganizationValues } from "~/composables/organization/useOrganizationValues";
+  import { useUserValues } from "~/composables/user/useUserValues";
   import { signOut } from "firebase/auth";
 
-  const currentUser = useCurrentUser();
-  const router = useRouter();
   const route = useRoute();
 
   const auth = useFirebaseAuth();
-  const { organizationID } = useOrganizationValues();
+  const { organizationID, organizationData } = await useOrganizationValues();
+  const { userData } = await useUserValues();
   const logout = async () => {
     await signOut(auth!);
     navigateTo("/");
@@ -119,15 +119,10 @@
   const { isSidebarHidden, toggleSidebar } = useSidebarState();
 
   const user = {
-    username: "Jane Doe",
-    email: "muzcad@he.tg",
+    username: userData.value.username || "Name",
+    email: userData.value.email || "",
   };
 
-  const dashboardLink = computed(() => {
-    return `/organization/${organizationID.value}`;
-  });
-
-  console.log(dashboardLink.value);
   const topNav = [
     { title: "Organization", icon: "lucide:home", link: "#" },
     { title: "Dashboard", icon: "lucide:bar-chart-3", link: "/organization/dashboard" },
@@ -148,7 +143,20 @@
     return route.path === link;
   };
 
-  const isInnerPage = (link: string) => {
-    return route.path.includes(link);
-  };
+  // Function to check if the current route is in topNav or bottomNav
+  const isRouteInNav = computed(() => {
+    const allNavLinks = [...topNav, ...bottomNav].map((nav) => nav.link);
+    return allNavLinks.includes(route.path);
+  });
+
+  // Watch the route and hide the sidebar if the route is not in topNav or bottomNav
+  watch(
+    () => route.path,
+    (newPath) => {
+      if (!isRouteInNav.value) {
+        isSidebarHidden.value = true;
+      }
+    },
+    { immediate: true }
+  );
 </script>

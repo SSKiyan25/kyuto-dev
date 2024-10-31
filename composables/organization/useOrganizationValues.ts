@@ -1,9 +1,9 @@
 import { useUserValues } from "~/composables/user/useUserValues";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, query, where } from "firebase/firestore";
 import type { Organization } from "~/types/models/Organization";
 
-export const useOrganizationValues = () => {
-  const { userData } = useUserValues();
+export async function useOrganizationValues() {
+  const { userData, loading: userLoading } = await useUserValues();
   const db = useFirestore();
 
   const currentOrganization: Partial<Organization> = {
@@ -20,42 +20,26 @@ export const useOrganizationValues = () => {
     accounts: [],
   };
 
-  const organizationData = ref<Partial<Organization>>(currentOrganization);
-  const organizationID = ref("");
-  const organizationLoading = ref(true);
+  const orgQuery = computed(() => {
+    if (userData.value && userData.value.organization) {
+      return query(
+        collection(db, "organizations"),
+        where("name", "==", userData.value.organization)
+      );
+    }
+    return null;
+  });
 
-  watch(
-    userData,
-    async (newUser) => {
-      if (newUser && newUser.organization) {
-        try {
-          const orgQuery = query(
-            collection(db, "organizations"),
-            where("name", "==", newUser.organization)
-          );
-          const querySnapshot = await getDocs(orgQuery);
-          if (!querySnapshot.empty) {
-            const orgDoc = querySnapshot.docs[0];
-            organizationData.value = orgDoc.data() as Partial<Organization>;
-            organizationID.value = orgDoc.id;
-            console.log("Organization data fetched successfully:", organizationData.value);
-          } else {
-            console.log("No organization data found");
-            organizationLoading.value = false;
-          }
-        } catch (error) {
-          console.error("Error fetching organization data:", error);
-          organizationLoading.value = false;
-        } finally {
-          organizationLoading.value = false;
-        }
-      } else {
-        console.log("No organization associated with the current user");
-        organizationLoading.value = false;
-      }
-    },
-    { immediate: true }
-  );
+  const { data: organizationData, pending: organizationLoading } =
+    useCollection<Organization>(orgQuery);
+
+  console.log("Organization data: ", organizationData);
+  const organizationID = computed(() => {
+    if (organizationData.value && organizationData.value.length > 0) {
+      return organizationData.value[0].id ?? "";
+    }
+    return "";
+  });
 
   return { organizationData, organizationLoading, organizationID };
-};
+}

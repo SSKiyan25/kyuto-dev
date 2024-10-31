@@ -1,3 +1,3 @@
-export const useUseProducts = () => {
-  return ref()
-}
+export const useUseProducts = async () => {
+  return ref();
+};

@@ -166,8 +166,10 @@
   import { useUserValues } from "~/composables/user/useUserValues";
   import { signOut } from "firebase/auth";
 
-  const { organizationID } = useOrganizationValues();
-  const { userData } = useUserValues();
+  const { organizationID } = await useOrganizationValues();
+  const { userData } = await useUserValues();
+  console.log("userData", userData);
+  console.log("organizationID", organizationID);
 
   const cartNum = ref(1);
 

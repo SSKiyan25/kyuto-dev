@@ -1,7 +1,7 @@
-import { doc, getDoc } from "firebase/firestore";
+import { doc } from "firebase/firestore";
 import type { Account } from "~/types/models/Account";
 
-export function useUserValues() {
+export async function useUserValues() {
   const user = useCurrentUser();
   const db = useFirestore();
 
@@ -21,40 +21,11 @@ export function useUserValues() {
     isVerified: false,
   };
 
-  const userData = ref<Partial<Account>>(defaultUser);
-  const loading = ref(true);
+  const userDocRef = computed(() => (user.value ? doc(db, "accounts", user.value.uid) : null));
+  const { data: userData, pending: loading } = useDocument<Partial<Account>>(userDocRef);
+  console.log("User data: ", userData);
+  // Initialize userData with defaultUser if userDocRef is null
+  const userDataWithDefault = computed(() => userData.value ?? defaultUser);
 
-  watch(
-    user,
-    async (newUser) => {
-      if (newUser) {
-        try {
-          //console.log("Current user:", newUser);
-          //console.log("Current user ID:", newUser.uid);
-          const docRef = doc(db, "accounts", newUser.uid);
-          //console.log("User doc ref:", docRef);
-          const docSnap = await getDoc(docRef);
-          if (docSnap.exists()) {
-            userData.value = docSnap.data() as Partial<Account>;
-            //console.log("User data fetched successfully:", userData.value);
-          } else {
-            console.log("No user data found");
-            userData.value = defaultUser;
-          }
-        } catch (error) {
-          console.error("Error fetching user data:", error);
-          userData.value = defaultUser;
-        } finally {
-          loading.value = false;
-        }
-      } else {
-        console.log("No current user");
-        userData.value = defaultUser;
-        loading.value = false;
-      }
-    },
-    { immediate: true }
-  );
-
-  return { userData, loading };
+  return { userData: userDataWithDefault, loading };
 }
