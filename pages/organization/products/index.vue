@@ -1,9 +1,11 @@
 <script setup lang="ts">
   import { useOrganizationValues } from "~/composables/organization/useOrganizationValues";
   import { fetchProducts } from "~/composables/organization/useProducts";
-  import { Timestamp } from "firebase/firestore";
+  import { QueryDocumentSnapshot, Timestamp } from "firebase/firestore";
+  import { RouterLink } from "vue-router";
   import type { ColumnDef, Table } from "@tanstack/vue-table";
   import type { Crumbs } from "~/components/Ui/Breadcrumbs.vue";
+  import type { DocumentData } from "firebase/firestore";
 
   definePageMeta({
     layout: "organization",
@@ -27,6 +29,7 @@
   const search = ref("");
 
   type Product = {
+    id: string;
     photo: string;
     name: string;
     category: string;
@@ -37,6 +40,7 @@
   };
 
   const data = ref<Partial<Product>[]>([]);
+  const lastVisible = ref<QueryDocumentSnapshot<DocumentData> | null>(null);
   const columns: ColumnDef<Partial<Product>>[] = [
     { accessorKey: "name", header: "Name", enableHiding: true },
     {
@@ -65,7 +69,8 @@
       header: "",
       enableSorting: false,
       enableHiding: false,
-      cell: () => {
+      cell: ({ row }) => {
+        const productId = row.original.id;
         return h(resolveComponent("UiDropdownMenu"), {}, () => [
           h(resolveComponent("UiDropdownMenuTrigger"), { asChild: true }, () => [
             h(
@@ -81,16 +86,20 @@
           ]),
           h(resolveComponent("UiDropdownMenuContent"), () => [
             h(resolveComponent("UiDropdownMenuItem"), { title: "View" }, () => [
-              h(resolveComponent("Icon"), { name: "lucide:view", class: "mr-2 h-4 w-4" }),
-              "View",
+              h(RouterLink, { to: `/organization/products/product/${productId}` }, () => [
+                h(resolveComponent("Icon"), { name: "lucide:view", class: "mr-2 h-4 w-4" }),
+                "View",
+              ]),
             ]),
             h(resolveComponent("UiDropdownMenuItem"), { title: "Edit" }, () => [
-              h(resolveComponent("Icon"), { name: "lucide:pencil", class: "mr-2 h-4 w-4" }),
-              "Edit",
+              h(RouterLink, { to: `/organization/products/edit/${productId}` }, () => [
+                h(resolveComponent("Icon"), { name: "lucide:pencil", class: "mr-2 h-4 w-4" }),
+                "Edit",
+              ]),
             ]),
-            h(resolveComponent("UiDropdownMenuItem"), { title: "Delete" }, () => [
+            h(resolveComponent("UiDropdownMenuItem"), { title: "Archive" }, () => [
               h(resolveComponent("Icon"), { name: "lucide:delete", class: "mr-2 h-4 w-4" }),
-              "Delete",
+              "Archive",
             ]),
           ]),
         ]);
@@ -101,35 +110,67 @@
   const { organizationID } = await useOrganizationValues();
   console.log("Organization ID: ", organizationID.value);
 
-  const fetchAndSetProducts = async () => {
+  const fetchAndSetProducts = async (reset = false) => {
     if (organizationID.value) {
       const pageSize = table.value?.getState().pagination.pageSize || 10;
-      const products = await fetchProducts(
+      const result = await fetchProducts(
         organizationID.value,
         pageSize,
         filterBy.value,
-        defaultCategory.value
+        defaultCategory.value,
+        reset ? null : lastVisible.value
       );
-      console.log("Products in script:", products);
-      data.value = products.map((product) => ({
-        photo: product.featuredPhoto,
-        name: product.name,
-        category: product.category,
-        price: product.price,
-        stock: product.stock,
-        status: product.status,
-        date:
-          product.dateCreated instanceof Timestamp
-            ? product.dateCreated.toDate().toISOString().split("T")[0]
-            : "",
-      }));
+      console.log("Products in script:", result.products);
+      if (reset) {
+        data.value = result.products.map((product) => ({
+          id: product.id,
+          photo: product.featuredPhoto,
+          name: product.name,
+          category: product.category,
+          price: product.price,
+          stock: product.stock,
+          status: product.status,
+          date:
+            product.dateCreated instanceof Timestamp
+              ? product.dateCreated.toDate().toISOString().split("T")[0]
+              : "",
+        }));
+      } else {
+        data.value = [
+          ...data.value,
+          ...result.products.map((product) => ({
+            id: product.id,
+            photo: product.featuredPhoto,
+            name: product.name,
+            category: product.category,
+            price: product.price,
+            stock: product.stock,
+            status: product.status,
+            date:
+              product.dateCreated instanceof Timestamp
+                ? product.dateCreated.toDate().toISOString().split("T")[0]
+                : "",
+          })),
+        ];
+      }
+      lastVisible.value = result.lastVisible;
       console.log("Data: ", data.value);
     }
   };
 
-  watch(() => [organizationID.value, filterBy.value, defaultCategory.value], fetchAndSetProducts, {
+  watch([organizationID, filterBy, defaultCategory], () => fetchAndSetProducts(true), {
     immediate: true,
   });
+
+  watch(
+    () => table.value?.getState().pagination.pageSize,
+    () => fetchAndSetProducts(true)
+  );
+
+  watch(
+    () => table.value?.getState().pagination.pageIndex,
+    () => fetchAndSetProducts()
+  );
 
   onMounted(fetchAndSetProducts);
 </script>
@@ -224,5 +265,7 @@
         </UiTanStackTable>
       </div>
     </div>
+    <!-- Dont remove -->
+    <div class="min-h-32 text-secondary"></div>
   </div>
 </template>

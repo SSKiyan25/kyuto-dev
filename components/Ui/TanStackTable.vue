@@ -60,7 +60,7 @@
     </div>
 
     <div
-      v-if="showPagination"
+      v-if="showPagination || showRowsPerPage"
       class="my-6 flex flex-col justify-between gap-4 px-2 md:flex-row md:items-center"
     >
       <div class="flex items-center justify-between gap-3">
@@ -73,7 +73,7 @@
           </div>
         </slot>
         <slot name="rowsPerPage" :table="table">
-          <div class="flex items-center space-x-2 whitespace-nowrap">
+          <div v-if="showRowsPerPage" class="flex items-center space-x-2 whitespace-nowrap">
             <p class="hidden text-sm font-medium text-foreground md:inline-block">
               {{ rowsPerPageText }}
             </p>
@@ -98,7 +98,7 @@
         </slot>
       </div>
 
-      <div class="flex items-center justify-between gap-3">
+      <div v-if="showPagination" class="flex items-center justify-between gap-3">
         <slot :table="table" name="page">
           <div
             class="flex items-center justify-center whitespace-nowrap text-sm font-medium text-foreground"
@@ -180,6 +180,7 @@
       unsortedIcon?: string;
       class?: any;
       showPagination?: boolean;
+      showRowsPerPage?: boolean;
       rowsPerPageText?: string;
     }>(),
     {
@@ -192,6 +193,7 @@
       descIcon: "heroicons:chevron-down",
       unsortedIcon: "heroicons:chevron-up-down",
       showPagination: true,
+      showRowsPerPage: true,
       rowsPerPageText: "Rows per page:",
     }
   );

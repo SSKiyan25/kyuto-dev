@@ -107,6 +107,7 @@
 
   const auth = useFirebaseAuth();
   const { organizationID, organizationData } = await useOrganizationValues();
+  console.log("OrganizationData: ",organizationData.value);
   const { userData } = await useUserValues();
   const logout = async () => {
     await signOut(auth!);

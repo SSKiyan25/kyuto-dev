@@ -1,7 +1,15 @@
-import { collection, limit as firestoreLimit, getDocs, query, where } from "firebase/firestore";
+import {
+  collection,
+  limit as firestoreLimit,
+  getDocs,
+  query,
+  startAfter,
+  where,
+} from "firebase/firestore";
 import type { Product, Variation } from "~/types/models/Product";
 
 interface EnhancedProduct extends Product {
+  id: string;
   price: number;
   stock: number;
 }
@@ -10,7 +18,8 @@ export async function fetchProducts(
   organizationID: string,
   limit: number,
   filterBy: string,
-  category: string
+  category: string,
+  lastVisible: any = null
 ) {
   const db = useFirestore();
 
@@ -27,6 +36,10 @@ export async function fetchProducts(
 
   if (category !== "All") {
     productsQuery = query(productsQuery, where("category", "==", category));
+  }
+
+  if (lastVisible) {
+    productsQuery = query(productsQuery, startAfter(lastVisible));
   }
 
   const productsSnapshot = await getDocs(productsQuery);
@@ -55,5 +68,8 @@ export async function fetchProducts(
   );
 
   console.log("Enhanced Products in composable: ", enhancedProducts);
-  return enhancedProducts;
+  return {
+    products: enhancedProducts,
+    lastVisible: productsSnapshot.docs[productsSnapshot.docs.length - 1],
+  };
 }
