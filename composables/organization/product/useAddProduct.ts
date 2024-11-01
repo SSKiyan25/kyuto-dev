@@ -36,7 +36,7 @@ export const useAddProduct = async (
       organization: organizationName,
       name: values.name,
       category: values.category,
-      description: values.description,
+      description: values.description ?? "",
       status: values.status,
       dateCreated: new Date(),
       lastModified: new Date(),
@@ -94,7 +94,7 @@ export const useAddProduct = async (
       const newPriceHistory: Partial<PriceHistory> = {
         variationID: variationDocRef.id,
         price: variation.price,
-        discountPrice: variation.price_discount ?? 0,
+        discountPrice: 0,
         dateCreated: new Date(),
         dateModified: new Date(),
       };

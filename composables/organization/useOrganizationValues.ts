@@ -6,20 +6,6 @@ export async function useOrganizationValues() {
   const { userData, loading: userLoading } = await useUserValues();
   const db = useFirestore();
 
-  const currentOrganization: Partial<Organization> = {
-    name: "",
-    contactEmail: "",
-    address: "",
-    addressImages: [],
-    description: "",
-    phoneNumber: "",
-    icon: "",
-    images: [],
-    isVerified: false,
-    dateCreated: new Date(),
-    accounts: [],
-  };
-
   const orgQuery = computed(() => {
     if (userData.value && userData.value.organization) {
       return query(

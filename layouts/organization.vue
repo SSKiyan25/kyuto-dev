@@ -25,7 +25,6 @@
   import { useSidebarState } from "~/composables/misc/useSidebar";
 
   const { isSidebarHidden, toggleSidebar } = useSidebarState();
-  console.log("isSidebarHidden", isSidebarHidden);
 </script>
 
 <style scoped>

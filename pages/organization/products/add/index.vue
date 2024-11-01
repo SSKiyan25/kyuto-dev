@@ -10,21 +10,22 @@
   });
 
   const crumbs: Crumbs[] = [
-    { label: "Dashboard", link: "/organization/dashboard" },
-    { label: "All Products", link: "/organization/products" },
-    { label: "Add Product", link: "/organization/products/add" },
+    { label: "Dashboard", link: "/organization/dashboard", icon: "lucide:newspaper" },
+    { label: "All Products", link: "/organization/products", icon: "lucide:package" },
+    { label: "Add Product", link: "/organization/products/add", icon: "lucide:file-plus" },
   ];
 
   const categories = ["T-shirt", "Hoodie", "Lanyard", "Sticker", "Others"];
   const status = ["Draft", "Publish"];
-  const variations = ref([{ value: "None", price: 1, stocks: 0, price_discount: 0 }]);
+  const variations = ref([{ value: "None", price: 1, stocks: 0 }]);
   const loading = ref(false);
+  const currentMessage = ref("");
   const router = useRouter();
   const toast = useToast();
 
   const addVariation = () => {
     if (variations.value.length < 10) {
-      variations.value.push({ value: "", price: 1, stocks: 0, price_discount: 0 });
+      variations.value.push({ value: "", price: 1, stocks: 0 });
     } else {
       alert("You can only add up to 10 variations.");
     }
@@ -33,6 +34,22 @@
   const removeVariation = (index: number) => {
     if (variations.value.length === 1) return;
     variations.value.splice(index, 1);
+  };
+
+  const messages = [
+    "Uploading your product...",
+    "Almost there...",
+    "Just a moment...",
+    "Hang tight, we're adding your product...",
+    "It should be finished already...",
+    "Just a few more seconds...",
+    "Thank you for your patience...",
+  ];
+
+  let messageIndex = 0;
+  const updateMessage = () => {
+    currentMessage.value = messages[messageIndex];
+    messageIndex = (messageIndex + 1) % messages.length;
   };
 
   // Form Functions
@@ -56,10 +73,12 @@
   const submit = handleSubmit(async (values) => {
     console.log("Form successfully submitted with values: ", values);
     loading.value = true;
+    const messageInterval = setInterval(updateMessage, 2000);
     await useAddProduct(values, organizationID.value, organizationName.value);
+    clearInterval(messageInterval);
     loading.value = false;
     resetForm();
-    variations.value = [{ value: "None", price: 1, stocks: 0, price_discount: 0 }];
+    variations.value = [{ value: "None", price: 1, stocks: 0 }];
     // Clear file inputs
     document
       .querySelectorAll('input[type="file"]')
@@ -148,7 +167,7 @@
               :key="index"
               class="mb-4 flex flex-row flex-wrap gap-4 sm:grid sm:grid-cols-12"
             >
-              <div class="flex sm:col-span-3">
+              <div class="flex sm:col-span-5">
                 <UiVeeInput
                   :name="'variations[' + index + '].name'"
                   label="Variation Name"
@@ -181,17 +200,7 @@
                   <UiNumberFieldInput placeholder="0" />
                 </UiVeeNumberField>
               </div>
-              <div class="flex w-11/12 sm:col-span-2">
-                <UiVeeNumberField
-                  :min="0"
-                  :max="10000"
-                  label="Discount Price"
-                  :name="'variations[' + index + '].price_discount'"
-                  v-model="variation.price_discount"
-                >
-                  <UiNumberFieldInput placeholder="0" />
-                </UiVeeNumberField>
-              </div>
+
               <div class="flex items-center pt-7">
                 <UiButton
                   @click.prevent="removeVariation(index)"
@@ -260,8 +269,8 @@
   >
     <div class="flex flex-col items-center justify-center gap-4">
       <Icon name="lucide:loader-circle" class="size-16 animate-spin text-primary" />
-      <span class="text-sm text-muted-foreground"> Test</span>
-      Adding Product...
+      <span class="text-sm text-muted-foreground"> {{ currentMessage }}</span>
+      <!-- Add a GIF here -->
     </div>
   </div>
 </template>

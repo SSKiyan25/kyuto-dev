@@ -124,7 +124,7 @@
   };
 
   const topNav = [
-    { title: "Organization", icon: "lucide:home", link: "#" },
+    { title: "Organization", icon: "lucide:newspaper", link: "#" },
     { title: "Dashboard", icon: "lucide:bar-chart-3", link: "/organization/dashboard" },
     { title: "Inbox", icon: "lucide:inbox", link: "#" },
     { title: "Products", icon: "lucide:package", link: "/organization/products" },

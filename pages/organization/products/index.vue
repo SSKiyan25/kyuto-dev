@@ -1,5 +1,7 @@
 <script setup lang="ts">
   import { useOrganizationValues } from "~/composables/organization/useOrganizationValues";
+  import { fetchProducts } from "~/composables/organization/useProducts";
+  import { Timestamp } from "firebase/firestore";
   import type { ColumnDef, Table } from "@tanstack/vue-table";
   import type { Crumbs } from "~/components/Ui/Breadcrumbs.vue";
 
@@ -7,21 +9,17 @@
     layout: "organization",
     middleware: ["auth"],
   });
-  const { organizationData, organizationLoading, organizationID } = await useOrganizationValues();
 
   const crumbs: Crumbs[] = [
-    { label: "Dashboard", link: "/organization/dashboard" },
-    { label: "All Products", link: "/organization/products" },
+    { label: "Dashboard", link: "/organization/dashboard", icon: "lucide:newspaper" },
+    { label: "All Products", link: "/organization/products", icon: "lucide:package" },
   ];
 
   // Filters
   const filterBy = ref("All");
-  const filterOptions = ["All", "Active", "Draft", "Archived"];
-
+  const filterOptions = ["All", "Publish", "Draft", "Archived"];
   const defaultCategory = ref("All");
   const categories = ["All", "T-shirt", "Hoodie", "Lanyard", "Sticker", "Others"];
-
-  const date = ref();
 
   // Table
   const tableRef = ref();
@@ -38,36 +36,7 @@
     date: string;
   };
 
-  const data: Partial<Product>[] = [
-    {
-      photo: "/assets/images/sample-product.png",
-      name: "Sample Product",
-      category: "T-shirt",
-      price: 100,
-      stock: 100,
-      status: "Active",
-      date: "2021-10-10",
-    },
-    {
-      photo: "/assets/images/sample-product.png",
-      name: "Sample Product - 2",
-      category: "Lanyard",
-      price: 100,
-      stock: 100,
-      status: "Draft",
-      date: "2021-10-11",
-    },
-    {
-      photo: "/assets/images/sample-product.png",
-      name: "Sample Product - 3",
-      category: "Others",
-      price: 100,
-      stock: 100,
-      status: "Archived",
-      date: "2021-10-9",
-    },
-  ];
-
+  const data = ref<Partial<Product>[]>([]);
   const columns: ColumnDef<Partial<Product>>[] = [
     { accessorKey: "name", header: "Name", enableHiding: true },
     {
@@ -96,7 +65,7 @@
       header: "",
       enableSorting: false,
       enableHiding: false,
-      cell: ({ row }) => {
+      cell: () => {
         return h(resolveComponent("UiDropdownMenu"), {}, () => [
           h(resolveComponent("UiDropdownMenuTrigger"), { asChild: true }, () => [
             h(
@@ -128,7 +97,43 @@
       },
     },
   ];
+
+  const { organizationID } = await useOrganizationValues();
+  console.log("Organization ID: ", organizationID.value);
+
+  const fetchAndSetProducts = async () => {
+    if (organizationID.value) {
+      const pageSize = table.value?.getState().pagination.pageSize || 10;
+      const products = await fetchProducts(
+        organizationID.value,
+        pageSize,
+        filterBy.value,
+        defaultCategory.value
+      );
+      console.log("Products in script:", products);
+      data.value = products.map((product) => ({
+        photo: product.featuredPhoto,
+        name: product.name,
+        category: product.category,
+        price: product.price,
+        stock: product.stock,
+        status: product.status,
+        date:
+          product.dateCreated instanceof Timestamp
+            ? product.dateCreated.toDate().toISOString().split("T")[0]
+            : "",
+      }));
+      console.log("Data: ", data.value);
+    }
+  };
+
+  watch(() => [organizationID.value, filterBy.value, defaultCategory.value], fetchAndSetProducts, {
+    immediate: true,
+  });
+
+  onMounted(fetchAndSetProducts);
 </script>
+
 <template>
   <div class="flex h-screen w-full flex-col p-8">
     <div class="flex flex-row items-center justify-between">
