@@ -1,6 +1,7 @@
 <script lang="ts" setup>
-  import { ref } from "vue";
+  import { collection, doc, getDoc } from "firebase/firestore";
   import type { Crumbs } from "~/components/Ui/Breadcrumbs.vue";
+  import type { Product } from "~/types/models/Product";
 
   const crumbs: Crumbs[] = [
     { label: "Dashboard", link: "/organization/dashboard", icon: "lucide:newspaper" },
@@ -25,9 +26,17 @@
   const status = ["Draft", "Publish"];
 
   // Edit Functions
-  const router = useRouter();
-  const productID = router.currentRoute.value.params.id;
-  console.log(productID);
+  const route = useRoute();
+  const productID = computed(() => route.params.id);
+  console.log("current product: ", productID);
+
+  // Fetch Product
+  const db = useFirestore();
+  const productRef = computed(() =>
+    productID.value ? doc(collection(db, "products"), productID.value as string) : null
+  );
+  const { data: product, pending, error, promise } = useDocument<Partial<Product>>(productRef);
+  console.log("Product in Edit Page: ", product);
 </script>
 
 <template>

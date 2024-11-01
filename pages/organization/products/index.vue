@@ -97,8 +97,14 @@
                 "Edit",
               ]),
             ]),
+            h(resolveComponent("UiDropdownMenuItem"), { title: "Manage Inventory" }, () => [
+              h(RouterLink, { to: `/organization/products/inventory/${productId}` }, () => [
+                h(resolveComponent("Icon"), { name: "lucide:layers-3", class: "mr-2 h-4 w-4" }),
+                "Manage Inventory",
+              ]),
+            ]),
             h(resolveComponent("UiDropdownMenuItem"), { title: "Archive" }, () => [
-              h(resolveComponent("Icon"), { name: "lucide:delete", class: "mr-2 h-4 w-4" }),
+              h(resolveComponent("Icon"), { name: "lucide:file-x", class: "mr-2 h-4 w-4" }),
               "Archive",
             ]),
           ]),
@@ -254,6 +260,8 @@
           :search="search"
           :data="data"
           :columns="columns"
+          :showPagination="false"
+          :showRowsPerPage="true"
           class="mt-5 flex w-full rounded-md border"
         >
           <template #empty>
@@ -263,6 +271,9 @@
             </div>
           </template>
         </UiTanStackTable>
+        <div class="flex items-end justify-end">
+          <span class="text-sm text-muted-foreground">Total Products: {{ data.length }}</span>
+        </div>
       </div>
     </div>
     <!-- Dont remove -->
