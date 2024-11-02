@@ -151,7 +151,7 @@
         </div>
         <!-- Product Images -->
         <div
-          class="mx-auto my-4 mb-24 flex h-auto w-11/12 flex-col items-start rounded-sm bg-muted p-4 shadow"
+          class="mx-auto my-4 flex h-auto w-11/12 flex-col items-start rounded-sm bg-muted p-4 shadow"
         >
           <div class="flex flex-col items-start gap-1">
             <span class="text-2xl font-semibold"> Images</span>
@@ -251,7 +251,9 @@
                   </div>
                 </div>
                 <div class="flex flex-row items-center gap-1 pb-4">
-                  <span class="text-[12px] text-muted-foreground">Add more images?</span>
+                  <span class="text-[12px] text-muted-foreground"
+                    >Add more images? (Limited to 5 total only)</span
+                  >
 
                   <input type="checkbox" v-model="addMoreImages" id="addMoreImages" />
                 </div>
@@ -269,6 +271,10 @@
               </div>
             </fieldset>
           </div>
+        </div>
+        <div class="mb-24 flex w-full flex-row justify-end px-14">
+          <UiButton variant="outline" class="mr-4" to="/organization/products">Cancel</UiButton>
+          <UiButton type="submit" class="">Save Changes</UiButton>
         </div>
       </div>
     </form>
