@@ -262,6 +262,7 @@
           :columns="columns"
           :showPagination="false"
           :showRowsPerPage="true"
+          rowsPerPageText="Total items in Table:"
           class="mt-5 flex w-full rounded-md border"
         >
           <template #empty>
