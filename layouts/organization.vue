@@ -6,10 +6,10 @@
       :class="{
         'ml-2 rounded px-2 opacity-90 hover:text-secondary-foreground hover:shadow-sm':
           !isSidebarHidden,
-        'm-4 bg-primary text-primary-foreground': isSidebarHidden,
+        'm-4 bg-secondary text-secondary-foreground': isSidebarHidden,
       }"
     >
-      <Icon name="lucide:menu" class="size-8" />
+      <Icon name="lucide:menu" class="size-6" />
     </UiButton>
 
     <transition name="slide">

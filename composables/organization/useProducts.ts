@@ -1,3 +1,4 @@
+import { user } from "firebase-functions/v1/auth";
 import {
   collection,
   limit as firestoreLimit,
@@ -8,6 +9,8 @@ import {
 } from "firebase/firestore";
 import type { Product, Variation } from "~/types/models/Product";
 
+import { useFetchUser } from "../user/useFetchUser";
+
 interface EnhancedProduct extends Product {
   id: string;
   price: number;
@@ -15,18 +18,18 @@ interface EnhancedProduct extends Product {
 }
 
 export async function fetchProducts(
-  organizationID: string,
   limit: number,
   filterBy: string,
   category: string,
   lastVisible: any = null
 ) {
   const db = useFirestore();
+  const { userData } = await useFetchUser();
 
-  console.log("Organization ID in composable: ", organizationID);
+  console.log("Organization ID in composable: ", userData.organizationID);
   let productsQuery = query(
     collection(db, "products"),
-    where("organizationID", "==", organizationID),
+    where("organizationID", "==", userData.organizationID),
     firestoreLimit(limit)
   );
 

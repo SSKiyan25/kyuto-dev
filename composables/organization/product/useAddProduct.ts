@@ -3,20 +3,19 @@ import { ref as storageRef } from "firebase/storage";
 import { sha256 } from "js-sha256";
 import type { PriceHistory, Product, Variation } from "~/types/models/Product";
 
-export const useAddProduct = async (
-  values: any,
-  organizationID: string,
-  organizationName: string
-) => {
+import { useFetchUser } from "../../user/useFetchUser";
+
+export const useAddProduct = async (values: any) => {
   const user = useCurrentUser();
   const db = useFirestore();
   const storage = useFirebaseStorage();
+  const { userData } = await useFetchUser();
 
   const timestamp = Date.now();
-  const basePath = `${organizationName}/products/${values.name}`;
+  const basePath = `organizations/${userData.organizationID}/products/${values.name}`;
 
   // Generate a unique name for the featured image
-  const uniqueStringFeatured = `${timestamp}-${values.name}-${organizationName}-${values.category}-1`;
+  const uniqueStringFeatured = `${timestamp}-${values.name}-${userData.organization}-${values.category}-1`;
   const uniqueNameFeatured = sha256(uniqueStringFeatured);
 
   const featuredRef = storageRef(storage, `${basePath}/${uniqueNameFeatured}`);
@@ -32,8 +31,8 @@ export const useAddProduct = async (
     // Create the new product
     const newProduct: Partial<Product> = {
       accountID: user.value?.uid ?? "",
-      organizationID: organizationID,
-      organization: organizationName,
+      organizationID: userData.organizationID,
+      organization: userData.organization,
       name: values.name,
       category: values.category,
       description: values.description ?? "",
@@ -52,7 +51,7 @@ export const useAddProduct = async (
     const imageUrls: string[] = [];
     for (let i = 0; i < values.images.length; i++) {
       const image = values.images[i];
-      const uniqueStringImage = `${timestamp}-${values.name}-${organizationName}-${values.category}-${i + 2}`;
+      const uniqueStringImage = `${timestamp}-${values.name}-${userData.organization}-${values.category}-${i + 2}`;
       const uniqueNameImage = sha256(uniqueStringImage);
 
       const imageRef = storageRef(storage, `${basePath}/${uniqueNameImage}`);

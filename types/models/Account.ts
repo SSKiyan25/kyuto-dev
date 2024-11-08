@@ -4,6 +4,7 @@ export interface Account {
   username: string;
   avatar: string;
   organization?: string;
+  organizationID: string;
   firstname: string;
   lastname: string;
   department?: string;

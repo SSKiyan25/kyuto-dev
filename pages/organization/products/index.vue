@@ -1,6 +1,6 @@
 <script setup lang="ts">
-  import { useOrganizationValues } from "~/composables/organization/useOrganizationValues";
   import { fetchProducts } from "~/composables/organization/useProducts";
+  import { useFetchUser } from "~/composables/user/useFetchUser";
   import { QueryDocumentSnapshot, Timestamp } from "firebase/firestore";
   import { RouterLink } from "vue-router";
   import type { ColumnDef, Table } from "@tanstack/vue-table";
@@ -113,58 +113,49 @@
     },
   ];
 
-  const { organizationID } = await useOrganizationValues();
-  console.log("Organization ID: ", organizationID.value);
+  const { userData } = await useFetchUser();
 
+  console.log("User Data: ", userData);
+  // Get copy of the products
   const fetchAndSetProducts = async (reset = false) => {
-    if (organizationID.value) {
+    if (userData.organizationID) {
       const pageSize = table.value?.getState().pagination.pageSize || 10;
       const result = await fetchProducts(
-        organizationID.value,
         pageSize,
         filterBy.value,
         defaultCategory.value,
         reset ? null : lastVisible.value
       );
       console.log("Products in script:", result.products);
+
+      const newData = result.products.map((product) => ({
+        id: product.id,
+        photo: product.featuredPhoto,
+        name: product.name,
+        category: product.category,
+        price: product.price,
+        stock: product.stock,
+        status: product.status,
+        date:
+          product.dateCreated instanceof Timestamp
+            ? product.dateCreated.toDate().toISOString().split("T")[0]
+            : "",
+      }));
+
       if (reset) {
-        data.value = result.products.map((product) => ({
-          id: product.id,
-          photo: product.featuredPhoto,
-          name: product.name,
-          category: product.category,
-          price: product.price,
-          stock: product.stock,
-          status: product.status,
-          date:
-            product.dateCreated instanceof Timestamp
-              ? product.dateCreated.toDate().toISOString().split("T")[0]
-              : "",
-        }));
+        data.value = newData;
       } else {
-        data.value = [
-          ...data.value,
-          ...result.products.map((product) => ({
-            id: product.id,
-            photo: product.featuredPhoto,
-            name: product.name,
-            category: product.category,
-            price: product.price,
-            stock: product.stock,
-            status: product.status,
-            date:
-              product.dateCreated instanceof Timestamp
-                ? product.dateCreated.toDate().toISOString().split("T")[0]
-                : "",
-          })),
-        ];
+        const existingIds = new Set(data.value.map((product) => product.id));
+        const uniqueNewData = newData.filter((product) => !existingIds.has(product.id));
+        data.value = [...data.value, ...uniqueNewData];
       }
+
       lastVisible.value = result.lastVisible;
       console.log("Data: ", data.value);
     }
   };
 
-  watch([organizationID, filterBy, defaultCategory], () => fetchAndSetProducts(true), {
+  watch([filterBy, defaultCategory], () => fetchAndSetProducts(true), {
     immediate: true,
   });
 

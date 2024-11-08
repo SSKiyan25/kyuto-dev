@@ -1,7 +1,5 @@
 <script lang="ts" setup>
   import { useAddProduct } from "~/composables/organization/product/useAddProduct";
-  import { useOrganizationValues } from "~/composables/organization/useOrganizationValues";
-  import { useUserValues } from "~/composables/user/useUserValues";
   import type { Crumbs } from "~/components/Ui/Breadcrumbs.vue";
 
   definePageMeta({
@@ -53,28 +51,15 @@
   };
 
   // Form Functions
-  const { userData } = await useUserValues();
-  console.log("userData: ", userData);
-  const { organizationID, organizationData } = await useOrganizationValues();
-  console.log("organizationData", organizationData);
   const { handleSubmit, isSubmitting, resetForm } = useForm({
     validationSchema: toTypedSchema(AddProductSchema),
   });
-  const organizationName = ref("defaultOrganizationName");
-
-  watchEffect(() => {
-    if (organizationData.value.length > 0) {
-      organizationName.value = organizationData.value[0].name;
-    }
-  });
-  console.log("organizationID: ", organizationID.value);
-  console.log("organizationName: ", organizationName.value);
 
   const submit = handleSubmit(async (values) => {
     console.log("Form successfully submitted with values: ", values);
     loading.value = true;
     const messageInterval = setInterval(updateMessage, 2000);
-    await useAddProduct(values, organizationID.value, organizationName.value);
+    await useAddProduct(values);
     clearInterval(messageInterval);
     loading.value = false;
     resetForm();
@@ -269,7 +254,7 @@
   >
     <div class="flex flex-col items-center justify-center gap-4">
       <Icon name="lucide:loader-circle" class="size-16 animate-spin text-primary" />
-      <span class="text-sm text-muted-foreground"> {{ currentMessage }}</span>
+      <span class="text-sm text-primary-foreground/70"> {{ currentMessage }}</span>
       <!-- Add a GIF here -->
     </div>
   </div>
