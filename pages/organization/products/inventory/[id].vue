@@ -17,7 +17,29 @@
     },
   ];
 
-  const isEdit = ref(false);
+  const isEditName = ref(false);
+  const isEditStatus = ref(false);
+  const isAddStocks = ref(false);
+  const isRemoveStocks = ref(false);
+  const isChangePrice = ref(false);
+
+  const isDelete = ref(false);
+  const isAddVariation = ref(false);
+  const isDeleteShowMessage = (message: string) => {
+    useSonner(message);
+  };
+  const closeAddDialog = (save: boolean) => {
+    useToast().toast({
+      title: save ? "Variation added!" : "Action cancelled",
+      description: save
+        ? "You have successfully added a new variation to your product."
+        : "You have cancelled the action.",
+      duration: 5000,
+      icon: save ? "lucide:check" : "lucide:x",
+    });
+    isAddVariation.value = false;
+  };
+
   const variations = [
     {
       id: "1",
@@ -139,8 +161,8 @@
           <UiTableBody class="last:border-b">
             <template v-for="(variation, i) in variations" :key="variation.id">
               <UiTableRow>
-                <UiTableCell>{{ variation.name }}</UiTableCell>
-                <UiTableCell>
+                <UiTableCell class="bg-secondary">{{ variation.name }}</UiTableCell>
+                <UiTableCell class="bg-secondary">
                   <template v-if="variation.status === 'Available'">
                     <UiBadge>{{ variation.status }}</UiBadge>
                   </template>
@@ -305,23 +327,76 @@
           </p>
           <div class="grid grid-cols-10 py-4">
             <div class="col-span-1 flex flex-col justify-center space-y-4">
-              <UiButton variant="outline" class="p-1">Edit Name</UiButton>
-              <UiButton variant="outline" class="p-1">Edit Status</UiButton>
-              <UiButton variant="outline">Add Stocks</UiButton>
-              <UiButton variant="outline">Change Price</UiButton>
-              <UiButton variant="destructive">Delete</UiButton>
+              <UiButton
+                :variant="isEditName ? 'default' : 'outline'"
+                @click="isEditName = !isEditName"
+                class="p-1"
+              >
+                Edit Name
+              </UiButton>
+              <UiButton
+                :variant="isEditStatus ? 'default' : 'outline'"
+                @click="isEditStatus = !isEditStatus"
+                class="p-1"
+              >
+                Edit Status
+              </UiButton>
+              <UiButton
+                :variant="isAddStocks ? 'default' : 'outline'"
+                @click="isAddStocks = !isAddStocks"
+              >
+                Add Stocks
+              </UiButton>
+              <UiButton
+                :variant="isRemoveStocks ? 'default' : 'outline'"
+                @click="isRemoveStocks = !isRemoveStocks"
+              >
+                Remove Stocks
+              </UiButton>
+              <UiButton
+                :variant="isChangePrice ? 'default' : 'outline'"
+                @click="isChangePrice = !isChangePrice"
+              >
+                Change Price
+              </UiButton>
+              <!-- Delete Button Variation-->
+              <UiDialog v-model:open="isDelete">
+                <UiAlertDialogTrigger as-child>
+                  <UiButton variant="destructive">Delete</UiButton>
+                </UiAlertDialogTrigger>
+                <UiAlertDialogContent @escape-key-down="isDeleteShowMessage('Escape key pressed')">
+                  <UiAlertDialogHeader>
+                    <UiAlertDialogTitle>Are you absolutely sure?</UiAlertDialogTitle>
+                    <UiAlertDialogDescription>
+                      This action cannot be undone. This will permanently delete your product's
+                      variation [name] and remove your data from our servers.
+                    </UiAlertDialogDescription>
+                  </UiAlertDialogHeader>
+                  <UiAlertDialogFooter>
+                    <UiAlertDialogCancel @click="isDeleteShowMessage('Action cancelled')" />
+                    <UiAlertDialogAction
+                      variant="destructive"
+                      @click="isDeleteShowMessage('Action confirmed!')"
+                    />
+                  </UiAlertDialogFooter>
+                </UiAlertDialogContent>
+              </UiDialog>
             </div>
             <UiDivider orientation="vertical" class="col-span-1" />
             <div class="col-span-8 flex flex-col justify-start space-y-4">
+              <!-- Edit Name-->
               <div class="flex flex-row items-center">
                 <UiInput label="Variation Name" placeholder="Small" />
-                <UiButton variant="ghost" title="Save Changes">
-                  <Icon name="lucide:check" class="size-4" />
-                </UiButton>
-                <UiButton variant="ghost" title="Cancel">
-                  <Icon name="lucide:x" class="size-4" />
-                </UiButton>
+                <template v-if="isEditName">
+                  <UiButton variant="ghost" title="Save Changes">
+                    <Icon name="lucide:check" class="size-4" />
+                  </UiButton>
+                  <UiButton variant="ghost" title="Cancel">
+                    <Icon name="lucide:x" class="size-4" />
+                  </UiButton>
+                </template>
               </div>
+              <!-- Edit Status-->
               <div class="flex w-1/4 flex-row items-center">
                 <UiSelect>
                   <UiSelectTrigger placeholder="Status" />
@@ -332,38 +407,62 @@
                     </UiSelectGroup>
                   </UiSelectContent>
                 </UiSelect>
-                <UiButton variant="ghost" title="Save Changes">
-                  <Icon name="lucide:check" class="size-4" />
-                </UiButton>
-                <UiButton variant="ghost" title="Cancel">
-                  <Icon name="lucide:x" class="size-4" />
-                </UiButton>
+                <template v-if="isEditStatus">
+                  <UiButton variant="ghost" title="Save Changes">
+                    <Icon name="lucide:check" class="size-4" />
+                  </UiButton>
+                  <UiButton variant="ghost" title="Cancel">
+                    <Icon name="lucide:x" class="size-4" />
+                  </UiButton>
+                </template>
               </div>
+              <!-- Add Stocks-->
               <div class="flex w-1/3 flex-row items-center">
                 <UiNumberField :min="0" :max="10000">
                   <UiNumberFieldInput placeholder="15" />
                   <UiNumberFieldDecrement class="border-l" />
                   <UiNumberFieldIncrement class="border-l" />
                 </UiNumberField>
-                <UiButton variant="ghost" title="Save Changes">
-                  <Icon name="lucide:check" class="size-4" />
-                </UiButton>
-                <UiButton variant="ghost" title="Cancel">
-                  <Icon name="lucide:x" class="size-4" />
-                </UiButton>
+                <template v-if="isAddStocks">
+                  <UiButton variant="ghost" title="Save Changes">
+                    <Icon name="lucide:check" class="size-4" />
+                  </UiButton>
+                  <UiButton variant="ghost" title="Cancel">
+                    <Icon name="lucide:x" class="size-4" />
+                  </UiButton>
+                </template>
               </div>
+              <!-- Remove Stocks-->
               <div class="flex w-1/3 flex-row items-center">
                 <UiNumberField :min="0" :max="10000">
                   <UiNumberFieldInput placeholder="15" />
                   <UiNumberFieldDecrement class="border-l" />
                   <UiNumberFieldIncrement class="border-l" />
                 </UiNumberField>
-                <UiButton variant="ghost" title="Save Changes">
-                  <Icon name="lucide:check" class="size-4" />
-                </UiButton>
-                <UiButton variant="ghost" title="Cancel">
-                  <Icon name="lucide:x" class="size-4" />
-                </UiButton>
+                <template v-if="isRemoveStocks">
+                  <UiButton variant="ghost" title="Save Changes">
+                    <Icon name="lucide:check" class="size-4" />
+                  </UiButton>
+                  <UiButton variant="ghost" title="Cancel">
+                    <Icon name="lucide:x" class="size-4" />
+                  </UiButton>
+                </template>
+              </div>
+              <!-- Price Change-->
+              <div class="flex w-1/3 flex-row items-center">
+                <UiNumberField :min="0" :max="10000">
+                  <UiNumberFieldInput placeholder="₱0.00" />
+                  <UiNumberFieldDecrement class="border-l" />
+                  <UiNumberFieldIncrement class="border-l" />
+                </UiNumberField>
+                <template v-if="isChangePrice">
+                  <UiButton variant="ghost" title="Save Changes">
+                    <Icon name="lucide:check" class="size-4" />
+                  </UiButton>
+                  <UiButton variant="ghost" title="Cancel">
+                    <Icon name="lucide:x" class="size-4" />
+                  </UiButton>
+                </template>
               </div>
             </div>
           </div>
@@ -374,10 +473,56 @@
           <p class="text-[12px] text-muted-foreground">
             You can only have 10 variations in each product.
           </p>
-          <UiButton class="w-1/2">
-            <Icon name="lucide:plus" class="size-4" />
-            Add New Variation
-          </UiButton>
+          <UiDialog v-model:open="isAddVariation">
+            <UiDialogTrigger as-child>
+              <UiButton>
+                <Icon name="lucide:plus" class="size-4" />
+                Add New Variation
+              </UiButton>
+            </UiDialogTrigger>
+            <UiDialogContent
+              class="sm:max-w-[625px]"
+              title="Add Variation"
+              description="Add a new variation to your product. You can specify details such its name, price, and the number of stocks."
+            >
+              <template #content>
+                <div class="grid gap-4 py-4">
+                  <div class="grid grid-cols-4 items-center gap-4">
+                    <UiLabel for="name" class="text-right"> Name </UiLabel>
+                    <UiInput id="name" placeholder="Small" class="col-span-3" />
+                  </div>
+                  <div class="grid grid-cols-4 items-center gap-4">
+                    <UiLabel for="price" class="text-right"> Price </UiLabel>
+                    <UiNumberField :min="0" :max="10000" class="col-span-3">
+                      <UiNumberFieldInput id="price" placeholder="₱0.00" />
+                      <UiNumberFieldDecrement class="border-l" />
+                      <UiNumberFieldIncrement class="border-l" />
+                    </UiNumberField>
+                  </div>
+                  <div class="grid grid-cols-4 items-center gap-4">
+                    <UiLabel for="stocks" class="text-right"> Stocks </UiLabel>
+                    <UiNumberField :min="0" :max="10000" class="col-span-3">
+                      <UiNumberFieldInput id="stocks" placeholder="0" />
+                      <UiNumberFieldDecrement class="border-l" />
+                      <UiNumberFieldIncrement class="border-l" />
+                    </UiNumberField>
+                  </div>
+                </div>
+              </template>
+              <template #footer>
+                <UiDialogFooter>
+                  <UiButton
+                    @click="closeAddDialog(false)"
+                    variant="outline"
+                    type="button"
+                    class="mt-2 sm:mt-0"
+                    >Cancel</UiButton
+                  >
+                  <UiButton @click="closeAddDialog(true)" type="submit">Save</UiButton>
+                </UiDialogFooter>
+              </template>
+            </UiDialogContent>
+          </UiDialog>
         </div>
       </div>
     </div>
