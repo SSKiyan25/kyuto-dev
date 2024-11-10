@@ -22,6 +22,7 @@ export interface Variation {
   isAvailable: boolean;
   stocks: number;
   currentPrice: number;
+  lastModified: Date;
 }
 
 export interface PriceHistory {
@@ -29,5 +30,5 @@ export interface PriceHistory {
   price: number;
   discountPrice: number;
   dateCreated: Date;
-  dateModified: Date;
+  dateModified: Date; // Remove this
 }

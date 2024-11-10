@@ -4,4 +4,5 @@ export interface Variation {
   isAvailable: boolean;
   stocks: number;
   currentPrice: number;
+  lastModified: Date;
 }

@@ -62,7 +62,7 @@
     },
     { accessorKey: "category", header: "Category", enableHiding: true },
     { accessorKey: "price", header: "Price", enableHiding: true },
-    { accessorKey: "stock", header: "Stock", enableHiding: true },
+    { accessorKey: "stock", header: "Remaining Stocks", enableHiding: true },
     { accessorKey: "date", header: "Date", enableHiding: true },
     {
       accessorKey: "actions",

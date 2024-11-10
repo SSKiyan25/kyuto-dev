@@ -19,6 +19,8 @@
     middleware: ["auth"],
   });
 
+  const editName = ref(false);
+  const editDescription = ref(false);
   const changeCategory = ref(false);
   const changeStatus = ref(false);
   const changeFeaturedImage = ref(false);
@@ -41,7 +43,7 @@
   const productRef = computed(() =>
     productID.value ? doc(collection(db, "products"), productID.value as string) : null
   );
-  const { data: product } = useDocument<Partial<Product>>(productRef);
+  const { data: product, pending } = useDocument<Partial<Product>>(productRef);
   const productData = reactive({
     name: "",
     category: "",
@@ -53,7 +55,6 @@
 
   const changedName = ref("");
   const changedDescription = ref("");
-  let initialLoad = true;
 
   watchEffect(() => {
     if (product.value) {
@@ -63,12 +64,12 @@
       productData.description = product.value.description || "";
       productData.featuredPhoto = product.value.featuredPhoto || "";
       productData.photos = product.value.photos || [];
-      if (initialLoad) {
-        changedName.value = productData.name;
-        changedDescription.value = productData.description;
-        initialLoad = false;
-      }
     }
+  });
+
+  onMounted(async () => {
+    changedName.value = productData.name;
+    changedDescription.value = productData.description;
   });
 
   const selectedCategory = ref(productData.category);
@@ -82,12 +83,12 @@
 
   const handleRemoveImage = async (photoUrl: string) => {
     loading.value = true;
-    console.log("Removing Image: ", photoUrl);
+    // console.log("Removing Image: ", photoUrl);
     if (newPhotos.value.includes(photoUrl)) {
-      console.log("Removing from new photos...");
+      // console.log("Removing from new photos...");
       newPhotos.value = newPhotos.value.filter((photo) => photo !== photoUrl);
     } else if (productID.value) {
-      console.log("Removing from database...");
+      // console.log("Removing from database...");
       await removeImage(productID.value as string, photoUrl);
       productData.photos = productData.photos.filter((photo) => photo !== photoUrl);
     }
@@ -134,50 +135,54 @@
 
   const validateFields = () => {
     const invalidChars = /[<@`#"]/;
-    if (changedName.value.length > 72) {
-      toast.toast({
-        title: "Invalid Name",
-        description: "The name cannot exceed 72 characters.",
-        variant: "warning",
-        icon: "lucide:triangle-alert",
-      });
-      return false;
+    if (editName) {
+      if (changedName.value.length > 72) {
+        toast.toast({
+          title: "Invalid Name",
+          description: "The name cannot exceed 72 characters.",
+          variant: "warning",
+          icon: "lucide:triangle-alert",
+        });
+        return false;
+      }
+      if (changedName.value.length == 0) {
+        toast.toast({
+          title: "Invalid Name",
+          description: "The name cannot be empty.",
+          variant: "warning",
+          icon: "lucide:triangle-alert",
+        });
+        return false;
+      }
+      if (invalidChars.test(changedName.value)) {
+        toast.toast({
+          title: "Invalid Name",
+          description: "The name cannot contain <, @, `, or #.",
+          variant: "warning",
+          icon: "lucide:triangle-alert",
+        });
+        return false;
+      }
     }
-    if (changedName.value.length == 0) {
-      toast.toast({
-        title: "Invalid Name",
-        description: "The name cannot be empty.",
-        variant: "warning",
-        icon: "lucide:triangle-alert",
-      });
-      return false;
-    }
-    if (invalidChars.test(changedName.value)) {
-      toast.toast({
-        title: "Invalid Name",
-        description: "The name cannot contain <, @, `, or #.",
-        variant: "warning",
-        icon: "lucide:triangle-alert",
-      });
-      return false;
-    }
-    if (changedDescription.value.length > 200) {
-      toast.toast({
-        title: "Invalid Description",
-        description: "The description cannot exceed 200 characters.",
-        variant: "warning",
-        icon: "lucide:triangle-alert",
-      });
-      return false;
-    }
-    if (invalidChars.test(changedDescription.value)) {
-      toast.toast({
-        title: "Invalid Description",
-        description: "The description cannot contain <, @, `, or #.",
-        variant: "warning",
-        icon: "lucide:triangle-alert",
-      });
-      return false;
+    if (editDescription) {
+      if (changedDescription.value.length > 200) {
+        toast.toast({
+          title: "Invalid Description",
+          description: "The description cannot exceed 200 characters.",
+          variant: "warning",
+          icon: "lucide:triangle-alert",
+        });
+        return false;
+      }
+      if (invalidChars.test(changedDescription.value)) {
+        toast.toast({
+          title: "Invalid Description",
+          description: "The description cannot contain <, @, `, or #.",
+          variant: "warning",
+          icon: "lucide:triangle-alert",
+        });
+        return false;
+      }
     }
     return true;
   };
@@ -202,15 +207,16 @@
     if (addMoreImages.value) {
       updatedData.photos = [...productData.photos, ...newPhotos.value];
     }
-    if (productID.value) {
+    if (editName.value) {
       updatedData.name = changedName.value;
+    }
+    if (editDescription.value) {
       updatedData.description = changedDescription.value;
+    }
+    if (productID.value) {
       await updateProduct(productID.value as string, updatedData);
     }
 
-    console.log("Changed name:", changedName.value);
-    console.log("Changed description:", changedDescription.value);
-    console.log("Updated Data: ", updatedData);
     newPhotos.value = []; // Clear the new photos array after saving
     loading.value = false;
     toast.toast({
@@ -238,16 +244,28 @@
           </div>
           <UiGradientDivider class="mt-4" />
           <div class="flex w-full flex-col gap-4 pl-4 pt-4">
+            <div class="flex flex-row gap-2">
+              <span class="font-semibold">Product Name: </span>
+              <span class="text-muted-foreground"> {{ productData.name }}</span>
+            </div>
+            <div class="flex flex-row items-center gap-2">
+              <span class="text-[12px] text-muted-foreground"
+                >Do you want to change product name?</span
+              >
+              <input type="checkbox" v-model="editName" id="editName" />
+            </div>
             <fieldset>
-              <UiLabel for="name">Product Name</UiLabel>
-              <UiInput
-                name="name"
-                id="name"
-                type="text"
-                class="w-11/12"
-                v-model="changedName"
-                required
-              />
+              <template v-if="editName">
+                <UiLabel for="name">Change Product Name</UiLabel>
+                <UiInput
+                  name="name"
+                  id="name"
+                  type="text"
+                  class="w-11/12"
+                  v-model="changedName"
+                  required
+                />
+              </template>
               <div class="flex w-full flex-col gap-2 pt-4">
                 <div class="flex flex-row items-center gap-2">
                   <span class="font-semibold text-muted-foreground">Current Category: </span>
@@ -308,13 +326,27 @@
                   </UiSelect>
                 </div>
               </div>
-              <UiLabel for="description" class="pt-4">Description</UiLabel>
-              <UiTextarea
-                id="description"
-                name="description"
-                class="w-11/12 pt-4"
-                v-model="changedDescription"
-              />
+              <div class="flex flex-col gap-2 pt-4">
+                <span class="font-semibold">Product Description: </span>
+                <p class="px-4 text-justify text-[12px] text-muted-foreground">
+                  {{ productData.description }}
+                </p>
+              </div>
+              <div class="flex flex-row items-center gap-2 pt-2">
+                <span class="text-[12px] text-muted-foreground"
+                  >Do you want to change product description?</span
+                >
+                <input type="checkbox" v-model="editDescription" id="editDescription" />
+              </div>
+              <template v-if="editDescription">
+                <UiLabel for="description" class="pt-4">Change Description</UiLabel>
+                <UiTextarea
+                  id="description"
+                  name="description"
+                  class="w-11/12 pt-4"
+                  v-model="changedDescription"
+                />
+              </template>
             </fieldset>
           </div>
         </div>
@@ -483,6 +515,17 @@
     <div class="flex flex-col items-center justify-center gap-4">
       <Icon name="lucide:loader-circle" class="size-16 animate-spin text-primary" />
       <span class="text-sm text-muted-foreground"> {{ currentMessage }}</span>
+      <!-- Add a GIF here -->
+    </div>
+  </div>
+
+  <div
+    v-if="pending"
+    class="fixed inset-0 z-50 flex min-h-screen w-full items-center justify-center bg-secondary/40 backdrop-blur"
+  >
+    <div class="flex flex-col items-center justify-center gap-4">
+      <Icon name="lucide:loader-circle" class="size-16 animate-spin text-primary" />
+      <span class="text-sm text-muted-foreground"> Fetching data... </span>
       <!-- Add a GIF here -->
     </div>
   </div>
