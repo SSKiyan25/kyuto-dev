@@ -130,7 +130,7 @@
 
       const newData = result.products.map((product) => ({
         id: product.id,
-        photo: product.featuredPhoto,
+        photo: product.featuredPhotoURL,
         name: product.name,
         category: product.category,
         price: product.price,

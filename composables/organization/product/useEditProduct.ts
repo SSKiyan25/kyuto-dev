@@ -112,21 +112,21 @@ export function useEditProduct() {
       }
     }
 
-    if (updatedData.photos) {
-      updatedData.photos = await uploadPhotos(updatedData.photos);
+    if (updatedData.photosURL) {
+      updatedData.photosURL = await uploadPhotos(updatedData.photosURL);
     }
 
-    if (updatedData.featuredPhoto && updatedData.featuredPhoto.startsWith("blob:")) {
+    if (updatedData.featuredPhotoURL && updatedData.featuredPhotoURL.startsWith("blob:")) {
       const uniqueString = `${timestamp}-${updatedData.name}-featured`;
       const uniqueName = sha256(uniqueString);
       const featuredRef = storageRef(storage, `${basePath}/${uniqueName}`);
       const { upload: uploadFeatured } = useStorageFile(featuredRef);
       const { url: featuredUrl, refresh: refreshFeaturedUrl } = useStorageFileUrl(featuredRef);
 
-      const featuredBlob = await urlToBlob(updatedData.featuredPhoto);
+      const featuredBlob = await urlToBlob(updatedData.featuredPhotoURL);
       await uploadFeatured(featuredBlob);
       await refreshFeaturedUrl();
-      updatedData.featuredPhoto = featuredUrl.value ?? undefined;
+      updatedData.featuredPhotoURL = featuredUrl.value ?? undefined;
     }
 
     // Update product

@@ -2,15 +2,18 @@ export interface Account {
   id: string;
   email: string;
   username: string;
-  avatar: string;
-  organization?: string;
-  organizationID: string;
+  role: string;
   firstname: string;
   lastname: string;
   department?: string;
   studentId?: string;
+  avatarURL: string;
   phoneNumber: string;
+  hasOrganization: boolean;
+  organization?: string;
+  organizationID: string;
+  organizationRole: string;
   dateCreated: Date;
-  role: string;
-  isVerified: boolean;
+  lastModified: Date;
+  isArchived: boolean;
 }

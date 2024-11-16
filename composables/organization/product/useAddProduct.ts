@@ -1,7 +1,7 @@
 import { addDoc, collection } from "firebase/firestore";
 import { ref as storageRef } from "firebase/storage";
 import { sha256 } from "js-sha256";
-import type { PriceHistory, Product, Variation } from "~/types/models/Product";
+import type { Product, StocksLogs, Variation } from "~/types/models/Product";
 
 import { useFetchUser } from "../../user/useFetchUser";
 
@@ -41,11 +41,11 @@ export const useAddProduct = async (values: any) => {
       lastModified: new Date(),
       isApproved: false,
       totalSales: 0,
-      views: 0,
-      isArchived: false,
       isDiscounted: false,
-      featuredPhoto: featuredPhotoURL,
-      photos: [],
+      featuredPhotoURL: featuredPhotoURL,
+      photosURL: [],
+      canPreOrder: values.canPreOrder ?? false,
+      isArchived: false,
     };
 
     const imageUrls: string[] = [];
@@ -66,7 +66,7 @@ export const useAddProduct = async (values: any) => {
       }
     }
 
-    newProduct.photos = imageUrls;
+    newProduct.photosURL = imageUrls;
 
     const productDocRef = await addDoc(collection(db, "products"), newProduct);
     console.log("product added: ", productDocRef);
@@ -81,25 +81,29 @@ export const useAddProduct = async (values: any) => {
       const newVariation: Partial<Variation> = {
         productID: productDocRef.id,
         value: variation.name,
-        isAvailable: true,
-        stocks: variation.stocks,
-        currentPrice: variation.price,
+        price: variation.price,
+        discountPrice: variation.discountPrice ?? 0,
+        totalStocks: variation.totalStocks ?? 0,
+        remainingStocks: variation.remainingStocks ?? 0,
+        lastStockUpdate: new Date(),
+        dateAdded: new Date(),
+        lastModified: new Date(),
+        isArchived: false,
       };
 
       const variationDocRef = await addDoc(collection(productDocRef, "variations"), newVariation);
       console.log("Variation added: ", variationDocRef);
 
-      // Add price history as a subcollection of the variation
-      const newPriceHistory: Partial<PriceHistory> = {
+      const newStockLog: Partial<StocksLogs> = {
         variationID: variationDocRef.id,
-        price: variation.price,
-        discountPrice: 0,
+        quantity: variation.totalStocks,
+        action: "Initial Stock",
+        remarks: "Initial stock added",
         dateCreated: new Date(),
-        dateModified: new Date(),
       };
-      console.log("Price history added: ", newPriceHistory);
+      console.log("Stock log added: ", newStockLog);
 
-      await addDoc(collection(variationDocRef, "priceHistory"), newPriceHistory);
+      await addDoc(collection(variationDocRef, "stocksLogs"), newStockLog);
     }
 
     console.log("Product and subcollections added successfully");

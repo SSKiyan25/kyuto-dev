@@ -7,7 +7,7 @@ export async function useFetchUser() {
   const user = useCurrentUser();
 
   if (!user.value) {
-    throw new Error("User is not authenticated");
+    throw new Error("User not found");
   }
 
   const userRef = doc(db, "accounts", user.value.uid);

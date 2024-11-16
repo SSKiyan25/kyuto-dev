@@ -5,14 +5,28 @@ export interface Organization {
   addressImages: string[];
   description?: string;
   phoneNumber?: string;
-  icon: string;
-  images?: string[];
+  iconURL: string;
+  accounts: OrganizationAccount[];
+  imagesURL: string[];
   isVerified: boolean;
+  isPremium: boolean;
+  premiumStartDate: Date;
+  premiumEndDate: Date;
+  isAutoRenew: boolean;
   dateCreated: Date;
-  accounts: Account[];
+  lastModified: Date;
+  isArchived: boolean;
 }
 
-type Account = {
+export interface OrganizationAccount {
+  organizationID: string;
   accountID: string;
   role: string;
-};
+  dateCreated: Date;
+}
+
+export interface OrganizationViews {
+  organizationID: string;
+  accountID: string;
+  generatedAt: Date;
+}

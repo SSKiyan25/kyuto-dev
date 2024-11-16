@@ -62,8 +62,8 @@
       productData.category = product.value.category || "";
       productData.status = product.value.status || "";
       productData.description = product.value.description || "";
-      productData.featuredPhoto = product.value.featuredPhoto || "";
-      productData.photos = product.value.photos || [];
+      productData.featuredPhoto = product.value.featuredPhotoURL || "";
+      productData.photos = product.value.photosURL || [];
     }
   });
 
@@ -202,10 +202,10 @@
       updatedData.status = selectedStatus.value;
     }
     if (changeFeaturedImage.value) {
-      updatedData.featuredPhoto = productData.featuredPhoto;
+      updatedData.featuredPhotoURL = productData.featuredPhoto;
     }
     if (addMoreImages.value) {
-      updatedData.photos = [...productData.photos, ...newPhotos.value];
+      updatedData.photosURL = [...productData.photos, ...newPhotos.value];
     }
     if (editName.value) {
       updatedData.name = changedName.value;

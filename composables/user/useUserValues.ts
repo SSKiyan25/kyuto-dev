@@ -9,7 +9,7 @@ export async function useUserValues() {
     id: "",
     email: "",
     username: "",
-    avatar: "",
+    avatarURL: "",
     organization: "",
     firstname: "",
     lastname: "",
@@ -18,7 +18,6 @@ export async function useUserValues() {
     phoneNumber: "",
     dateCreated: new Date(),
     role: "",
-    isVerified: false,
   };
 
   const userDocRef = computed(() => (user.value ? doc(db, "accounts", user.value.uid) : null));

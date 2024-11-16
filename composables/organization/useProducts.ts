@@ -59,8 +59,8 @@ export async function fetchProducts(
       );
       const variations = variationsSnapshot.docs.map((doc) => doc.data() as Variation);
 
-      const maxPrice = Math.max(...variations.map((v) => v.currentPrice));
-      const totalStocks = variations.reduce((acc, v) => acc + v.stocks, 0);
+      const maxPrice = Math.max(...variations.map((v) => v.price));
+      const totalStocks = variations.reduce((sum, v) => sum + v.remainingStocks, 0);
 
       return {
         ...product,

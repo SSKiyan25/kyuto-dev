@@ -1,6 +1,6 @@
 <script lang="ts" setup>
   import type { Crumbs } from "~/components/Ui/Breadcrumbs.vue";
-  import type { PriceHistory, Product, Variation } from "~/types/models/Product";
+  import type { Product, StocksLogs, Variation } from "~/types/models/Product";
 
   definePageMeta({
     layout: "no-nav",

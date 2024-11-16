@@ -4,31 +4,41 @@ export interface Product {
   organization: string;
   name: string;
   category: string;
-  description: string;
   status: string;
-  dateCreated: Date;
-  lastModified: Date;
+  description: string;
   isApproved: boolean;
   totalSales: number;
-  views: number;
-  isArchived: boolean;
   isDiscounted: boolean;
-  featuredPhoto: string;
-  photos: string[];
+  featuredPhotoURL: string;
+  photosURL: string[];
+  canPreOrder: boolean;
+  dateCreated: Date;
+  lastModified: Date;
+  isArchived: boolean;
 }
 export interface Variation {
   productID: string;
   value: string;
-  isAvailable: boolean;
-  stocks: number;
-  currentPrice: number;
-  lastModified: Date;
-}
-
-export interface PriceHistory {
-  variationID: string;
   price: number;
   discountPrice: number;
+  totalStocks: number;
+  remainingStocks: number;
+  lastStockUpdate: Date;
+  dateAdded: Date;
+  lastModified: Date;
+  isArchived: boolean;
+}
+
+export interface StocksLogs {
+  variationID: string;
+  quantity: number;
+  action: string;
+  remarks: string;
   dateCreated: Date;
-  dateModified: Date; // Remove this
+}
+
+export interface ProductViews {
+  productID: string;
+  accountID: string;
+  generatedAt: Date;
 }
