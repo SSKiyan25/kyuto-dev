@@ -17,6 +17,7 @@
   const status = ["Draft", "Publish"];
   const variations = ref([{ value: "None", price: 1, stocks: 0 }]);
   const loading = ref(false);
+  const canPreOrder = ref(false);
   const currentMessage = ref("");
   const router = useRouter();
   const toast = useToast();
@@ -59,7 +60,7 @@
     console.log("Form successfully submitted with values: ", values);
     loading.value = true;
     const messageInterval = setInterval(updateMessage, 2000);
-    await useAddProduct(values);
+    await useAddProduct(values, canPreOrder.value);
     clearInterval(messageInterval);
     loading.value = false;
     resetForm();
@@ -130,6 +131,15 @@
               placeholder="Optional"
               class="w-11/12 pt-4"
             />
+            <div class="my-6 flex w-full flex-col justify-start">
+              <span class="text-muted-foreground"
+                >Click the checkbox to enable pre-order for your merchandise
+              </span>
+              <div class="flex flex-row items-center space-x-2 pl-4 pt-2">
+                <input type="checkbox" id="canPreOrder" v-model="canPreOrder" />
+                <span>Allow Pre-Order</span>
+              </div>
+            </div>
           </fieldset>
         </div>
       </div>

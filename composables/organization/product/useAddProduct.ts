@@ -5,7 +5,7 @@ import type { Product, StocksLogs, Variation } from "~/types/models/Product";
 
 import { useFetchUser } from "../../user/useFetchUser";
 
-export const useAddProduct = async (values: any) => {
+export const useAddProduct = async (values: any, canPreOrder: boolean) => {
   const user = useCurrentUser();
   const db = useFirestore();
   const storage = useFirebaseStorage();
@@ -44,7 +44,7 @@ export const useAddProduct = async (values: any) => {
       isDiscounted: false,
       featuredPhotoURL: featuredPhotoURL,
       photosURL: [],
-      canPreOrder: values.canPreOrder ?? false,
+      canPreOrder: canPreOrder,
       isArchived: false,
     };
 
@@ -83,8 +83,8 @@ export const useAddProduct = async (values: any) => {
         value: variation.name,
         price: variation.price,
         discountPrice: variation.discountPrice ?? 0,
-        totalStocks: variation.totalStocks ?? 0,
-        remainingStocks: variation.remainingStocks ?? 0,
+        totalStocks: variation.stocks ?? 0,
+        remainingStocks: variation.stocks ?? 0,
         lastStockUpdate: new Date(),
         dateAdded: new Date(),
         lastModified: new Date(),
@@ -96,7 +96,7 @@ export const useAddProduct = async (values: any) => {
 
       const newStockLog: Partial<StocksLogs> = {
         variationID: variationDocRef.id,
-        quantity: variation.totalStocks,
+        quantity: variation.stocks ?? 0,
         action: "Initial Stock",
         remarks: "Initial stock added",
         dateCreated: new Date(),

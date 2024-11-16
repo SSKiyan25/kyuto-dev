@@ -25,6 +25,7 @@
   const changeStatus = ref(false);
   const changeFeaturedImage = ref(false);
   const addMoreImages = ref(false);
+  const changePreOrder = ref(false);
   const loading = ref(false);
   const toast = useToast();
   const newPhotos = ref<string[]>([]);
@@ -50,11 +51,13 @@
     status: "",
     description: "",
     featuredPhoto: "",
+    canPreOrder: false,
     photos: [] as string[],
   });
 
   const changedName = ref("");
   const changedDescription = ref("");
+  const preOrder = ref(false);
 
   watchEffect(() => {
     if (product.value) {
@@ -63,6 +66,7 @@
       productData.status = product.value.status || "";
       productData.description = product.value.description || "";
       productData.featuredPhoto = product.value.featuredPhotoURL || "";
+      productData.canPreOrder = product.value.canPreOrder || false;
       productData.photos = product.value.photosURL || [];
     }
   });
@@ -70,6 +74,7 @@
   onMounted(async () => {
     changedName.value = productData.name;
     changedDescription.value = productData.description;
+    preOrder.value = productData.canPreOrder;
   });
 
   const selectedCategory = ref(productData.category);
@@ -213,6 +218,9 @@
     if (editDescription.value) {
       updatedData.description = changedDescription.value;
     }
+    if (changePreOrder.value) {
+      updatedData.canPreOrder = preOrder.value;
+    }
     if (productID.value) {
       await updateProduct(productID.value as string, updatedData);
     }
@@ -346,6 +354,25 @@
                   class="w-11/12 pt-4"
                   v-model="changedDescription"
                 />
+              </template>
+              <!-- Pre Order-->
+              <div class="flex flex-col gap-2 pt-4">
+                <span class="font-semibold">Pre-Order settings: </span>
+                <p class="px-4 text-justify text-[12px] text-muted-foreground">
+                  {{ productData.canPreOrder ? "Pre-Order is enabled." : "Pre-Order is disabled." }}
+                </p>
+              </div>
+              <div class="flex flex-row items-center gap-2 pt-2">
+                <span class="text-[12px] text-muted-foreground">Do you want to change it?</span>
+                <input type="checkbox" v-model="changePreOrder" id="changePreOrder" />
+              </div>
+              <template v-if="changePreOrder">
+                <div class="flex flex-row items-center space-x-2 pt-4">
+                  <input type="checkbox" v-model="preOrder" id="canPreOrder" />
+                  <UiLabel for="canPreOrder">
+                    {{ preOrder ? "Enabled" : "Disabled" }}
+                  </UiLabel>
+                </div>
               </template>
             </fieldset>
           </div>

@@ -1,6 +1,8 @@
 <script lang="ts" setup>
+  import { useEditVariation } from "~/composables/organization/product/useEditVariation";
+  import { collection, deleteDoc, doc, Timestamp } from "firebase/firestore";
   import type { Crumbs } from "~/components/Ui/Breadcrumbs.vue";
-  import type { Product, StocksLogs, Variation } from "~/types/models/Product";
+  import type { StocksLogs, Variation } from "~/types/models/Product";
 
   definePageMeta({
     layout: "no-nav",
@@ -18,7 +20,6 @@
   ];
 
   const isEditName = ref(false);
-  const isEditStatus = ref(false);
   const isAddStocks = ref(false);
   const isRemoveStocks = ref(false);
   const isChangePrice = ref(false);
@@ -40,98 +41,253 @@
     isAddVariation.value = false;
   };
 
-  const variations = [
-    {
-      id: "1",
-      name: "Small",
-      status: "Not Available",
-      price: 100,
-      remainingStocks: 10,
-      totalStocks: 20,
-      lastModified: "2021-10-10",
+  const db = useFirestore();
+  const route = useRoute();
+  const productID = route.params.id as string;
+
+  const variationsRef = computed(() =>
+    productID ? collection(doc(db, "products", productID), "variations") : null
+  );
+  const { data: variationsSnapshot } = useCollection(variationsRef);
+
+  console.log("variationsSnapshot", variationsSnapshot);
+
+  const variations = computed(() => {
+    if (!variationsSnapshot.value) {
+      return [];
+    }
+    return variationsSnapshot.value.map((doc) => {
+      console.log("doc", doc); // Debugging log
+      return {
+        id: doc.id,
+        ...doc,
+      };
+    }) as (Variation & { id: string })[];
+  });
+
+  const stocksLogs = ref<{ [key: string]: StocksLogs[] }>({});
+  const selectedVariation = ref<(Variation & { id: string }) | null>(null);
+
+  // Copy Variables
+  const changedVariationValue = ref("");
+  const changedVariationPrice = ref(0);
+  const changedVariationAddedStocks = ref(0);
+  const changedVariationRemovedStocks = ref(0);
+
+  const stockLogsRef = computed(() => {
+    if (!selectedVariation.value) return null;
+    return collection(
+      doc(db, "products", productID),
+      "variations",
+      selectedVariation.value.id,
+      "stocksLogs"
+    );
+  });
+
+  const { data: stockLogsSnapshot } = useCollection<StocksLogs>(stockLogsRef);
+
+  watch(
+    () => stockLogsSnapshot.value,
+    (newLogs) => {
+      if (selectedVariation.value) {
+        stocksLogs.value[selectedVariation.value.id] = newLogs || [];
+      }
     },
-    {
-      id: "2",
-      name: "Medium",
-      status: "Available",
-      price: 150,
-      remainingStocks: 20,
-      totalStocks: 40,
-      lastModified: "2021-10-10",
-    },
-    {
-      id: "3",
-      name: "Large",
-      status: "Available",
-      price: 200,
-      remainingStocks: 30,
-      totalStocks: 60,
-      lastModified: "2021-10-10",
-    },
-    {
-      id: "4",
-      name: "X-Large",
-      status: "Available",
-      price: 250,
-      remainingStocks: 15,
-      totalStocks: 30,
-      lastModified: "2021-10-10",
-    },
-    {
-      id: "5",
-      name: "XX-Large",
-      status: "Available",
-      price: 300,
-      remainingStocks: 25,
-      totalStocks: 50,
-      lastModified: "2021-10-10",
-    },
-    {
-      id: "6",
-      name: "XXX-Large",
-      status: "Available",
-      price: 350,
-      remainingStocks: 5,
-      totalStocks: 10,
-      lastModified: "2021-10-10",
-    },
-    {
-      id: "7",
-      name: "Small Tall",
-      status: "Available",
-      price: 120,
-      remainingStocks: 12,
-      totalStocks: 24,
-      lastModified: "2021-10-10",
-    },
-    {
-      id: "8",
-      name: "Medium Tall",
-      status: "Available",
-      price: 170,
-      remainingStocks: 18,
-      totalStocks: 36,
-      lastModified: "2021-10-10",
-    },
-    {
-      id: "9",
-      name: "Large Tall",
-      status: "Available",
-      price: 220,
-      remainingStocks: 22,
-      totalStocks: 44,
-      lastModified: "2021-10-10",
-    },
-    {
-      id: "10",
-      name: "X-Large Tall",
-      status: "Available",
-      price: 270,
-      remainingStocks: 8,
-      totalStocks: 16,
-      lastModified: "2021-10-10",
-    },
-  ];
+    { immediate: true }
+  );
+
+  const formatDate = (timestamp: Timestamp | Date) => {
+    const date = timestamp instanceof Timestamp ? timestamp.toDate() : timestamp;
+    return new Intl.DateTimeFormat("en-US", {
+      month: "long",
+      day: "2-digit",
+      year: "numeric",
+    }).format(date);
+  };
+
+  const selectVariation = (variation: Variation & { id: string }) => {
+    selectedVariation.value = variation;
+    // Set initial values for editing
+    changedVariationValue.value = variation.value;
+    changedVariationPrice.value = variation.price;
+  };
+
+  console.log("Variations:", variations);
+  console.log("Stock Logs:", stocksLogs);
+  const loading = ref(false);
+
+  const { updateVariation, addStocks, removeStocks, addVariation } = useEditVariation();
+  const toast = useToast();
+
+  const handleSaveName = async () => {
+    loading.value = true;
+    if (!selectedVariation.value) return;
+
+    const updatedData: Partial<Variation> = {
+      value: changedVariationValue.value,
+    };
+    console.log("Passed variation ID:", selectedVariation.value.id);
+    console.log("Updated Data:", updatedData);
+    await updateVariation(productID, selectedVariation.value.id, updatedData);
+    isEditName.value = false;
+    loading.value = false;
+    console.log("Name changes saved");
+  };
+
+  const handleSavePrice = async () => {
+    loading.value = true;
+    if (!selectedVariation.value) return;
+
+    const updatedData: Partial<Variation> = {
+      price: changedVariationPrice.value,
+    };
+
+    await updateVariation(productID, selectedVariation.value.id, updatedData);
+    isChangePrice.value = false;
+    loading.value = false;
+    console.log("Price changes saved");
+  };
+
+  const handleSaveAddedStocks = async () => {
+    loading.value = true;
+    if (!selectedVariation.value) return;
+
+    const addedStocks = changedVariationAddedStocks.value;
+    const stocksLog: StocksLogs = {
+      variationID: selectedVariation.value.id,
+      quantity: addedStocks,
+      action: "Add Stock",
+      remarks: "Added stocks",
+      dateCreated: Timestamp.now().toDate(),
+    };
+
+    await addStocks(productID, selectedVariation.value.id, addedStocks, [stocksLog]);
+    isAddStocks.value = false;
+    changedVariationAddedStocks.value = 0;
+    loading.value = false;
+    console.log("Added stocks saved");
+  };
+
+  const handleSaveRemovedStocks = async () => {
+    loading.value = true;
+    if (!selectedVariation.value) return;
+
+    const removedStocks = changedVariationRemovedStocks.value;
+    if (removedStocks > selectedVariation.value.remainingStocks) {
+      toast.toast({
+        title: "Invalid Operation",
+        description: "Cannot remove more stocks than available.",
+        variant: "destructive",
+        icon: "lucide:triangle-alert",
+      });
+      loading.value = false;
+      return;
+    }
+
+    const stocksLog: StocksLogs = {
+      variationID: selectedVariation.value.id,
+      action: "Remove Stock",
+      quantity: removedStocks,
+      remarks: "Removed stocks",
+      dateCreated: Timestamp.now().toDate(),
+    };
+
+    await removeStocks(productID, selectedVariation.value.id, removedStocks, [stocksLog]);
+    isRemoveStocks.value = false;
+    changedVariationRemovedStocks.value = 0;
+    loading.value = false;
+    console.log("Removed stocks saved");
+  };
+
+  const handleDeleteVariation = async () => {
+    if (!selectedVariation.value) return;
+
+    loading.value = true;
+    try {
+      await deleteDoc(doc(db, "products", productID, "variations", selectedVariation.value.id));
+      toast.toast({
+        title: "Variation Deleted",
+        description: "The variation has been deleted successfully.",
+        variant: "success",
+        icon: "lucide:check",
+      });
+      selectedVariation.value = null;
+    } catch (error) {
+      toast.toast({
+        title: "Error",
+        description: "An error occurred while deleting the variation.",
+        variant: "destructive",
+        icon: "lucide:alert-circle",
+      });
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const handleCancelName = () => {
+    if (!selectedVariation.value) return;
+
+    // Revert changes
+    changedVariationValue.value = selectedVariation.value.value;
+    isEditName.value = false;
+  };
+
+  const handleCancelPrice = () => {
+    if (!selectedVariation.value) return;
+
+    // Revert changes
+    changedVariationPrice.value = selectedVariation.value.price;
+    isChangePrice.value = false;
+  };
+
+  const handleCancelAddedStocks = () => {
+    changedVariationAddedStocks.value = 0;
+    isAddStocks.value = false;
+  };
+
+  const handleCancelRemovedStocks = () => {
+    changedVariationRemovedStocks.value = 0;
+    isRemoveStocks.value = false;
+  };
+
+  const isDeleteDisabled = computed(() => variations.value.length <= 1);
+  const loadingVariation = ref(false);
+
+  const newVariationName = ref("");
+  const newVariationPrice = ref(0);
+  const newVariationStocks = ref(0);
+
+  const handleAddVariation = async () => {
+    loadingVariation.value = true;
+    const newVariation: Partial<Variation> = {
+      value: newVariationName.value,
+      price: newVariationPrice.value,
+      totalStocks: newVariationStocks.value,
+      remainingStocks: newVariationStocks.value,
+      lastModified: Timestamp.now().toDate(),
+    };
+
+    try {
+      await addVariation(productID, newVariation);
+      toast.toast({
+        title: "Variation Added",
+        description: "The new variation has been added successfully.",
+        variant: "success",
+        icon: "lucide:check",
+      });
+      isAddVariation.value = false;
+    } catch (error) {
+      toast.toast({
+        title: "Error",
+        description: "An error occurred while adding the variation.",
+        variant: "destructive",
+        icon: "lucide:alert-circle",
+      });
+    } finally {
+      loadingVariation.value = false;
+    }
+    console.log("New variation added");
+  };
 </script>
 
 <template>
@@ -154,25 +310,27 @@
               <UiTableHead>Variation Name</UiTableHead>
               <UiTableHead>Status</UiTableHead>
               <UiTableHead>Current Price</UiTableHead>
+              <UiTableHead>Total Stocks</UiTableHead>
               <UiTableHead>Remaining Stocks</UiTableHead>
               <UiTableHead>Last Modified</UiTableHead>
             </UiTableRow>
           </UiTableHeader>
           <UiTableBody class="last:border-b">
-            <template v-for="(variation, i) in variations" :key="variation.id">
+            <template v-for="variation in variations" :key="variation.id">
               <UiTableRow>
-                <UiTableCell class="bg-secondary">{{ variation.name }}</UiTableCell>
+                <UiTableCell class="bg-secondary">{{ variation.value }}</UiTableCell>
                 <UiTableCell class="bg-secondary">
-                  <template v-if="variation.status === 'Available'">
-                    <UiBadge>{{ variation.status }}</UiBadge>
+                  <template v-if="variation.remainingStocks > 0">
+                    <UiBadge> Available </UiBadge>
                   </template>
                   <template v-else>
-                    <UiBadge variant="destructive">{{ variation.status }}</UiBadge>
+                    <UiBadge variant="destructive">No Stocks</UiBadge>
                   </template>
                 </UiTableCell>
                 <UiTableCell>₱{{ variation.price }}</UiTableCell>
+                <UiTableCell>{{ variation.totalStocks }}</UiTableCell>
                 <UiTableCell>{{ variation.remainingStocks }}</UiTableCell>
-                <UiTableCell>{{ variation.lastModified }}</UiTableCell>
+                <UiTableCell>{{ formatDate(variation.lastModified) }}</UiTableCell>
               </UiTableRow>
             </template>
           </UiTableBody>
@@ -187,32 +345,47 @@
       </span>
       <div class="flex flex-row flex-wrap gap-4 pt-2">
         <template v-for="(variation, i) in variations" :key="variation.id">
-          <UiButton>{{ variation.name }}</UiButton>
+          <UiButton
+            :variant="
+              selectedVariation && selectedVariation.id === variation.id ? 'default' : 'outline'
+            "
+            @click="selectVariation(variation)"
+          >
+            {{ variation.value }}
+          </UiButton>
         </template>
       </div>
       <UiDivider class="my-3" />
-      <div class="flex flex-col space-y-2">
+      <div v-if="selectedVariation" class="flex flex-col space-y-2">
         <span class="text-lg font-medium text-muted-foreground">Variation Details</span>
         <div class="flex w-full flex-row items-center gap-2 pl-4 pt-2">
           <!--Variation Name-->
           <div class="flex flex-row items-center gap-1">
             <Icon name="lucide:book-a" class="size-4" />
             <span class="font-medium">Name:</span>
-            <span class="pl-2 text-muted-foreground">Small</span>
+            <span class="pl-2 text-muted-foreground"> {{ selectedVariation.value }}</span>
           </div>
           <UiDivider orientation="vertical" />
           <!--Status-->
           <div class="flex flex-row items-center gap-2 text-nowrap">
             <Icon name="lucide:eye" class="size-4" />
             <span class="font-medium">Status:</span>
-            <UiBadge>Available</UiBadge>
+            <UiBadge
+              v-if="
+                selectedVariation &&
+                selectedVariation.remainingStocks !== undefined &&
+                selectedVariation.remainingStocks > 0
+              "
+              >Available</UiBadge
+            >
+            <UiBadge v-else variant="destructive">No Stocks</UiBadge>
           </div>
           <UiDivider orientation="vertical" />
           <!--Current Price-->
           <div class="flex flex-row items-center gap-2 text-nowrap">
             <Icon name="lucide:banknote" class="size-4" />
             <span class="font-medium">Current Price:</span>
-            <span class="text-muted-foreground">₱200.00</span>
+            <span class="text-muted-foreground">₱{{ selectedVariation.price }}</span>
           </div>
 
           <UiDivider orientation="vertical" />
@@ -220,7 +393,7 @@
           <div class="flex flex-row items-center gap-2 text-nowrap">
             <Icon name="lucide:layers" class="size-4" />
             <span class="font-medium">Total Stocks:</span>
-            <span class="text-muted-foreground">115</span>
+            <span class="text-muted-foreground"> {{ selectedVariation.totalStocks }}</span>
           </div>
 
           <UiDivider orientation="vertical" />
@@ -228,7 +401,7 @@
           <div class="flex flex-row items-center gap-2 text-nowrap">
             <Icon name="lucide:layers-2" class="size-4" />
             <span class="font-medium">Remaining Stocks:</span>
-            <span class="text-muted-foreground">115</span>
+            <span class="text-muted-foreground"> {{ selectedVariation.remainingStocks }}</span>
           </div>
 
           <UiDivider orientation="vertical" />
@@ -236,7 +409,11 @@
           <div class="flex flex-row items-center gap-2 text-nowrap">
             <Icon name="lucide:calendar-clock" class="size-4" />
             <span class="font-medium">Last Modified:</span>
-            <span class="text-muted-foreground">January 8, 2024</span>
+            <span class="text-muted-foreground">
+              {{
+                selectedVariation?.lastModified ? formatDate(selectedVariation.lastModified) : "N/A"
+              }}
+            </span>
           </div>
         </div>
         <UiGradientDivider class="my-1" />
@@ -249,68 +426,42 @@
             </p>
           </div>
           <div class="grid grid-cols-9 items-center justify-center">
-            <div class="col-span-4 mx-16 pt-10">
+            <div class="col-span-9 mx-16 pt-10">
               <UiTable class="border">
-                <UiTableCaption>Price History</UiTableCaption>
+                <UiTableCaption>Stock History</UiTableCaption>
                 <UiTableHeader>
                   <UiTableRow>
                     <UiTableHead>Date</UiTableHead>
-                    <UiTableHead>Previous Price</UiTableHead>
-                    <UiTableHead>Updated Price</UiTableHead>
+                    <UiTableHead>Action</UiTableHead>
+                    <UiTableHead>Quantity</UiTableHead>
+                    <UiTableHead> Selected Variation</UiTableHead>
                   </UiTableRow>
                 </UiTableHeader>
                 <UiTableBody class="last:border-b">
-                  <UiTableRow>
-                    <UiTableCell>January 8, 2024</UiTableCell>
-                    <UiTableCell class="text-muted-foreground">₱170.00</UiTableCell>
-                    <UiTableCell>₱200.00</UiTableCell>
-                  </UiTableRow>
-                  <UiTableRow>
-                    <UiTableCell>January 8, 2024</UiTableCell>
-                    <UiTableCell class="text-muted-foreground">₱170.00</UiTableCell>
-                    <UiTableCell>₱200.00</UiTableCell>
-                  </UiTableRow>
-                  <UiTableRow>
-                    <UiTableCell>January 8, 2024</UiTableCell>
-                    <UiTableCell class="text-muted-foreground">₱170.00</UiTableCell>
-                    <UiTableCell>₱200.00</UiTableCell>
-                  </UiTableRow>
-                </UiTableBody>
-              </UiTable>
-            </div>
-            <div class="col-span-1">
-              <UiDivider orientation="vertical" />
-            </div>
-            <div class="col-span-4 mx-16 pt-10">
-              <UiTable class="border">
-                <UiTableCaption>Stocks History</UiTableCaption>
-                <UiTableHeader>
-                  <UiTableRow>
-                    <UiTableHead>Date</UiTableHead>
-                    <UiTableHead>Previous Stocks</UiTableHead>
-                    <UiTableHead>Added Stocks</UiTableHead>
-                    <UiTableHead>Total Stocks</UiTableHead>
-                  </UiTableRow>
-                </UiTableHeader>
-                <UiTableBody class="last:border-b">
-                  <UiTableRow>
-                    <UiTableCell>January 8, 2024</UiTableCell>
-                    <UiTableCell class="text-muted-foreground">100</UiTableCell>
-                    <UiTableCell>15</UiTableCell>
-                    <UiTableCell>115</UiTableCell>
-                  </UiTableRow>
-                  <UiTableRow>
-                    <UiTableCell>January 8, 2024</UiTableCell>
-                    <UiTableCell class="text-muted-foreground">100</UiTableCell>
-                    <UiTableCell>15</UiTableCell>
-                    <UiTableCell>115</UiTableCell>
-                  </UiTableRow>
-                  <UiTableRow>
-                    <UiTableCell>January 8, 2024</UiTableCell>
-                    <UiTableCell class="text-muted-foreground">100</UiTableCell>
-                    <UiTableCell>15</UiTableCell>
-                    <UiTableCell>115</UiTableCell>
-                  </UiTableRow>
+                  <template
+                    v-if="selectedVariation && selectedVariation.id"
+                    v-for="log in stocksLogs[selectedVariation.id]"
+                    :key="log.dateCreated"
+                  >
+                    <UiTableRow>
+                      <UiTableCell class="bg-secondary">{{
+                        formatDate(log.dateCreated)
+                      }}</UiTableCell>
+                      <UiTableCell>
+                        <UiBadge v-if="log.action === 'Initial Stock'" variant="secondary">
+                          Initial Stock
+                        </UiBadge>
+                        <UiBadge v-else-if="log.action === 'Add Stock'" variant="default">
+                          Add Stock
+                        </UiBadge>
+                        <UiBadge v-else-if="log.action === 'Remove Stock'" variant="destructive">
+                          Remove Stock
+                        </UiBadge>
+                      </UiTableCell>
+                      <UiTableCell>{{ log.quantity }}</UiTableCell>
+                      <UiTableCell>{{ selectedVariation.value }}</UiTableCell>
+                    </UiTableRow>
+                  </template>
                 </UiTableBody>
               </UiTable>
             </div>
@@ -335,13 +486,6 @@
                 Edit Name
               </UiButton>
               <UiButton
-                :variant="isEditStatus ? 'default' : 'outline'"
-                @click="isEditStatus = !isEditStatus"
-                class="p-1"
-              >
-                Edit Status
-              </UiButton>
-              <UiButton
                 :variant="isAddStocks ? 'default' : 'outline'"
                 @click="isAddStocks = !isAddStocks"
               >
@@ -362,7 +506,7 @@
               <!-- Delete Button Variation-->
               <UiDialog v-model:open="isDelete">
                 <UiAlertDialogTrigger as-child>
-                  <UiButton variant="destructive">Delete</UiButton>
+                  <UiButton variant="destructive" :disabled="isDeleteDisabled">Delete</UiButton>
                 </UiAlertDialogTrigger>
                 <UiAlertDialogContent @escape-key-down="isDeleteShowMessage('Escape key pressed')">
                   <UiAlertDialogHeader>
@@ -374,10 +518,7 @@
                   </UiAlertDialogHeader>
                   <UiAlertDialogFooter>
                     <UiAlertDialogCancel @click="isDeleteShowMessage('Action cancelled')" />
-                    <UiAlertDialogAction
-                      variant="destructive"
-                      @click="isDeleteShowMessage('Action confirmed!')"
-                    />
+                    <UiAlertDialogAction variant="destructive" @click="handleDeleteVariation" />
                   </UiAlertDialogFooter>
                 </UiAlertDialogContent>
               </UiDialog>
@@ -386,82 +527,95 @@
             <div class="col-span-8 flex flex-col justify-start space-y-4">
               <!-- Edit Name-->
               <div class="flex flex-row items-center">
-                <UiInput label="Variation Name" placeholder="Small" />
-                <template v-if="isEditName">
-                  <UiButton variant="ghost" title="Save Changes">
+                <UiInput
+                  :disabled="!isEditName || loading"
+                  label="Variation Name"
+                  :placeholder="selectedVariation.value"
+                  v-model="changedVariationValue"
+                />
+                <template v-if="isEditName && !loading">
+                  <UiButton variant="ghost" title="Save Changes" @click="handleSaveName">
                     <Icon name="lucide:check" class="size-4" />
                   </UiButton>
-                  <UiButton variant="ghost" title="Cancel">
+                  <UiButton variant="ghost" title="Cancel" @click="handleCancelName">
                     <Icon name="lucide:x" class="size-4" />
                   </UiButton>
                 </template>
-              </div>
-              <!-- Edit Status-->
-              <div class="flex w-1/4 flex-row items-center">
-                <UiSelect>
-                  <UiSelectTrigger placeholder="Status" />
-                  <UiSelectContent>
-                    <UiSelectGroup>
-                      <UiSelectItem text="Available" value="Available" />
-                      <UiSelectItem text="Not Available" value="Not Available" />
-                    </UiSelectGroup>
-                  </UiSelectContent>
-                </UiSelect>
-                <template v-if="isEditStatus">
-                  <UiButton variant="ghost" title="Save Changes">
-                    <Icon name="lucide:check" class="size-4" />
-                  </UiButton>
-                  <UiButton variant="ghost" title="Cancel">
-                    <Icon name="lucide:x" class="size-4" />
-                  </UiButton>
+                <template v-if="loading">
+                  <Icon name="lucide:loader-circle" class="ml-2 size-4 animate-spin" />
                 </template>
               </div>
+
               <!-- Add Stocks-->
               <div class="flex w-1/3 flex-row items-center">
-                <UiNumberField :min="0" :max="10000">
-                  <UiNumberFieldInput placeholder="15" />
+                <UiNumberField
+                  :disabled="!isAddStocks || loading"
+                  :min="0"
+                  :max="10000"
+                  v-model="changedVariationAddedStocks"
+                >
+                  <UiNumberFieldInput placeholder="0" step="1" />
                   <UiNumberFieldDecrement class="border-l" />
                   <UiNumberFieldIncrement class="border-l" />
                 </UiNumberField>
-                <template v-if="isAddStocks">
-                  <UiButton variant="ghost" title="Save Changes">
+                <template v-if="isAddStocks && !loading">
+                  <UiButton variant="ghost" title="Save Changes" @click="handleSaveAddedStocks">
                     <Icon name="lucide:check" class="size-4" />
                   </UiButton>
-                  <UiButton variant="ghost" title="Cancel">
+                  <UiButton variant="ghost" title="Cancel" @click="handleCancelAddedStocks">
                     <Icon name="lucide:x" class="size-4" />
                   </UiButton>
+                </template>
+                <template v-if="loading">
+                  <Icon name="lucide:loader-circle" class="ml-2 size-4 animate-spin" />
                 </template>
               </div>
               <!-- Remove Stocks-->
               <div class="flex w-1/3 flex-row items-center">
-                <UiNumberField :min="0" :max="10000">
-                  <UiNumberFieldInput placeholder="15" />
+                <UiNumberField
+                  :disabled="!isRemoveStocks || loading"
+                  :min="0"
+                  :max="10000"
+                  v-model="changedVariationRemovedStocks"
+                >
+                  <UiNumberFieldInput placeholder="0" step="1" />
                   <UiNumberFieldDecrement class="border-l" />
                   <UiNumberFieldIncrement class="border-l" />
                 </UiNumberField>
-                <template v-if="isRemoveStocks">
-                  <UiButton variant="ghost" title="Save Changes">
+                <template v-if="isRemoveStocks && !loading">
+                  <UiButton variant="ghost" title="Save Changes" @click="handleSaveRemovedStocks">
                     <Icon name="lucide:check" class="size-4" />
                   </UiButton>
-                  <UiButton variant="ghost" title="Cancel">
+                  <UiButton variant="ghost" title="Cancel" @click="handleCancelRemovedStocks">
                     <Icon name="lucide:x" class="size-4" />
                   </UiButton>
+                </template>
+                <template v-if="loading">
+                  <Icon name="lucide:loader-circle" class="ml-2 size-4 animate-spin" />
                 </template>
               </div>
               <!-- Price Change-->
               <div class="flex w-1/3 flex-row items-center">
-                <UiNumberField :min="0" :max="10000">
-                  <UiNumberFieldInput placeholder="₱0.00" />
+                <UiNumberField
+                  :disabled="!isChangePrice || loading"
+                  :min="0"
+                  :max="10000"
+                  v-model="changedVariationPrice"
+                >
+                  <UiNumberFieldInput :placeholder="selectedVariation.price" step="0.01" />
                   <UiNumberFieldDecrement class="border-l" />
                   <UiNumberFieldIncrement class="border-l" />
                 </UiNumberField>
-                <template v-if="isChangePrice">
-                  <UiButton variant="ghost" title="Save Changes">
+                <template v-if="isChangePrice && !loading">
+                  <UiButton variant="ghost" title="Save Changes" @click="handleSavePrice">
                     <Icon name="lucide:check" class="size-4" />
                   </UiButton>
-                  <UiButton variant="ghost" title="Cancel">
+                  <UiButton variant="ghost" title="Cancel" @click="handleCancelPrice">
                     <Icon name="lucide:x" class="size-4" />
                   </UiButton>
+                </template>
+                <template v-if="loading">
+                  <Icon name="lucide:loader-circle" class="ml-2 size-4 animate-spin" />
                 </template>
               </div>
             </div>
@@ -489,20 +643,35 @@
                 <div class="grid gap-4 py-4">
                   <div class="grid grid-cols-4 items-center gap-4">
                     <UiLabel for="name" class="text-right"> Name </UiLabel>
-                    <UiInput id="name" placeholder="Small" class="col-span-3" />
+                    <UiInput
+                      v-model="newVariationName"
+                      id="name"
+                      placeholder="Small"
+                      class="col-span-3"
+                    />
                   </div>
                   <div class="grid grid-cols-4 items-center gap-4">
                     <UiLabel for="price" class="text-right"> Price </UiLabel>
-                    <UiNumberField :min="0" :max="10000" class="col-span-3">
-                      <UiNumberFieldInput id="price" placeholder="₱0.00" />
+                    <UiNumberField
+                      v-model="newVariationPrice"
+                      :min="0"
+                      :max="10000"
+                      class="col-span-3"
+                    >
+                      <UiNumberFieldInput id="price" placeholder="₱0.00" step="0.01" />
                       <UiNumberFieldDecrement class="border-l" />
                       <UiNumberFieldIncrement class="border-l" />
                     </UiNumberField>
                   </div>
                   <div class="grid grid-cols-4 items-center gap-4">
                     <UiLabel for="stocks" class="text-right"> Stocks </UiLabel>
-                    <UiNumberField :min="0" :max="10000" class="col-span-3">
-                      <UiNumberFieldInput id="stocks" placeholder="0" />
+                    <UiNumberField
+                      v-model="newVariationStocks"
+                      :min="0"
+                      :max="10000"
+                      class="col-span-3"
+                    >
+                      <UiNumberFieldInput id="stocks" placeholder="0" step="1" />
                       <UiNumberFieldDecrement class="border-l" />
                       <UiNumberFieldIncrement class="border-l" />
                     </UiNumberField>
@@ -513,12 +682,24 @@
                 <UiDialogFooter>
                   <UiButton
                     @click="closeAddDialog(false)"
+                    :disabled="loadingVariation"
                     variant="outline"
                     type="button"
                     class="mt-2 sm:mt-0"
-                    >Cancel</UiButton
-                  >
-                  <UiButton @click="closeAddDialog(true)" type="submit">Save</UiButton>
+                    >Cancel
+                    <Icon
+                      v-if="loadingVariation"
+                      name="lucide:loader-circle"
+                      class="ml-2 size-4 animate-spin"
+                  /></UiButton>
+                  <UiButton @click="handleAddVariation" :disabled="loadingVariation" type="submit"
+                    >Save
+                    <Icon
+                      v-if="loadingVariation"
+                      name="lucide:loader-circle"
+                      class="ml-2 size-4 animate-spin"
+                    />
+                  </UiButton>
                 </UiDialogFooter>
               </template>
             </UiDialogContent>
