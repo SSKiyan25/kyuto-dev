@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { fetchProducts } from "~/composables/organization/useProducts";
+  import { archiveProduct, fetchProducts } from "~/composables/organization/useProducts";
   import { useFetchUser } from "~/composables/user/useFetchUser";
   import { QueryDocumentSnapshot, Timestamp } from "firebase/firestore";
   import { RouterLink } from "vue-router";
@@ -11,6 +11,8 @@
     layout: "organization",
     middleware: ["auth"],
   });
+
+  const toast = useToast();
 
   const crumbs: Crumbs[] = [
     { label: "Dashboard", link: "/organization/dashboard", icon: "lucide:newspaper" },
@@ -103,10 +105,14 @@
                 "Manage Inventory",
               ]),
             ]),
-            h(resolveComponent("UiDropdownMenuItem"), { title: "Archive" }, () => [
-              h(resolveComponent("Icon"), { name: "lucide:file-x", class: "mr-2 h-4 w-4" }),
-              "Archive",
-            ]),
+            h(
+              resolveComponent("UiDropdownMenuItem"),
+              { title: "Archive", onClick: () => handleArchiveProduct(productId as string) },
+              () => [
+                h(resolveComponent("Icon"), { name: "lucide:file-x", class: "mr-2 h-4 w-4" }),
+                "Archive",
+              ]
+            ),
           ]),
         ]);
       },
@@ -152,6 +158,26 @@
 
       lastVisible.value = result.lastVisible;
       console.log("Data: ", data.value);
+    }
+  };
+
+  const handleArchiveProduct = async (productId: string) => {
+    try {
+      await archiveProduct(productId);
+      toast.toast({
+        title: "Product Archived",
+        description: "The product has been archived successfully.",
+        variant: "success",
+        icon: "lucide:check",
+      });
+      await fetchAndSetProducts(true); // Refresh the product list
+    } catch (error) {
+      toast.toast({
+        title: "Error",
+        description: "An error occurred while archiving the product.",
+        variant: "destructive",
+        icon: "lucide:alert-circle",
+      });
     }
   };
 

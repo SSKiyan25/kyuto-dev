@@ -1,10 +1,11 @@
-import { user } from "firebase-functions/v1/auth";
 import {
   collection,
+  doc,
   limit as firestoreLimit,
   getDocs,
   query,
   startAfter,
+  updateDoc,
   where,
 } from "firebase/firestore";
 import type { Product, Variation } from "~/types/models/Product";
@@ -35,6 +36,8 @@ export async function fetchProducts(
 
   if (filterBy !== "All") {
     productsQuery = query(productsQuery, where("status", "==", filterBy));
+  } else {
+    productsQuery = query(productsQuery, where("isArchived", "==", false));
   }
 
   if (category !== "All") {
@@ -75,4 +78,10 @@ export async function fetchProducts(
     products: enhancedProducts,
     lastVisible: productsSnapshot.docs[productsSnapshot.docs.length - 1],
   };
+}
+
+export async function archiveProduct(productId: string) {
+  const db = useFirestore();
+  const productRef = doc(db, "products", productId);
+  await updateDoc(productRef, { isArchived: true, status: "Archived" });
 }

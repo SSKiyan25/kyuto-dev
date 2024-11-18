@@ -31,7 +31,18 @@
   const newPhotos = ref<string[]>([]);
   const router = useRouter();
 
-  const categories = ["T-shirt", "Hoodie", "Lanyard", "Sticker", "Others"];
+  const categories = [
+    "T-shirt",
+    "Polo-Shirt",
+    "Hoodie",
+    "Lanyard",
+    "Sticker",
+    "Umbrella",
+    "Totebag",
+    "Fan",
+    "Mug",
+    "Others",
+  ];
   const status = ["Draft", "Publish"];
   const currentMessage = ref("Saving changes...");
 

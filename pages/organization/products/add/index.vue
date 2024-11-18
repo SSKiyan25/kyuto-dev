@@ -13,7 +13,18 @@
     { label: "Add Product", link: "/organization/products/add", icon: "lucide:file-plus" },
   ];
 
-  const categories = ["T-shirt", "Hoodie", "Lanyard", "Sticker", "Others"];
+  const categories = [
+    "T-shirt",
+    "Polo-Shirt",
+    "Hoodie",
+    "Lanyard",
+    "Sticker",
+    "Umbrella",
+    "Totebag",
+    "Fan",
+    "Mug",
+    "Others",
+  ];
   const status = ["Draft", "Publish"];
   const variations = ref([{ value: "None", price: 1, stocks: 0 }]);
   const loading = ref(false);
@@ -181,7 +192,7 @@
                   v-model="variation.price"
                   required
                 >
-                  <UiNumberFieldInput placeholder="x.xx" />
+                  <UiNumberFieldInput placeholder="x.xx" step="0.01" />
                 </UiVeeNumberField>
               </div>
               <div class="flex w-11/12 sm:col-span-2">

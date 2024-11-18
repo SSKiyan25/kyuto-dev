@@ -123,6 +123,18 @@
     loading.value = true;
     if (!selectedVariation.value) return;
 
+    const invalidChars = /[\/\*<>!]/;
+    if (invalidChars.test(changedVariationValue.value)) {
+      toast.toast({
+        title: "Invalid Name",
+        description: "The name contains invalid characters: /, *, <, >, !",
+        variant: "warning",
+        icon: "lucide:triangle-alert",
+      });
+      loading.value = false;
+      return;
+    }
+
     const updatedData: Partial<Variation> = {
       value: changedVariationValue.value,
     };
@@ -131,7 +143,12 @@
     await updateVariation(productID, selectedVariation.value.id, updatedData);
     isEditName.value = false;
     loading.value = false;
-    console.log("Name changes saved");
+    toast.toast({
+      title: "Name Updated",
+      description: "The name has been updated successfully.",
+      variant: "success",
+      icon: "lucide:check",
+    });
   };
 
   const handleSavePrice = async () => {
@@ -145,7 +162,12 @@
     await updateVariation(productID, selectedVariation.value.id, updatedData);
     isChangePrice.value = false;
     loading.value = false;
-    console.log("Price changes saved");
+    toast.toast({
+      title: "Price Updated",
+      description: "The price has been updated successfully.",
+      variant: "success",
+      icon: "lucide:check",
+    });
   };
 
   const handleSaveAddedStocks = async () => {
@@ -165,7 +187,12 @@
     isAddStocks.value = false;
     changedVariationAddedStocks.value = 0;
     loading.value = false;
-    console.log("Added stocks saved");
+    toast.toast({
+      title: "Stocks Added",
+      description: "The stocks have been added successfully.",
+      variant: "success",
+      icon: "lucide:check",
+    });
   };
 
   const handleSaveRemovedStocks = async () => {
@@ -196,7 +223,12 @@
     isRemoveStocks.value = false;
     changedVariationRemovedStocks.value = 0;
     loading.value = false;
-    console.log("Removed stocks saved");
+    toast.toast({
+      title: "Stocks Removed",
+      description: "The stocks have been removed successfully.",
+      variant: "success",
+      icon: "lucide:check",
+    });
   };
 
   const handleDeleteVariation = async () => {
@@ -335,6 +367,89 @@
             </template>
           </UiTableBody>
         </UiTable>
+      </div>
+      <div class="mx-auto flex flex-col items-center justify-center space-y-2 pt-12">
+        <span></span>
+        <p class="text-[12px] text-muted-foreground">
+          You can only have 10 variations in each product.
+        </p>
+        <UiDialog v-model:open="isAddVariation">
+          <UiDialogTrigger as-child>
+            <UiButton>
+              <Icon name="lucide:plus" class="size-4" />
+              Add New Variation
+            </UiButton>
+          </UiDialogTrigger>
+          <UiDialogContent
+            class="sm:max-w-[625px]"
+            title="Add Variation"
+            description="Add a new variation to your product. You can specify details such its name, price, and the number of stocks."
+          >
+            <template #content>
+              <div class="grid gap-4 py-4">
+                <div class="grid grid-cols-4 items-center gap-4">
+                  <UiLabel for="name" class="text-right"> Name </UiLabel>
+                  <UiInput
+                    v-model="newVariationName"
+                    id="name"
+                    placeholder="Small"
+                    class="col-span-3"
+                  />
+                </div>
+                <div class="grid grid-cols-4 items-center gap-4">
+                  <UiLabel for="price" class="text-right"> Price </UiLabel>
+                  <UiNumberField
+                    v-model="newVariationPrice"
+                    :min="0"
+                    :max="10000"
+                    class="col-span-3"
+                  >
+                    <UiNumberFieldInput id="price" placeholder="₱0.00" step="0.01" />
+                    <UiNumberFieldDecrement class="border-l" />
+                    <UiNumberFieldIncrement class="border-l" />
+                  </UiNumberField>
+                </div>
+                <div class="grid grid-cols-4 items-center gap-4">
+                  <UiLabel for="stocks" class="text-right"> Stocks </UiLabel>
+                  <UiNumberField
+                    v-model="newVariationStocks"
+                    :min="0"
+                    :max="10000"
+                    class="col-span-3"
+                  >
+                    <UiNumberFieldInput id="stocks" placeholder="0" step="1" />
+                    <UiNumberFieldDecrement class="border-l" />
+                    <UiNumberFieldIncrement class="border-l" />
+                  </UiNumberField>
+                </div>
+              </div>
+            </template>
+            <template #footer>
+              <UiDialogFooter>
+                <UiButton
+                  @click="closeAddDialog(false)"
+                  :disabled="loadingVariation"
+                  variant="outline"
+                  type="button"
+                  class="mt-2 sm:mt-0"
+                  >Cancel
+                  <Icon
+                    v-if="loadingVariation"
+                    name="lucide:loader-circle"
+                    class="ml-2 size-4 animate-spin"
+                /></UiButton>
+                <UiButton @click="handleAddVariation" :disabled="loadingVariation" type="submit"
+                  >Save
+                  <Icon
+                    v-if="loadingVariation"
+                    name="lucide:loader-circle"
+                    class="ml-2 size-4 animate-spin"
+                  />
+                </UiButton>
+              </UiDialogFooter>
+            </template>
+          </UiDialogContent>
+        </UiDialog>
       </div>
     </div>
     <div
@@ -622,89 +737,6 @@
           </div>
         </div>
         <UiDivider class="mb-2" />
-        <div class="flex flex-col items-center justify-center space-y-2">
-          <span></span>
-          <p class="text-[12px] text-muted-foreground">
-            You can only have 10 variations in each product.
-          </p>
-          <UiDialog v-model:open="isAddVariation">
-            <UiDialogTrigger as-child>
-              <UiButton>
-                <Icon name="lucide:plus" class="size-4" />
-                Add New Variation
-              </UiButton>
-            </UiDialogTrigger>
-            <UiDialogContent
-              class="sm:max-w-[625px]"
-              title="Add Variation"
-              description="Add a new variation to your product. You can specify details such its name, price, and the number of stocks."
-            >
-              <template #content>
-                <div class="grid gap-4 py-4">
-                  <div class="grid grid-cols-4 items-center gap-4">
-                    <UiLabel for="name" class="text-right"> Name </UiLabel>
-                    <UiInput
-                      v-model="newVariationName"
-                      id="name"
-                      placeholder="Small"
-                      class="col-span-3"
-                    />
-                  </div>
-                  <div class="grid grid-cols-4 items-center gap-4">
-                    <UiLabel for="price" class="text-right"> Price </UiLabel>
-                    <UiNumberField
-                      v-model="newVariationPrice"
-                      :min="0"
-                      :max="10000"
-                      class="col-span-3"
-                    >
-                      <UiNumberFieldInput id="price" placeholder="₱0.00" step="0.01" />
-                      <UiNumberFieldDecrement class="border-l" />
-                      <UiNumberFieldIncrement class="border-l" />
-                    </UiNumberField>
-                  </div>
-                  <div class="grid grid-cols-4 items-center gap-4">
-                    <UiLabel for="stocks" class="text-right"> Stocks </UiLabel>
-                    <UiNumberField
-                      v-model="newVariationStocks"
-                      :min="0"
-                      :max="10000"
-                      class="col-span-3"
-                    >
-                      <UiNumberFieldInput id="stocks" placeholder="0" step="1" />
-                      <UiNumberFieldDecrement class="border-l" />
-                      <UiNumberFieldIncrement class="border-l" />
-                    </UiNumberField>
-                  </div>
-                </div>
-              </template>
-              <template #footer>
-                <UiDialogFooter>
-                  <UiButton
-                    @click="closeAddDialog(false)"
-                    :disabled="loadingVariation"
-                    variant="outline"
-                    type="button"
-                    class="mt-2 sm:mt-0"
-                    >Cancel
-                    <Icon
-                      v-if="loadingVariation"
-                      name="lucide:loader-circle"
-                      class="ml-2 size-4 animate-spin"
-                  /></UiButton>
-                  <UiButton @click="handleAddVariation" :disabled="loadingVariation" type="submit"
-                    >Save
-                    <Icon
-                      v-if="loadingVariation"
-                      name="lucide:loader-circle"
-                      class="ml-2 size-4 animate-spin"
-                    />
-                  </UiButton>
-                </UiDialogFooter>
-              </template>
-            </UiDialogContent>
-          </UiDialog>
-        </div>
       </div>
     </div>
     <div class="min-h-64 text-secondary">.</div>

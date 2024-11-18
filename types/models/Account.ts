@@ -5,8 +5,8 @@ export interface Account {
   role: string;
   firstname: string;
   lastname: string;
-  department?: string;
-  studentId?: string;
+  department: string;
+  studentId: string;
   avatarURL: string;
   phoneNumber: string;
   hasOrganization: boolean;

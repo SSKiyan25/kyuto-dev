@@ -21,11 +21,12 @@ export interface Order {
 export interface OrderItem {
   orderID: string;
   productID: string;
+  isPackage: boolean;
+  packageID: string;
   variationID: string;
   variationName: string;
   quantity: number;
   price: number;
-  discountPrice: number;
+  discountedPrice: number;
   totalPrice: number;
-  dateAdded: Date;
 }

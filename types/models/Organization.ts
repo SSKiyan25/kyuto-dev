@@ -2,9 +2,9 @@ export interface Organization {
   name: string;
   contactEmail: string;
   address: string;
-  addressImages: string[];
-  description?: string;
-  phoneNumber?: string;
+  addressImagesURL: string[];
+  description: string;
+  phoneNumber: string;
   iconURL: string;
   accounts: OrganizationAccount[];
   imagesURL: string[];
@@ -19,10 +19,8 @@ export interface Organization {
 }
 
 export interface OrganizationAccount {
-  organizationID: string;
   accountID: string;
   role: string;
-  dateCreated: Date;
 }
 
 export interface OrganizationViews {

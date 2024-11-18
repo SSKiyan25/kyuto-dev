@@ -49,20 +49,22 @@ export const useAddProduct = async (values: any, canPreOrder: boolean) => {
     };
 
     const imageUrls: string[] = [];
-    for (let i = 0; i < values.images.length; i++) {
-      const image = values.images[i];
-      const uniqueStringImage = `${timestamp}-${values.name}-${userData.organization}-${values.category}-${i + 2}`;
-      const uniqueNameImage = sha256(uniqueStringImage);
+    if (values.images && values.images.length > 0) {
+      for (let i = 0; i < values.images.length; i++) {
+        const image = values.images[i];
+        const uniqueStringImage = `${timestamp}-${values.name}-${userData.organization}-${values.category}-${i + 2}`;
+        const uniqueNameImage = sha256(uniqueStringImage);
 
-      const imageRef = storageRef(storage, `${basePath}/${uniqueNameImage}`);
-      const { upload: uploadImage } = useStorageFile(imageRef);
-      const { url: imageUrl, refresh: refreshImageUrl } = useStorageFileUrl(imageRef);
+        const imageRef = storageRef(storage, `${basePath}/${uniqueNameImage}`);
+        const { upload: uploadImage } = useStorageFile(imageRef);
+        const { url: imageUrl, refresh: refreshImageUrl } = useStorageFileUrl(imageRef);
 
-      await uploadImage(image);
-      await refreshImageUrl();
-      const imageUploadedUrl = imageUrl.value ?? undefined;
-      if (imageUploadedUrl) {
-        imageUrls.push(imageUploadedUrl);
+        await uploadImage(image);
+        await refreshImageUrl();
+        const imageUploadedUrl = imageUrl.value ?? undefined;
+        if (imageUploadedUrl) {
+          imageUrls.push(imageUploadedUrl);
+        }
       }
     }
 
