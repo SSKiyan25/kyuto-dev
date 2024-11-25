@@ -1,5 +1,4 @@
 import { doc, getDoc } from "firebase/firestore";
-import { useCurrentUser, useFirestore } from "vuefire";
 import type { Account } from "~/types/models/Account";
 
 export async function useFetchUser() {

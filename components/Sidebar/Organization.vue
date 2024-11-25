@@ -63,8 +63,8 @@
             <div class="flex items-center gap-3">
               <Icon name="lucide:user" class="size-10" />
               <div>
-                <p class="text-sm font-semibold" v-html="user.username" />
-                <p class="text-sm" v-html="user.email" />
+                <p class="text-sm font-semibold" v-html="userData?.username" />
+                <p class="text-sm" v-html="userData?.email" />
               </div>
             </div>
             <UiTooltip>
@@ -79,7 +79,7 @@
             </UiTooltip>
           </div>
         </div>
-        <div class="flex justify-center p-4 text-muted/80">Organization Name</div>
+        <div class="flex items-center justify-center p-4 text-muted/80">{{ orgData.name }}</div>
       </div>
     </UiScrollArea>
     <TransitionSlide ref="sideBarRef" :offset="[-30, 0]">
@@ -99,16 +99,22 @@
 
 <script lang="ts" setup>
   import { useSidebarState } from "~/composables/misc/useSidebar";
-  import { useOrganizationValues } from "~/composables/organization/useOrganizationValues";
-  import { useUserValues } from "~/composables/user/useUserValues";
+  import { fetchOrganization } from "~/composables/organization/useOrganization";
   import { signOut } from "firebase/auth";
+  import { doc } from "firebase/firestore";
+  import type { Account } from "~/types/models/Account";
 
   const route = useRoute();
-
+  const user = useCurrentUser();
+  const db = useFirestore();
   const auth = useFirebaseAuth();
-  const { organizationID, organizationData } = await useOrganizationValues();
-  console.log("OrganizationData: ",organizationData.value);
-  const { userData } = await useUserValues();
+
+  const orgData = await fetchOrganization();
+  const userDocRef = computed(() => (user.value ? doc(db, "accounts", user.value.uid) : null));
+  const userData = useDocument<Partial<Account>>(userDocRef) as Partial<Account> | undefined;
+
+  console.log("OrganizationData: ", orgData);
+
   const logout = async () => {
     await signOut(auth!);
     navigateTo("/");
@@ -118,14 +124,11 @@
   const miniSidebarItems = ref<Array<any>>();
   const sideBarRef = ref<any>();
   const { isSidebarHidden, toggleSidebar } = useSidebarState();
-
-  const user = {
-    username: userData.value.username || "Name",
-    email: userData.value.email || "",
-  };
-
+  console.log("Organization id:", userData?.organizationID);
+  const organizationPath = `/organization/${orgData.id}`;
+  console.log(organizationPath);
   const topNav = [
-    { title: "Organization", icon: "lucide:newspaper", link: "#" },
+    { title: "Organization", icon: "lucide:newspaper", link: organizationPath },
     { title: "Dashboard", icon: "lucide:bar-chart-3", link: "/organization/dashboard" },
     { title: "Inbox", icon: "lucide:inbox", link: "#" },
     { title: "Products", icon: "lucide:package", link: "/organization/products" },

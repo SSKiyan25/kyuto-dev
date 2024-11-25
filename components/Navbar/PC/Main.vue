@@ -46,7 +46,11 @@
             <div v-if="user" class="flex flex-row items-center gap-4">
               <!-- Cart -->
               <UiButton :to="`/user/cart/${user.uid}`">
-                <UiChip class="bg-red-700 text-white" size="lg" :text="cartNum?.toString()">
+                <UiChip
+                  :class="cartNum > 0 ? 'bg-red-700 text-white' : ''"
+                  size="lg"
+                  :text="cartNum > 0 ? cartNum.toString() : ''"
+                >
                   <Icon
                     name="lucide:shopping-cart"
                     class="h-6 w-6 cursor-pointer hover:shadow-md"
@@ -170,6 +174,7 @@
 </template>
 
 <script lang="ts" setup>
+  import { useFetchUserCart } from "~/composables/user/useFetchUserCart";
   import { signOut } from "firebase/auth";
   import { doc } from "firebase/firestore";
   import type { Account } from "~/types/models/Account";
@@ -179,11 +184,29 @@
   console.log("user", user);
   console.log("User iud", user.value?.uid);
 
+  const cartNum = ref(0);
+
   const userDocRef = computed(() => (user.value ? doc(db, "accounts", user.value.uid) : null));
   const userData = useDocument<Partial<Account>>(userDocRef) as Partial<Account> | undefined;
   console.log("userData", userData);
 
-  const cartNum = ref(1);
+  watch(
+    () => user.value,
+    (newUser) => {
+      if (newUser) {
+        const { userCart, fetchUserCart } = useFetchUserCart(newUser.uid);
+        watch(
+          () => userCart.value,
+          (newCart) => {
+            cartNum.value = newCart.length;
+          },
+          { immediate: true }
+        );
+        fetchUserCart();
+      }
+    },
+    { immediate: true }
+  );
 
   const auth = useFirebaseAuth();
   const logout = async () => {

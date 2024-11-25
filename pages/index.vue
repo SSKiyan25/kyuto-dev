@@ -57,11 +57,11 @@
     </div> -->
 
     <!-- Top Products-->
-    <div
+    <!-- <div
       class="mx-auto my-4 flex h-96 w-11/12 flex-col items-start justify-center rounded bg-muted p-4"
     >
       <span class="font-semibold uppercase text-muted-foreground">Top Products</span>
-    </div>
+    </div> -->
 
     <!-- Products -->
     <div class="mx-auto mb-24 flex min-h-lvh w-11/12 flex-col pt-8">
@@ -149,40 +149,48 @@
           </div>
           <!-- Price Range -->
           <div class="flex w-auto flex-row items-center pl-4">
-            <span class="pr-1 text-sm">Price Range:</span>
+            <!-- <span class="pr-1 text-sm">Price Range:</span>
             <div class="">
               <UiNumberField :min="0" :max="10000" v-model="priceRangeMin">
                 <UiNumberFieldInput placeholder="Min" class="w-16" />
               </UiNumberField>
-            </div>
-            <span class="px-1">-</span>
+            </div> -->
+            <!-- <span class="px-1">-</span>
             <div class="">
               <UiNumberField :min="0" :max="10000" v-model="priceRangeMax">
                 <UiNumberFieldInput placeholder="Max" class="w-16" />
               </UiNumberField>
-            </div>
-            <div>
-              <UiButton variant="secondary" class="ml-1">Set</UiButton>
-            </div>
+            </div> -->
+            <!-- <div>
+              <UiButton @click="applyFilters" variant="secondary" class="ml-1">Set</UiButton>
+            </div> -->
           </div>
           <!-- Clear Filter-->
-          <div>
-            <UiButton variant="destructive">Clear Filters</UiButton>
-          </div>
+          <!-- <div>
+            <UiButton @click="clearFilters" variant="destructive">Clear Filters</UiButton>
+          </div> -->
         </div>
       </transition>
 
       <!-- Products Container -->
       <div class="mt-6 flex flex-row flex-wrap gap-6 px-9">
+        <template v-if="loading">
+          <div v-for="i in 10" :key="i" class="flex flex-col items-center space-x-4">
+            <UiSkeleton class="h-52 w-52 rounded-sm" />
+            <UiSkeleton class="mt-2 h-6 w-24" />
+            <UiSkeleton class="mt-1 h-4 w-32" />
+            <UiSkeleton class="mt-1 h-4 w-16" />
+          </div>
+        </template>
         <div v-for="(product, i) in products" :key="i">
-          <NuxtLink :to="`/product/${product.name}`">
+          <NuxtLink :to="`/product/${product.id}`">
             <div
               class="flex max-h-[40rem] max-w-[24rem] flex-col rounded-sm border p-2 hover:shadow-lg"
             >
               <div class="flex justify-center border-b p-2">
                 <div class="h-52 w-52 overflow-hidden">
                   <img
-                    :src="product.image"
+                    :src="product.featuredPhotoURL"
                     :alt="product.name"
                     class="h-full w-full transform object-cover transition-transform duration-300 ease-in-out hover:scale-110"
                   />
@@ -194,7 +202,7 @@
                   {{ product.name }}
                 </p>
                 <div class="flex w-full flex-row justify-between pt-4 text-[12px] opacity-50">
-                  <span>{{ product.views }} views</span>
+                  <span>0 views</span>
                   <span>{{ product.totalSales }} sales</span>
                 </div>
               </div>
@@ -205,13 +213,20 @@
           <UiPagination :total="100" :sibling-count="1"></UiPagination>
         </div>
       </div>
-      <div class="min-h-lvh"></div>
+      <div class="min-h-96">.</div>
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-  const { products } = useProductValues();
+  import { useViewProducts } from "~/composables/useViewProducts";
+
+  const { products, loading, fetchProducts } = useViewProducts();
+
+  onMounted(() => {
+    fetchProducts();
+  });
+
   const { categories } = useCategoryValues();
   const showAs = ref<{ value: string; isActive: boolean; name: string }[]>([
     { value: "All", isActive: true, name: "all" },
@@ -219,23 +234,30 @@
     { value: "Popular", isActive: false, name: "popular" },
     { value: "Top-Sales", isActive: false, name: "top-sales" },
   ]);
+
   const filterCategories = [
-    { key: "1", title: "T-Shirts" },
-    { key: "2", title: "Hoodies" },
-    { key: "3", title: "Lanyards" },
-    { key: "4", title: "Stickers" },
-    { key: "5", titile: "Polo-Shirt" },
-    { key: "6", title: "Foldable Fan" },
-    { key: "7", title: "Others" },
+    { key: "1", title: "T-shirt" },
+    { key: "2", title: "Polo-Shirt" },
+    { key: "3", title: "Hoodie" },
+    { key: "4", title: "Lanyard" },
+    { key: "5", title: "Sticker" },
+    { key: "6", title: "Umbrella" },
+    { key: "7", title: "Totebag" },
+    { key: "8", title: "Fan" },
+    { key: "9", title: "Mug" },
+    { key: "10", title: "Others" },
   ];
 
   const selectedCategories = ref<string[]>([]);
-  const sortPrice = ref<string | undefined>(undefined);
+  const sortPrice = ref<string>("none");
+
   const toggleActive = (index: number) => {
     showAs.value.forEach((item, i) => {
       item.isActive = i === index;
     });
+    applyFilters();
   };
+
   const showFilterCommands = ref(false);
 
   const toggleFilterCommands = () => {
@@ -244,6 +266,28 @@
 
   const priceRangeMin = ref(0);
   const priceRangeMax = ref(0);
+
+  const applyFilters = () => {
+    const activeFilter = showAs.value.find((item) => item.isActive);
+    const sortBy = activeFilter ? activeFilter.name : "all";
+    const selectedCategoryTitles = selectedCategories.value
+      .map((key) => {
+        const category = filterCategories.find((c) => c.key === key);
+        return category ? category.title : "";
+      })
+      .filter((title) => title !== "");
+    fetchProducts(sortBy, selectedCategoryTitles, sortPrice.value);
+  };
+
+  const clearFilters = () => {
+    selectedCategories.value = [];
+    sortPrice.value = "none";
+    priceRangeMin.value = 0;
+    priceRangeMax.value = 0;
+    fetchProducts();
+  };
+
+  watch([selectedCategories, sortPrice, showAs], applyFilters);
 </script>
 
 <style scoped>

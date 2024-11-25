@@ -72,7 +72,7 @@
 
   watchEffect(() => {
     if (product.value) {
-      productData.name = product.value.name || "";
+      productData.name = product.value.name || ".";
       productData.category = product.value.category || "";
       productData.status = product.value.status || "";
       productData.description = product.value.description || "";

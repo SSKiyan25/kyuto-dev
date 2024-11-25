@@ -91,10 +91,13 @@
     layout: "no-nav",
   });
 
+  const user = useCurrentUser();
+  const userID = computed(() => user.value?.uid as string);
+
   const crumbs: Crumbs[] = [
     { label: "Home", link: "/" },
     { label: "My Profile", link: "/" },
-    { label: "Cart", link: "#" },
+    { label: "Cart", link: `/user/cart/${userID.value}` },
     { label: "Checkout", link: "#", disabled: true },
   ];
 
