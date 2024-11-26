@@ -52,9 +52,9 @@
             <span class="text-xl font-semibold">Variations</span>
             <div class="flex flex-row flex-wrap gap-4 px-4 pt-4">
               <div v-for="(vari, i) in variations" :key="i">
-                <UiButton class="cursor-default opacity-90" v-wave>
+                <div class="cursor-default rounded-sm border p-2 opacity-90" v-wave>
                   {{ vari.value }} | ₱{{ vari.price }}
-                </UiButton>
+                </div>
               </div>
             </div>
           </div>
@@ -130,8 +130,9 @@
                       <UiButton
                         size="lg"
                         :disabled="!selectedVariationPreOrder || quantityPreOrder === 0"
+                        :loading="loadingButton"
                         v-wave
-                        @click="submitAddToCart(true)"
+                        @click="debouncedSubmitAddToCart(true)"
                       >
                         Add to Cart
                       </UiButton>
@@ -143,13 +144,7 @@
             <!-- Add to Cart -->
             <UiDrawer>
               <UiDrawerTrigger as-child>
-                <UiButton
-                  class="w-1/2"
-                  size="lg"
-                  variant="destructive"
-                  v-wave
-                  @click="handleAddToCart"
-                >
+                <UiButton class="w-1/2" size="lg" v-wave @click="handleAddToCart">
                   <Icon name="lucide:baggage-claim" />
                   Add to Cart
                 </UiButton>
@@ -220,7 +215,8 @@
                         size="lg"
                         v-wave
                         :disabled="!selectedVariationAddToCart || quantityAddToCart === 0"
-                        @click="submitAddToCart(false)"
+                        :loading="loadingButton"
+                        @click="debouncedSubmitAddToCart(false)"
                       >
                         <Icon name="lucide:shopping-cart" />
                         Add to Cart
@@ -292,6 +288,7 @@
 <script lang="ts" setup>
   import { useAddToCart } from "~/composables/useAddToCart";
   import { useOrganizationProducts } from "~/composables/useOrganizationProducts";
+  import { debounce } from "~/utils/debounce";
   import { collection, doc } from "firebase/firestore";
   import { Carousel, Slide } from "vue3-carousel";
   import type { Crumbs } from "~/components/Ui/Breadcrumbs.vue";
@@ -305,6 +302,7 @@
   const db = useFirestore();
   const router = useRouter();
   const currentMessage = ref("Adding to your cart");
+  const loadingButton = ref(false);
   let messageIndex: number = 0;
   const toast = useToast();
 
@@ -415,6 +413,7 @@
       const quantity = preOrder ? quantityPreOrder.value : quantityAddToCart.value;
 
       if (selectedVariation) {
+        loadingButton.value = true;
         loading.value = true;
         console.log("Adding to cart...");
         console.log("Selected Variation: ", selectedVariation);
@@ -446,11 +445,13 @@
           icon: "lucide:badge-check",
         });
         loading.value = false;
-
+        loadingButton.value = false;
         router.push(`/user/cart/${user.value.uid}`);
       }
     }
   };
+
+  const debouncedSubmitAddToCart = debounce(submitAddToCart, 2000);
 
   const handlePreOrder = async () => {
     if (!user.value) {

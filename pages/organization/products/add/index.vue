@@ -37,7 +37,12 @@
     if (variations.value.length < 10) {
       variations.value.push({ value: "", price: 1, stocks: 0 });
     } else {
-      alert("You can only add up to 10 variations.");
+      toast.toast({
+        title: "Limit Reached",
+        description: "You can only add up to 10 variations.",
+        variant: "warning",
+        icon: "lucide:alert-circle",
+      });
     }
   };
 

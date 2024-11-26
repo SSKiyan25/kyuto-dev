@@ -1,6 +1,6 @@
 <template>
   <div class="flex h-screen w-full flex-col items-start p-12">
-    <div class="flex flex-row items-center gap-2 px-12 pt-2 text-4xl font-bold">
+    <div class="flex flex-row items-center gap-4 px-12 pt-2 text-4xl font-bold">
       <Icon name="lucide:shopping-cart" /> <span>Shopping Cart</span>
     </div>
 
@@ -44,7 +44,7 @@
                         />
                       </div>
                       <div class="flex flex-col">
-                        <span class="text-lg font-semibold">{{
+                        <span class="text-lg font-semibold hover:underline">{{
                           products[cartItem.productID]?.name
                         }}</span>
                         <span
@@ -57,7 +57,7 @@
                           >Quantity: {{ cartItem.quantity }}</span
                         >
                         <span class="text-[12px] text-muted-foreground"
-                          >Price per piece: {{ variations[cartItem.variationID]?.price }}</span
+                          >Price per quantity: {{ variations[cartItem.variationID]?.price }}</span
                         >
                       </div>
                     </div>
@@ -74,6 +74,7 @@
                             <UiButton
                               variant="destructive"
                               class="rounded-sm p-4 opacity-75 hover:opacity-100"
+                              @click="openRemoveDialog(cartItem)"
                               >Remove
                             </UiButton>
                           </UiAlertDialogTrigger>
@@ -90,7 +91,7 @@
                             <UiAlertDialogFooter>
                               <UiAlertDialogCancel @click="showMessage('Action cancelled')" />
                               <UiAlertDialogAction
-                                @click="showMessage('Removed Cart Item')"
+                                @click="confirmRemoveCartItem()"
                                 variant="destructive"
                                 text="Remove"
                               />
@@ -109,8 +110,13 @@
         </div>
       </div>
       <div class="flex h-auto w-1/4 flex-col">
-        <div class="sticky top-0 p-4 shadow-sm">
-          <div class="flex flex-col space-y-2 py-2 pt-20">
+        <div class="sticky top-20 p-4 shadow-sm">
+          <div class="flex flex-col space-y-2 py-2 pt-0">
+            <p class="text-[12px] text-muted-foreground">Select an Item to Proceed to Checkout</p>
+            <p>
+              <span class="font-bold">{{ selectedItems.length }}</span> Item(s) Selected
+            </p>
+            <UiDivider class="my-2" />
             <span class="text-md font-extrabold text-muted-foreground">Total:</span>
             <span class="text-2xl font-bold">₱ {{ totalPrice }}</span>
           </div>
@@ -122,10 +128,12 @@
           <div class="w-full pt-4">
             <UiDialog v-model:open="dialog">
               <UiDialogTrigger>
-                <UiButton class="w-full rounded-none">Checkout</UiButton>
+                <UiButton class="w-full rounded-none" :disabled="!hasSelectedItems"
+                  >Checkout</UiButton
+                >
               </UiDialogTrigger>
               <UiDialogContent
-                class="overflow-y-auto sm:max-h-[700px] sm:max-w-[725px]"
+                class="overflow-y-auto bg-stone-50 p-12 sm:max-h-[700px] sm:max-w-[725px]"
                 title="Checkout Order"
                 description="Please review your order details before proceeding to payment. Ensure that all items and quantities are correct."
               >
@@ -138,7 +146,7 @@
                       <div
                         v-for="cartItem in selectedItems"
                         :key="cartItem.productID"
-                        class="flex flex-row items-center justify-between gap-4"
+                        class="flex flex-row items-center justify-between gap-4 px-8 py-4"
                       >
                         <div class="flex flex-row items-center gap-4">
                           <div class="h-16 w-16 overflow-hidden">
@@ -161,7 +169,8 @@
                               >Quantity: {{ cartItem.quantity }}</span
                             >
                             <span class="text-[12px] text-muted-foreground"
-                              >Price per piece: {{ variations[cartItem.variationID]?.price }}</span
+                              >Price per quantity:
+                              {{ variations[cartItem.variationID]?.price }}</span
                             >
                           </div>
                         </div>
@@ -180,19 +189,26 @@
                     <div>
                       <h3 class="text-lg font-semibold">Payment Method</h3>
                       <UiDivider class="my-2" />
-                      <div class="flex flex-col gap-2">
-                        <label class="flex items-center">
-                          <input type="radio" name="paymentMethod" value="gcash" class="mr-2" />
+                      <div class="flex flex-col gap-2 px-4 text-sm">
+                        <label class="flex items-center opacity-50" title="Available soon">
+                          <input
+                            disabled
+                            type="radio"
+                            name="paymentMethod"
+                            value="gcash"
+                            class="mr-2"
+                          />
                           GCash
                         </label>
                         <label class="flex items-center">
                           <input
                             type="radio"
                             name="paymentMethod"
-                            value="cash-on-delivery"
+                            value="cash-on-hand"
                             class="mr-2"
+                            v-model="selectedPaymentMethod"
                           />
-                          Cash on Delivery
+                          Cash on Hand
                         </label>
                       </div>
                     </div>
@@ -207,14 +223,18 @@
                           placeholder="Enter voucher code"
                           class="rounded border p-2"
                         />
-                        <UiButton class="mt-2 bg-blue-500">Apply Voucher</UiButton>
+                        <UiButton class="mt-2 bg-blue-500 hover:bg-blue-700"
+                          >Apply Voucher</UiButton
+                        >
                       </div>
                     </div>
                     <UiDivider class="my-2" />
                     <!-- Submit Order Button -->
                     <div class="flex flex-row items-center justify-between">
                       <span class="text-lg font-semibold">Total: ₱{{ totalPrice }}</span>
-                      <UiButton>Submit Order</UiButton>
+                      <UiButton :disabled="!canSubmitOrder" @click="handleCheckout"
+                        >Submit Order</UiButton
+                      >
                     </div>
                   </div>
                 </template>
@@ -229,10 +249,21 @@
       <UiDivider class="my-5" />
       <!-- Recommended Products -->
     </div>
+    <div
+      v-if="removeLoading"
+      class="fixed inset-0 z-50 flex min-h-screen w-full items-center justify-center bg-secondary/40 backdrop-blur"
+    >
+      <div class="flex flex-col items-center justify-center gap-4">
+        <Icon name="lucide:loader-circle" class="size-16 animate-spin text-primary" />
+        <span class="text-sm font-semibold text-secondary-foreground"> Removing Cart Item ...</span>
+        <!-- Add a GIF here -->
+      </div>
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
+  import { useCheckoutCart } from "~/composables/user/useCheckoutCart";
   import { useFetchUserCart } from "~/composables/user/useFetchUserCart";
   import { collection, doc, getDoc } from "firebase/firestore";
   import type { Cart } from "~/types/models/Cart";
@@ -241,56 +272,70 @@
   definePageMeta({
     middleware: "auth",
   });
-  const user = useCurrentUser();
-  const userCart = ref<Cart[]>([]);
+  const userCart = ref<(Cart & { id: string })[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
   const route = useRoute();
   const userID = computed(() => route.params.id);
   const db = useFirestore();
-  const selectedItems = ref<Cart[]>([]);
+  const selectedItems = ref<(Cart & { id: string })[]>([]);
+  const selectedPaymentMethod = ref<string | null>(null);
+  const cartItemToRemove = ref<(Cart & { id: string }) | null>(null);
   const dialog = ref(false);
   const removeModal = ref(false);
 
-  const closeDialog = (save: boolean) => {
-    useToast().toast({
-      title: save ? "Profile updated" : "Changes discarded",
-      description: `Your changes has been ${save ? "saved" : "discarded"}.`,
-      duration: 5000,
-      icon: save ? "lucide:check" : "lucide:x",
-    });
-    dialog.value = false;
+  const { removeCartItem, loading: removeLoading } = useCheckoutCart();
+
+  const openRemoveDialog = (cartItem: Cart & { id: string }) => {
+    cartItemToRemove.value = cartItem;
+    removeModal.value = true;
   };
 
   const showMessage = (message: string) => {
     useSonner(message);
   };
 
+  const fetchUserCart = async (userID: string) => {
+    const {
+      userCart: cart,
+      loading: cartLoading,
+      error: cartError,
+      fetchUserCart: fetchCart,
+    } = useFetchUserCart(userID);
+    await fetchCart();
+    userCart.value = cart.value.map((item, index) => ({
+      ...item,
+      id: cart.value[index].id,
+    }));
+    loading.value = cartLoading.value;
+    error.value = cartError.value;
+    console.log("User cart updated:", userCart.value);
+  };
+
   watch(
     () => userID.value,
-    (newUserID) => {
+    async (newUserID) => {
       if (newUserID) {
-        const {
-          userCart: cart,
-          loading: cartLoading,
-          error: cartError,
-          fetchUserCart,
-        } = useFetchUserCart(newUserID as string);
-        watch(
-          () => cart.value,
-          (newCart) => {
-            userCart.value = newCart;
-            console.log("User cart updated:", newCart);
-          },
-          { immediate: true }
-        );
-        loading.value = cartLoading.value;
-        error.value = cartError.value;
-        fetchUserCart();
+        await fetchUserCart(newUserID as string);
       }
     },
     { immediate: true }
   );
+
+  const confirmRemoveCartItem = async () => {
+    removeLoading.value = true;
+    if (cartItemToRemove.value && userID.value) {
+      await removeCartItem(userID.value as string, cartItemToRemove.value.id);
+      await fetchUserCart(userID.value as string);
+      showMessage("Removed Cart Item");
+      selectedItems.value = selectedItems.value.filter(
+        (item) => item.id !== cartItemToRemove.value?.id
+      );
+      cartItemToRemove.value = null;
+      removeModal.value = false;
+    }
+    removeLoading.value = false;
+  };
 
   const products = ref<Record<string, Partial<Product>>>({});
   const variations = ref<Record<string, Partial<Variation>>>({});
@@ -337,7 +382,7 @@
   );
 
   const groupedCartItems = computed(() => {
-    const groups: Record<string, Cart[]> = {};
+    const groups: Record<string, (Cart & { id: string })[]> = {};
     userCart.value.forEach((cartItem) => {
       const organization =
         products.value[cartItem.productID]?.organization || "Unknown Organization";
@@ -349,19 +394,19 @@
     return groups;
   });
 
-  const isSelected = (cartItem: Cart) => {
+  const isSelected = (cartItem: Cart & { id: string }) => {
     return selectedItems.value.includes(cartItem);
   };
 
-  const toggleSelection = (cartItem: Cart) => {
+  const toggleSelection = (cartItem: Cart & { id: string }) => {
     if (isSelected(cartItem)) {
-      selectedItems.value = selectedItems.value.filter((item) => item !== cartItem);
+      selectedItems.value = selectedItems.value.filter((item) => item.id !== cartItem.id);
     } else {
       selectedItems.value.push(cartItem);
     }
   };
 
-  const isOtherGroupSelected = (cartItem: Cart) => {
+  const isOtherGroupSelected = (cartItem: Cart & { id: string }) => {
     if (selectedItems.value.length === 0) return false;
     const selectedOrganization = products.value[selectedItems.value[0].productID]?.organization;
     const currentOrganization = products.value[cartItem.productID]?.organization;
@@ -375,7 +420,19 @@
     }, 0);
   });
 
-  const toCheckOut = () => {
+  const hasSelectedItems = computed(() => {
+    return selectedItems.value.length > 0;
+  });
+
+  const canSubmitOrder = computed(() => {
+    return hasSelectedItems.value && selectedPaymentMethod.value !== null;
+  });
+
+  const handleCheckout = () => {
     console.log("Proceeding to checkout...");
+    console.log("User ID:", userID.value);
+    console.log("Total price:", totalPrice.value);
+    console.log("Selected payment method:", selectedPaymentMethod.value);
+    console.log("Selected items:", selectedItems.value);
   };
 </script>

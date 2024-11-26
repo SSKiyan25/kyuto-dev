@@ -24,21 +24,21 @@
                 <UiCommandList class="absolute mt-12 w-10/12 rounded-sm bg-secondary shadow">
                   <!-- <UiCommandEmpty>No results found.</UiCommandEmpty> -->
                   <!-- <template v-for="(item, label, i) in items" :key="i">
-                  <UiCommandGroup :heading="label">
-                    <UiCommandItem
-                      v-for="(child, k) in item"
-                      :key="k"
-                      :text="child.label"
-                      :icon="child.icon"
-                      :value="child.label"
-                      @select="
-                        child.perform?.();
-                        $event.preventDefault();
-                      "
-                    />
-                  </UiCommandGroup>
-                  <UiCommandSeparator class="last:hidden" />
-                </template> -->
+                    <UiCommandGroup :heading="label">
+                      <UiCommandItem
+                        v-for="(child, k) in item"
+                        :key="k"
+                        :text="child.label"
+                        :icon="child.icon"
+                        :value="child.label"
+                        @select="
+                          child.perform?.();
+                          $event.preventDefault();
+                        "
+                      />
+                    </UiCommandGroup>
+                    <UiCommandSeparator class="last:hidden" />
+                  </template> -->
                 </UiCommandList>
               </UiCommand>
             </div>
@@ -57,24 +57,6 @@
                   />
                 </UiChip>
               </UiButton>
-              <!-- <UiSheet>
-              <UiSheetTrigger asChild>
-                <UiButton>
-                  <UiChip class="bg-red-700 text-white" size="lg" :text="cartNum?.toString()">
-                    <Icon
-                      name="lucide:shopping-cart"
-                      class="h-6 w-6 cursor-pointer hover:shadow-md"
-                    />
-                  </UiChip>
-                </UiButton>
-              </UiSheetTrigger>
-              <UiSheetContent side="right" title="Cart" description="Shop more! Please >.<">
-                <template #content>
-                  <UiDivider class="pb-6 pt-2" />
-                  Testing
-                </template>
-              </UiSheetContent>
-            </UiSheet> -->
               <!-- User -->
               <UiNavigationMenu>
                 <UiNavigationMenuList>
