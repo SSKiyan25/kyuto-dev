@@ -219,14 +219,6 @@
     breadcrumbs?: Crumbs[];
   }>();
 
-  const data = {
-    user: {
-      name: "breezy",
-      email: "m@example.com",
-      avatar: "https://behonbaker.com/icon.png",
-    },
-  };
-
   const links = computed(() => [
     { label: "Home", url: "/", icon: "lucide:home" },
     { label: "Products", url: "/", icon: "lucide:shopping-bag" },
