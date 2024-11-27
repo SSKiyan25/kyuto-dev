@@ -1,5 +1,18 @@
-import { deleteDoc, doc } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  Timestamp,
+  updateDoc,
+  where,
+} from "firebase/firestore";
 import type { Cart } from "~/types/models/Cart";
+import type { Order, OrderItem } from "~/types/models/Order";
+import type { Product, StocksLogs, Variation } from "~/types/models/Product";
 
 export const useCheckoutCart = () => {
   const db = useFirestore();
@@ -25,9 +38,121 @@ export const useCheckoutCart = () => {
     }
   };
 
+  const createOrder = async (
+    userID: string,
+    organizationID: string,
+    organizationName: string,
+    totalPrice: number,
+    paymentMethod: string,
+    selectedItems: (Cart & { id: string })[]
+  ) => {
+    loading.value = true;
+    let uniqRefNumber = "";
+    try {
+      // Generate unique reference number
+      uniqRefNumber = await generateUniqueRefNumber();
+
+      // Create order document
+      const orderDocRef = await addDoc(collection(db, "orders"), {
+        buyerID: userID,
+        organizationID: organizationID,
+        organizationName: organizationName,
+        orderStatus: "pending",
+        uniqRefNumber: uniqRefNumber,
+        paymentMethod: paymentMethod,
+        paymentStatus: "not_paid",
+        isPreOrder: selectedItems.some((item) => item.isPreOrder),
+        remarks: "",
+        totalPrice: totalPrice,
+        isDiscounted: false,
+        discountValue: 0,
+        isPackage: selectedItems.some((item) => item.isPackage),
+        receivedDate: null,
+        dateOrdered: Timestamp.now(),
+        lastModified: Timestamp.now(),
+        isArchived: false,
+      });
+
+      // Create order items
+      for (const item of selectedItems) {
+        const productDocRef = doc(db, `products/${item.productID}`);
+        const productDoc = await getDoc(productDocRef);
+        const productData = productDoc.data() as Product;
+
+        const variationDocRef = doc(
+          db,
+          `products/${item.productID}/variations/${item.variationID}`
+        );
+        const variationDoc = await getDoc(variationDocRef);
+        const variationData = variationDoc.data() as Variation;
+
+        await addDoc(collection(orderDocRef, "orderItems"), {
+          orderID: orderDocRef.id,
+          productID: item.productID,
+          isPackage: item.isPackage,
+          packageID: item.packageID,
+          variationID: item.variationID,
+          variationName: variationData.value,
+          quantity: item.quantity,
+          price: variationData.price,
+          discountedPrice: variationData.discountPrice || 0,
+          totalPrice: variationData.price * item.quantity,
+        });
+
+        // Update variation data if not pre-order
+        if (!item.isPreOrder) {
+          await updateDoc(variationDocRef, {
+            remainingStocks: variationData.remainingStocks - item.quantity,
+            lastStockUpdate: Timestamp.now(),
+          });
+
+          // Log stock changes in the sub-collection of the variation
+          await addDoc(collection(variationDocRef, "stocksLogs"), {
+            variationID: item.variationID,
+            quantity: item.quantity,
+            action: "decrement",
+            remarks: "Order placed",
+            dateCreated: Timestamp.now(),
+          });
+        }
+
+        // Update cart item status to "done"
+        const cartItemDocRef = doc(db, `accounts/${userID}/cart/${item.id}`);
+        await updateDoc(cartItemDocRef, {
+          status: "done",
+        });
+      }
+
+      console.log("Order created successfully");
+    } catch (error) {
+      console.error("Error creating order:", error);
+    } finally {
+      loading.value = false;
+    }
+    return uniqRefNumber;
+  };
+
+  const generateUniqueRefNumber = async (): Promise<string> => {
+    let isUnique = false;
+    let uniqRefNumber = "";
+
+    while (!isUnique) {
+      uniqRefNumber = Math.random().toString(36).substr(2, 9).toUpperCase();
+      const q = query(collection(db, "orders"), where("uniqRefNumber", "==", uniqRefNumber));
+      const querySnapshot = await getDocs(q);
+      if (querySnapshot.empty) {
+        isUnique = true;
+      }
+    }
+
+    return uniqRefNumber;
+  };
+
   return {
     userCart,
+    createOrder,
     removeCartItem,
+    generateUniqueRefNumber,
     loading,
   };
 };

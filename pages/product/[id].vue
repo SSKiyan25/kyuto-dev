@@ -68,7 +68,7 @@
                   Pre-Order
                 </UiButton>
               </UiDrawerTrigger>
-              <UiDrawerContent>
+              <UiDrawerContent :class="{ 'z-40': loadingButton }">
                 <div class="min-w-md mx-auto w-full rounded-t-lg p-4 pb-10">
                   <UiDrawerTitle class="text-center font-semibold uppercase">
                     <Icon name="lucide:shopping-cart" />
@@ -149,7 +149,8 @@
                   Add to Cart
                 </UiButton>
               </UiDrawerTrigger>
-              <UiDrawerContent>
+              <UiDrawerOverlay :class="loadingButton ? 'z-30' : ''" />
+              <UiDrawerContent :class="loadingButton ? 'z-40' : ''">
                 <div class="min-w-md mx-auto w-full rounded-t-lg p-4 pb-10">
                   <UiDrawerTitle class="text-center font-semibold uppercase">
                     <Icon name="lucide:shopping-cart" />

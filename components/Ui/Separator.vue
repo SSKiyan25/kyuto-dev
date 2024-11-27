@@ -13,7 +13,7 @@
   const forwarded = useForwardProps(reactiveOmit(props, "class"));
 
   const styles = tv({
-    base: "shrink-0 bg-primary-foreground",
+    base: "shrink-0 bg-border",
     variants: {
       orientation: {
         horizontal: "h-[1px] w-full",

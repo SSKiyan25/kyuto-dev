@@ -87,10 +87,12 @@
                           <div
                             class="flex flex-row items-center justify-between rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
                           >
-                            <div class="flex items-center">
-                              <Icon name="lucide:box" class="h-4 w-4" />
-                              <div class="pl-2">Your Orders</div>
-                            </div>
+                            <NuxtLink :to="`/user/orders/pending/${userData?.id}`">
+                              <div class="flex items-center">
+                                <Icon name="lucide:box" class="h-4 w-4" />
+                                <div class="pl-2">Your Orders</div>
+                              </div>
+                            </NuxtLink>
 
                             <Icon name="lucide:move-up-right" class="h-2 w-2 opacity-70" />
                           </div>

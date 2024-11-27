@@ -1,6 +1,6 @@
 <template>
   <UiDialogPortal :to="to">
-    <UiDialogOverlay />
+    <UiDialogOverlay :class="overlayClass" />
     <DialogContent :class="styles({ class: props.class })" v-bind="{ ...forwarded, ...$attrs }">
       <slot>
         <slot name="header">
@@ -49,11 +49,13 @@
       hideClose?: boolean;
       /** Where to render the dialog */
       to?: string | HTMLElement;
+      /** Custom class for the overlay */
+      overlayClass?: string;
     }
   >();
   const emits = defineEmits<DialogContentEmits>();
   const forwarded = useForwardPropsEmits(
-    reactiveOmit(props, "icon", "title", "description", "class", "hideClose", "to"),
+    reactiveOmit(props, "icon", "title", "description", "class", "hideClose", "to", "overlayClass"),
     emits
   );
 

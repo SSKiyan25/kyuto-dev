@@ -23,7 +23,7 @@
       }
     >(),
     {
-      icon: "lucide:x",
+      icon: "heroicons:x-mark",
       srText: "Close",
     }
   );

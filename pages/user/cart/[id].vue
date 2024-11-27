@@ -133,6 +133,8 @@
                 >
               </UiDialogTrigger>
               <UiDialogContent
+                :class="{ 'z-40': orderLoading }"
+                :overlayClass="orderLoading ? 'z-40' : ''"
                 class="overflow-y-auto bg-stone-50 p-12 sm:max-h-[700px] sm:max-w-[725px]"
                 title="Checkout Order"
                 description="Please review your order details before proceeding to payment. Ensure that all items and quantities are correct."
@@ -198,13 +200,13 @@
                             value="gcash"
                             class="mr-2"
                           />
-                          GCash
+                          GCash (Available Soon)
                         </label>
                         <label class="flex items-center">
                           <input
                             type="radio"
                             name="paymentMethod"
-                            value="cash-on-hand"
+                            value="cash_on_hand"
                             class="mr-2"
                             v-model="selectedPaymentMethod"
                           />
@@ -232,7 +234,7 @@
                     <!-- Submit Order Button -->
                     <div class="flex flex-row items-center justify-between">
                       <span class="text-lg font-semibold">Total: ₱{{ totalPrice }}</span>
-                      <UiButton :disabled="!canSubmitOrder" @click="handleCheckout"
+                      <UiButton :disabled="!canSubmitOrder" @click="handleCheckout()"
                         >Submit Order</UiButton
                       >
                     </div>
@@ -250,12 +252,14 @@
       <!-- Recommended Products -->
     </div>
     <div
-      v-if="removeLoading"
+      v-if="removeLoading || orderLoading"
       class="fixed inset-0 z-50 flex min-h-screen w-full items-center justify-center bg-secondary/40 backdrop-blur"
     >
       <div class="flex flex-col items-center justify-center gap-4">
         <Icon name="lucide:loader-circle" class="size-16 animate-spin text-primary" />
-        <span class="text-sm font-semibold text-secondary-foreground"> Removing Cart Item ...</span>
+        <span class="text-sm font-semibold text-secondary-foreground">
+          {{ removeLoading ? "Removing Cart Item ..." : "Processing Order ..." }}
+        </span>
         <!-- Add a GIF here -->
       </div>
     </div>
@@ -282,9 +286,17 @@
   const selectedPaymentMethod = ref<string | null>(null);
   const cartItemToRemove = ref<(Cart & { id: string }) | null>(null);
   const dialog = ref(false);
+  const toast = useToast();
   const removeModal = ref(false);
+  const orderLoading = ref(false);
+  const router = useRouter();
 
-  const { removeCartItem, loading: removeLoading } = useCheckoutCart();
+  const {
+    removeCartItem,
+    createOrder,
+    loading: removeLoading,
+    generateUniqueRefNumber,
+  } = useCheckoutCart();
 
   const openRemoveDialog = (cartItem: Cart & { id: string }) => {
     cartItemToRemove.value = cartItem;
@@ -428,11 +440,48 @@
     return hasSelectedItems.value && selectedPaymentMethod.value !== null;
   });
 
-  const handleCheckout = () => {
-    console.log("Proceeding to checkout...");
-    console.log("User ID:", userID.value);
-    console.log("Total price:", totalPrice.value);
-    console.log("Selected payment method:", selectedPaymentMethod.value);
-    console.log("Selected items:", selectedItems.value);
+  const handleCheckout = async () => {
+    orderLoading.value = true;
+    try {
+      console.log("Proceeding to checkout...");
+      console.log("User ID:", userID.value);
+      console.log("Total price:", totalPrice.value);
+      console.log("Selected payment method:", selectedPaymentMethod.value);
+      console.log("Selected items:", selectedItems.value);
+
+      const organizationID = products.value[selectedItems.value[0].productID]?.organizationID;
+      const organizationName = products.value[selectedItems.value[0].productID]?.organization;
+
+      console.log("Organization ID:", organizationID);
+      console.log("Organization Name:", organizationName);
+
+      await createOrder(
+        userID.value as string,
+        organizationID as string,
+        organizationName as string,
+        totalPrice.value,
+        selectedPaymentMethod.value as string,
+        selectedItems.value
+      );
+      await testUniqueRefNumber();
+
+      toast.toast({
+        title: "Order submitted",
+        description: "Your order has been submitted successfully. Please wait for confirmation.",
+        variant: "success",
+        icon: "lucide:badge-check",
+      });
+      router.push(`/user/orders/${userID.value}`);
+    } catch (error) {
+      console.error("Error during checkout:", error);
+      showMessage("Error during checkout");
+    } finally {
+      orderLoading.value = false;
+    }
+  };
+
+  const testUniqueRefNumber = async () => {
+    const uniqueRefNumber = generateUniqueRefNumber();
+    console.log("Generated Unique Reference Number:", uniqueRefNumber);
   };
 </script>

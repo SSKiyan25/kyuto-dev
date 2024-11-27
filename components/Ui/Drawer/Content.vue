@@ -1,7 +1,7 @@
 <template>
   <UiDrawerPortal>
     <slot name="overlay">
-      <UiDrawerOverlay />
+      <UiDrawerOverlay :class="props.overlayClass" />
     </slot>
     <slot name="content">
       <DrawerContent v-bind="{ ...props, ...$attrs }" :class="styles({ class: props.class })">
@@ -24,7 +24,7 @@
   interface Props
     extends /* @vue-ignore */ Partial<Pick<InstanceType<typeof DrawerContent>, "$props">> {}
 
-  const props = defineProps<Props & { class?: any }>();
+  const props = defineProps<Props & { class?: any; overlayClass?: string }>();
   const styles = tv({
     base: "fixed bottom-0 left-0 right-0 z-50 mt-24 flex h-auto max-h-[95%] flex-col rounded-t-[10px] border bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/40",
   });

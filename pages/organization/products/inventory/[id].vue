@@ -572,6 +572,9 @@
                         <UiBadge v-else-if="log.action === 'Remove Stock'" variant="destructive">
                           Remove Stock
                         </UiBadge>
+                        <UiBadge v-else-if="log.action === 'ordered'" variant="destructive">
+                          Ordered
+                        </UiBadge>
                       </UiTableCell>
                       <UiTableCell>{{ log.quantity }}</UiTableCell>
                       <UiTableCell>{{ selectedVariation.value }}</UiTableCell>
