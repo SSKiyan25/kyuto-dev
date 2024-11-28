@@ -8,7 +8,7 @@
     @click="toggleSidebar"
   >
     <slot v-bind="{ state }">
-      <Icon v-if="icon" :name="icon" />
+      <Icon v-if="icon" :name="icon" class="size-5" />
       <span class="sr-only">{{ label }}</span>
     </slot>
   </UiButton>
@@ -18,7 +18,7 @@
   import type { HTMLAttributes } from "vue";
 
   export const sideBarTriggerStyles = tv({
-    base: "size-7",
+    base: "size-8",
   });
 </script>
 

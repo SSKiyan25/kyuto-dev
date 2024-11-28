@@ -1,11 +1,11 @@
 <template>
-  <div class="flex h-screen w-full flex-col items-start p-12">
-    <div class="flex flex-row items-center gap-4 px-12 pt-2 text-4xl font-bold">
+  <div class="flex h-screen w-full flex-col items-start p-4">
+    <ADUserOrderMore />
+    <!-- <div class="flex flex-row items-center gap-4 px-12 pt-2 text-4xl font-bold">
       <Icon name="lucide:shopping-cart" /> <span>Shopping Cart</span>
-    </div>
-
-    <div class="flex h-auto w-full flex-row justify-between gap-8 p-12">
-      <div class="flex h-auto w-3/4 flex-col rounded p-4">
+    </div> -->
+    <div class="flex h-auto w-full flex-row justify-between gap-8 px-12 pt-6">
+      <div class="flex h-auto w-3/4 flex-col rounded border p-4">
         <p>
           <span class="font-bold">{{ userCart.length }}</span> Item(s) in Cart
         </p>
@@ -109,6 +109,7 @@
           <div v-else>No items in the cart.</div>
         </div>
       </div>
+
       <div class="flex h-auto w-1/4 flex-col">
         <div class="sticky top-20 p-4 shadow-sm">
           <div class="flex flex-col space-y-2 py-2 pt-0">
@@ -275,6 +276,7 @@
 
   definePageMeta({
     middleware: "auth",
+    layout: "user",
   });
   const userCart = ref<(Cart & { id: string })[]>([]);
   const loading = ref(false);
@@ -471,7 +473,7 @@
         variant: "success",
         icon: "lucide:badge-check",
       });
-      router.push(`/user/orders/${userID.value}`);
+      router.push(`/user/orders/track-orders/${userID.value}`);
     } catch (error) {
       console.error("Error during checkout:", error);
       showMessage("Error during checkout");

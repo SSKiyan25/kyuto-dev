@@ -87,7 +87,7 @@
                           <div
                             class="flex flex-row items-center justify-between rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
                           >
-                            <NuxtLink :to="`/user/orders/pending/${userData?.id}`">
+                            <NuxtLink :to="`/user/orders/track-orders/${userData?.id}`">
                               <div class="flex items-center">
                                 <Icon name="lucide:box" class="h-4 w-4" />
                                 <div class="pl-2">Your Orders</div>

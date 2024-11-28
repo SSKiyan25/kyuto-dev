@@ -36,6 +36,7 @@
                   class="cursor-pointer"
                   @select="navigateTo(link.url)"
                 >
+                  <Icon v-if="link.icon" :name="link.icon" class="mr-2 size-4" />
                   {{ link.label }}
                 </UiDropdownMenuItem>
               </UiDropdownMenuContent>
@@ -48,7 +49,7 @@
         <UiDivider class="" />
         <!-- Profile, Inbox, Orders -->
         <UiSidebarGroup>
-          <UiSidebarGroupLabel label="" class="text-md rounded-none" />
+          <UiSidebarGroupLabel label="Main Menu" class="text-md rounded-none" />
           <UiSidebarMenu class="space-y-4 p-2 text-lg">
             <UiSidebarMenuItem>
               <UiSidebarMenuButton as-child>
@@ -107,15 +108,16 @@
                       <UiSidebarMenuSubButton as-child>
                         <NuxtLink
                           v-if="user"
-                          :to="`/user/orders/pending/${user.uid}`"
+                          :to="`/user/orders/track-orders/${user.uid}`"
                           :class="{
-                            'bg-secondary text-secondary-foreground':
-                              isActive('/user/orders/pending'),
+                            'bg-secondary text-secondary-foreground': isActive(
+                              '/user/orders/track-orders'
+                            ),
                           }"
                           class="mb-2"
                         >
                           <Icon name="lucide:clock" class="mr-2" />
-                          Pending Orders
+                          Track Orders
                         </NuxtLink>
                       </UiSidebarMenuSubButton>
                     </UiSidebarMenuSubItem>
@@ -182,7 +184,7 @@
                   </div>
                 </UiDropdownMenuLabel>
                 <UiDropdownMenuSeparator />
-                <UiDropdownMenuItem icon="lucide:log-out" title="Log out" />
+                <UiDropdownMenuItem icon="lucide:log-out" title="Log out" @click="logout" />
               </UiDropdownMenuContent>
             </UiDropdownMenu>
           </UiSidebarMenuItem>
@@ -193,7 +195,7 @@
     <UiSidebarInset>
       <!-- Navbar -->
       <UiNavbar sticky class="flex h-16 shrink-0 items-center gap-2 border-b bg-secondary px-4">
-        <UiSidebarTrigger class="-ml-1" />
+        <UiSidebarTrigger class="-ml-1" icon="lucide:panel-left-close" />
         <UiSeparator orientation="vertical" class="mr-2 h-4" />
         <UiBreadcrumbs v-if="breadcrumbs && breadcrumbs.length" :items="breadcrumbs" />
       </UiNavbar>
@@ -205,12 +207,14 @@
 </template>
 
 <script lang="ts" setup>
+  import { signOut } from "firebase/auth";
   import { doc } from "firebase/firestore";
   import type { Crumbs } from "~/components/Ui/Breadcrumbs.vue";
   import type { Account } from "~/types/models/Account";
 
   const user = useCurrentUser();
   const db = useFirestore();
+  const auth = useFirebaseAuth();
   const userDocRef = computed(() => (user.value ? doc(db, "accounts", user.value.uid) : null));
   const userData = useDocument<Partial<Account>>(userDocRef) as Partial<Account> | undefined;
   console.log("userData", userData);
@@ -222,11 +226,6 @@
   const links = computed(() => [
     { label: "Home", url: "/", icon: "lucide:home" },
     { label: "Products", url: "/", icon: "lucide:shopping-bag" },
-    {
-      label: "Cart",
-      url: user.value ? `/user/cart/${user.value.uid}` : "/cart",
-      icon: "lucide:shopping-cart",
-    },
   ]);
 
   const router = useRouter();
@@ -238,6 +237,11 @@
 
   const isActive = (path: string) => {
     return route.path.startsWith(path);
+  };
+
+  const logout = async () => {
+    await signOut(auth!);
+    navigateTo("/");
   };
 </script>
 

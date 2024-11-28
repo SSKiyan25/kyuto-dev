@@ -48,7 +48,7 @@
         <UiDivider class="" />
         <!-- Navigation -->
         <UiSidebarGroup>
-          <UiSidebarGroupLabel label="Navigation" class="text-md rounded-none" />
+          <UiSidebarGroupLabel label="Organization Dashboard" class="text-md rounded-none" />
           <UiSidebarMenu class="space-y-4 p-2 text-lg">
             <template v-for="(n, i) in topNav" :key="i">
               <UiSidebarMenuItem>
@@ -133,7 +133,7 @@
     <UiSidebarInset>
       <!-- Navbar -->
       <UiNavbar sticky class="flex h-16 shrink-0 items-center gap-2 border-b bg-secondary px-4">
-        <UiSidebarTrigger class="-ml-1" />
+        <UiSidebarTrigger class="-ml-1" icon="lucide:menu" />
         <UiSeparator orientation="vertical" class="mr-2 h-4" />
         <UiBreadcrumbs v-if="breadcrumbs && breadcrumbs.length" :items="breadcrumbs" />
       </UiNavbar>
@@ -161,11 +161,6 @@
   const links = computed(() => [
     { label: "Home", url: "/", icon: "lucide:home" },
     { label: "Products", url: "/", icon: "lucide:shopping-bag" },
-    {
-      label: "Cart",
-      url: user.value ? `/user/cart/${user.value.uid}` : "/cart",
-      icon: "lucide:shopping-cart",
-    },
   ]);
 
   const props = defineProps<{
