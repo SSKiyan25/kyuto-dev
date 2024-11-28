@@ -6,7 +6,7 @@
         <span class="text-lg font-semibold">Your Latest Order</span>
         <UiButton variant="ghost">
           <span>Refresh</span>
-          <Icon name="lucide:refresh-cw" class="size-4" />
+          <Icon name="lucide:refresh-cw" class="size-4 hover:animate-spin" />
         </UiButton>
       </div>
       <div class="flex w-full flex-row items-center bg-secondary p-4 shadow-md">
@@ -71,8 +71,8 @@
           </div>
         </div>
       </div>
-      <div class="mb-24 flex flex-col py-8 opacity-70">
-        <div class="flex flex-row">
+      <div class="mb-24 flex flex-col py-8">
+        <div class="flex flex-row opacity-70">
           <template v-for="(status, i) in statuses" :key="i">
             <UiButton :variant="status.variant">{{ status.status }}</UiButton>
           </template>
@@ -95,7 +95,7 @@
         <UiTanStackTable
           @ready="table = $event"
           ref="tableRef"
-          show-select
+          :show-select="false"
           :search="search"
           :data="data"
           :columns="columns"
@@ -226,6 +226,7 @@
         const status = row.original.orderStatus;
         let variant = "default";
         if (status === "Pending") variant = "secondary";
+        else if (status === "Processing") variant = "outline";
         else if (status === "Claimed") variant = "default";
         else if (status === "Cancelled") variant = "destructive";
         return h(resolveComponent("UiBadge"), { variant }, { default: () => status });
@@ -242,6 +243,42 @@
       header: "Total Payment",
       enableHiding: true,
       cell: ({ row }) => `$${row.original.totalPrice.toFixed(2)}`,
+    },
+    {
+      accessorKey: "actions",
+      header: "",
+      enableSorting: false,
+      enableHiding: false,
+      cell: ({ row }) => {
+        return h(resolveComponent("UiDropdownMenu"), {}, () => [
+          h(resolveComponent("UiDropdownMenuTrigger"), { asChild: true }, () => [
+            h(
+              resolveComponent("UiButton"),
+              { variant: "ghost", size: "icon", class: "w-9 h-9" },
+              () => [
+                h(resolveComponent("Icon"), {
+                  name: "lucide:more-horizontal",
+                  class: "h-4 w-4",
+                }),
+              ]
+            ),
+          ]),
+          h(resolveComponent("UiDropdownMenuContent"), {}, () => [
+            h(resolveComponent("UiDropdownMenuItem"), { title: "View Order" }, () => [
+              h(resolveComponent("Icon"), { name: "lucide:view", class: "mr-2" }),
+              "View Order",
+            ]),
+            h(resolveComponent("UiDropdownMenuItem"), { title: "Track Status" }, () => [
+              h(resolveComponent("Icon"), { name: "lucide:eye", class: "mr-2" }),
+              "Track Status",
+            ]),
+            h(resolveComponent("UiDropdownMenuItem"), { title: "Cancel Order" }, () => [
+              h(resolveComponent("Icon"), { name: "lucide:file-x", class: "mr-2" }),
+              "Cancel Order",
+            ]),
+          ]),
+        ]);
+      },
     },
   ];
 </script>

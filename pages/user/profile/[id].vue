@@ -35,7 +35,7 @@
         </div>
       </div>
       <!-- Name and Contact Information -->
-      <div class="grid grid-cols-3 gap-8 pt-8">
+      <div class="grid grid-cols-3 gap-8 pt-6">
         <div class="flex flex-col space-y-1">
           <span class="text-[12px] font-semibold text-muted-foreground">First Name</span>
           <span class="text-sm font-semibold">John</span>
