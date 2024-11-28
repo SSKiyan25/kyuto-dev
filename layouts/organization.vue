@@ -48,7 +48,7 @@
         <UiDivider class="" />
         <!-- Navigation -->
         <UiSidebarGroup>
-          <UiSidebarGroupLabel label="Organization Dashboard" class="text-md rounded-none" />
+          <UiSidebarGroupLabel label="Main Menu" class="text-md rounded-none" />
           <UiSidebarMenu class="space-y-4 p-2 text-lg">
             <template v-for="(n, i) in topNav" :key="i">
               <UiSidebarMenuItem>
