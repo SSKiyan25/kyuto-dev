@@ -71,7 +71,7 @@
                       <div class="flex w-[200px] flex-col justify-start px-4 py-4 text-sm">
                         <span></span>
                         <!-- User Profile -->
-                        <NuxtLink to="/user/profile">
+                        <NuxtLink :to="`/user/profile/${userData?.id}`">
                           <div
                             class="flex flex-row items-center justify-between rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
                           >
@@ -83,7 +83,7 @@
                             <Icon name="lucide:move-up-right" class="h-2 w-2 opacity-70" />
                           </div>
                         </NuxtLink>
-                        <NuxtLink to="/user/profile">
+                        <NuxtLink :to="`/user/orders/track-orders/${userData?.id}`">
                           <div
                             class="flex flex-row items-center justify-between rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
                           >
@@ -97,7 +97,7 @@
                             <Icon name="lucide:move-up-right" class="h-2 w-2 opacity-70" />
                           </div>
                         </NuxtLink>
-                        <NuxtLink to="/user/profile">
+                        <NuxtLink :to="`/user/inbox/${userData?.id}`">
                           <div
                             class="flex flex-row items-center justify-between rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
                           >

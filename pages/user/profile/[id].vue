@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-auto w-full flex-col space-y-8 rounded-md p-16 shadow-sm">
+  <div class="flex h-auto w-full flex-col space-y-6 rounded-md p-16 shadow-sm">
     <span class="text-xl font-semibold">My Profile</span>
     <!-- Profile Card -->
     <div
