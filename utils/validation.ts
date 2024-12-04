@@ -61,3 +61,39 @@ export const AddProductSchema = object({
     .min(1, "At least one variation is required")
     .max(10, "You can add up to 10 variations only"),
 });
+
+export const EditProfileSchema = object({
+  firstname: string()
+    .label("First Name")
+    .max(50)
+    .matches(/^[^<@#`]*$/, "First Name cannot contain the characters <, @, `, or #"),
+  lastname: string()
+    .label("Last Name")
+    .max(50)
+    .matches(/^[^<@#`]*$/, "Last Name cannot contain the characters <, @, `, or #"),
+  username: string()
+    .label("Username")
+    .max(30)
+    .matches(/^[^<@#`]*$/, "Username cannot contain the characters <, @, `, or #"),
+  // email: string().required().label("Email Address").email(),
+  phoneNumber: string()
+    .label("Phone Number")
+    .matches(
+      /^\+?[1-9]\d{1,14}$/,
+      "Phone Number must be a valid international phone number. Example +639201948834"
+    ),
+});
+
+export const EditStudentInfoSchema = object({
+  studentID: string()
+    .label("Student ID")
+    .matches(/^\d{2}-\d{1}-\d{4}$/, "Student ID must be in the format XX-X-XXXX"),
+  course: string()
+    .label("Course")
+    .max(50)
+    .matches(/^[^<@#`]*$/, "Course cannot contain the characters <, @, `, or #"),
+  college: string()
+    .label("College")
+    .max(50)
+    .matches(/^[^<@#`]*$/, "College cannot contain the characters <, @, `, or #"),
+});

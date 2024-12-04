@@ -6,9 +6,11 @@ export interface Account {
   firstname: string;
   lastname: string;
   department: string;
-  studentId: string;
+  studentID: string;
   avatarURL: string;
   phoneNumber: string;
+  college: string;
+  course: string;
   hasOrganization: boolean;
   organization?: string;
   organizationID: string;
