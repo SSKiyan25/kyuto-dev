@@ -1,6 +1,7 @@
 <template>
-  <div class="p-32">Inbox Page</div>
-  {{ userID }}////////////////////////////////////////////////
+  <!-- <div class="p-32">Inbox Page</div>
+  {{ userID }}//////////////////////////////////////////////// -->
+  <ADComingSoon />
 </template>
 
 <script lang="ts" setup>

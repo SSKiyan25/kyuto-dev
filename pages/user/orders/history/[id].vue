@@ -1,6 +1,6 @@
 <template>
-  <div class="flex h-screen w-full flex-col px-8 py-4">
-    <span class="text-lg font-bold">Order History</span>
+  <div class="flex h-screen w-full flex-col">
+    <!-- <span class="text-lg font-bold">Order History</span>
     <p class="text-[12px] text-muted-foreground">View all your orders here</p>
     <div class="w-1/3 pt-4">
       <UiVeeInput
@@ -25,7 +25,8 @@
           <span class="mt-2">No data available.</span>
         </div>
       </template>
-    </UiTanStackTable>
+    </UiTanStackTable> -->
+    <ADComingSoon />
   </div>
 </template>
 

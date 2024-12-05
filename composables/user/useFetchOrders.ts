@@ -1,6 +1,7 @@
 import {
   collection,
   doc,
+  getDoc,
   getDocs,
   limit,
   orderBy,
@@ -9,18 +10,65 @@ import {
   where,
 } from "firebase/firestore";
 import type { Order, OrderItem } from "~/types/models/Order";
+import type { Product, Variation } from "~/types/models/Product";
+
+// Define a new type that extends OrderItem to include additional properties
+export type ExtendedOrderItem = OrderItem &
+  Partial<{
+    productDetails: Product | null;
+    packageDetails: any | null;
+    variationDetails: Variation | null;
+  }>;
 
 export const useFetchOrders = () => {
   const db = useFirestore();
 
+  // Helper function to fetch product details
+  const fetchProductDetails = async (productID: string): Promise<Product | null> => {
+    const productRef = doc(db, "products", productID);
+    const productDoc = await getDoc(productRef);
+    return productDoc.exists() ? (productDoc.data() as Product) : null;
+  };
+
+  // Helper function to fetch package details
+  const fetchPackageDetails = async (packageID: string): Promise<any | null> => {
+    const packageRef = doc(db, "packages", packageID);
+    const packageDoc = await getDoc(packageRef);
+    return packageDoc.exists() ? packageDoc.data() : null;
+  };
+
+  // Helper function to fetch variation details from the sub-collection of the product
+  const fetchVariationDetails = async (
+    productID: string,
+    variationID: string
+  ): Promise<Variation | null> => {
+    const variationRef = doc(db, `products/${productID}/variations`, variationID);
+    const variationDoc = await getDoc(variationRef);
+    return variationDoc.exists() ? (variationDoc.data() as Variation) : null;
+  };
+
   // Helper function to fetch order items for a given order ID
-  const fetchOrderItems = async (orderID: string): Promise<OrderItem[]> => {
-    const orderItemsRef = collection(db, `orders/${orderID}/order-items`);
+  const fetchOrderItems = async (orderID: string): Promise<ExtendedOrderItem[]> => {
+    const orderItemsRef = collection(db, `orders/${orderID}/orderItems`);
     const querySnapshot = await getDocs(orderItemsRef);
-    const orderItems: OrderItem[] = [];
-    querySnapshot.forEach((doc) => {
-      orderItems.push(doc.data() as OrderItem);
-    });
+    const orderItems: ExtendedOrderItem[] = [];
+    for (const doc of querySnapshot.docs) {
+      const orderItem = doc.data() as OrderItem;
+      const productDetails = await fetchProductDetails(orderItem.productID);
+      const packageDetails = orderItem.isPackage
+        ? await fetchPackageDetails(orderItem.packageID)
+        : null;
+      const variationDetails = await fetchVariationDetails(
+        orderItem.productID,
+        orderItem.variationID
+      );
+      orderItems.push({
+        ...orderItem,
+        productDetails,
+        packageDetails,
+        variationDetails,
+      });
+    }
     return orderItems;
   };
 
@@ -101,9 +149,12 @@ export const useFetchOrders = () => {
 
   // 4. Cancel an order by changing its status and adding remarks
   const cancelOrder = async (orderID: string, remarks: string): Promise<void> => {
+    if (!remarks) {
+      throw new Error("Remarks is required to cancel an order.");
+    }
     const orderRef = doc(db, "orders", orderID);
     await updateDoc(orderRef, {
-      orderStatus: "Cancelled",
+      orderStatus: "cancelled",
       remarks: remarks,
     });
   };
@@ -113,5 +164,6 @@ export const useFetchOrders = () => {
     fetchLatestOrder,
     fetchOrders,
     cancelOrder,
+    fetchOrderItems,
   };
 };

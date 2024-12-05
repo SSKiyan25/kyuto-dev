@@ -160,11 +160,108 @@
       <div class="min-h-24"></div>
     </div>
   </div>
+  <!-- Cancel Order Dialog -->
+  <UiAlertDialog v-model:open="cancelOrderDialog">
+    <UiAlertDialogContent class="bg-secondary">
+      <UiAlertDialogHeader>
+        <UiAlertDialogTitle>Are you absolutely sure?</UiAlertDialogTitle>
+        <UiAlertDialogDescription>
+          This action cannot be undone. Please state your reason for cancelling your order.
+          <UiInput v-model="cancelRemarks" type="text" placeholder="Enter reason" class="mt-4" />
+        </UiAlertDialogDescription>
+      </UiAlertDialogHeader>
+      <UiAlertDialogFooter>
+        <UiAlertDialogCancel @click="cancelOrderDialog = false">Cancel</UiAlertDialogCancel>
+        <UiAlertDialogAction
+          @click="confirmCancelOrder"
+          :disabled="cancelRemarks === ''"
+          variant="destructive"
+          >Confirm</UiAlertDialogAction
+        >
+      </UiAlertDialogFooter>
+    </UiAlertDialogContent>
+  </UiAlertDialog>
+
+  <UiDialog v-model:open="viewOrderDialog">
+    <UiDialogContent
+      class="sm:max-w-[800px]"
+      title="Order Details"
+      description="Your order details"
+    >
+      <template #content>
+        <div class="max-h-96 space-y-4 overflow-y-auto px-8 py-2">
+          <div>
+            <h3 class="text-lg font-semibold">Order Reference Number</h3>
+            <p class="text-sm">{{ selectedOrder?.uniqRefNumber }}</p>
+          </div>
+          <div>
+            <h3 class="text-md font-semibold">Total Price</h3>
+            <p class="text-sm text-muted-foreground">₱{{ selectedOrder?.totalPrice.toFixed(2) }}</p>
+          </div>
+          <div>
+            <h3 class="text-md font-semibold">Organization Name</h3>
+            <p class="text-sm text-muted-foreground">{{ selectedOrder?.organizationName }}</p>
+          </div>
+          <div>
+            <h3 class="text-md font-semibold">Order Status</h3>
+            <p class="text-sm text-muted-foreground">{{ selectedOrder?.orderStatus }}</p>
+          </div>
+          <div>
+            <h3 class="text-md font-semibold">Payment Status</h3>
+            <p class="text-sm text-muted-foreground">{{ selectedOrder?.paymentStatus }}</p>
+          </div>
+          <UiDivider class="my-2" />
+          <div>
+            <h3 class="text-lg font-semibold">Order Items</h3>
+            <div
+              v-for="item in selectedOrder?.orderItems"
+              :key="item.productID"
+              class="mt-4 flex flex-row justify-between space-x-4 text-sm"
+            >
+              <div class="flex flex-row space-x-4">
+                <img
+                  :src="item.productDetails?.featuredPhotoURL || '/placeholder-img.jpg'"
+                  alt="Product Image"
+                  class="h-12 w-12 object-cover"
+                />
+                <div class="flex flex-col">
+                  <p class="font-semibold text-muted-foreground">
+                    Product Name:
+                    <span class="text-secondary-foreground">{{ item.productDetails?.name }}</span>
+                  </p>
+                  <p class="font-semibold text-muted-foreground">
+                    Variation:
+                    <span class="text-secondary-foreground">{{
+                      item.variationDetails?.value
+                    }}</span>
+                  </p>
+                </div>
+              </div>
+              <div class="flex flex-col">
+                <p class="font-semibold text-muted-foreground">
+                  Quantity: <span class="text-secondary-foreground">{{ item.quantity }}</span>
+                </p>
+                <p class="font-semibold text-muted-foreground">
+                  Price: <span class="text-secondary-foreground">₱{{ item.price.toFixed(2) }}</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+      <template #footer>
+        <div class="flex justify-end">
+          <UiButton variant="destructive" @click="closeViewOrderDialog">Close</UiButton>
+        </div>
+      </template>
+    </UiDialogContent>
+  </UiDialog>
 </template>
 
 <script lang="ts" setup>
   import { useFetchOrders } from "~/composables/user/useFetchOrders";
   import type { ColumnDef, Table } from "@tanstack/vue-table";
+  import type { ExtendedOrderItem } from "~/composables/user/useFetchOrders";
   import type { ButtonVariant } from "~/types/Button";
   import type { Order, OrderItem } from "~/types/models/Order";
 
@@ -173,20 +270,16 @@
     layout: "user",
   });
 
-  const breadcrumbs = [
-    { label: "Building Your Application", link: "#" },
-    { label: "Data Fetching", link: "#" },
-  ];
-
   const recentOrder = ref<Order | null>(null);
-  const orders = ref<Order[]>([]);
-  const filteredOrders = ref<Order[]>([]);
+  const orders = ref<(Order & { id: string })[]>([]);
+  const filteredOrders = ref<(Order & { id: string })[]>([]);
   const selectedStatus = ref<string>("all");
   const route = useRoute();
   const userID = computed(() => route.params.id as string);
   const rowsPerPage = ref<number>(10);
 
-  const { fetchUserOrders, fetchLatestOrder, fetchOrders, cancelOrder } = useFetchOrders();
+  const { fetchUserOrders, fetchLatestOrder, fetchOrders, cancelOrder, fetchOrderItems } =
+    useFetchOrders();
 
   const filterOrders = (status: string) => {
     selectedStatus.value = status;
@@ -221,6 +314,23 @@
     orders.value = allOrders;
     filterOrders(selectedStatus.value);
   });
+
+  // Test fetchOrderItems function
+  const testFetchOrderItems = async (orderID: string) => {
+    const orderItems = await fetchOrderItems(orderID);
+    console.log("Order Items for Order ID", orderID, ":", orderItems);
+  };
+
+  // Call the test function with a sample order ID
+  watch(
+    orders,
+    (newOrders) => {
+      if (newOrders.length > 0) {
+        testFetchOrderItems(newOrders[0].id);
+      }
+    },
+    { immediate: true }
+  );
 
   const steps = computed(() => {
     if (!recentOrder.value) return [];
@@ -320,7 +430,7 @@
   ];
 
   const tableRef = ref();
-  const table = ref<Table<Order> | null>(null);
+  const table = ref<Table<Order & { id: string }> | null>(null);
   const search = ref("");
 
   const handlePageSizeChange = (newPageSize: number) => {
@@ -341,7 +451,58 @@
     }
   );
 
-  const columns: ColumnDef<Order>[] = [
+  const cancelOrderDialog = ref(false);
+  const cancelRemarks = ref("");
+  const selectedOrderID = ref<string | null>(null);
+
+  const confirmCancelOrder = async () => {
+    if (selectedOrderID.value) {
+      try {
+        console.log("Cancelling order:", selectedOrderID.value);
+        console.log("Remarks:", cancelRemarks.value);
+        await cancelOrder(selectedOrderID.value, cancelRemarks.value);
+        useToast().toast({
+          title: "Order Cancelled",
+          description: "The order has been cancelled successfully.",
+          duration: 5000,
+          icon: "lucide:check",
+        });
+        // Refresh orders after cancellation
+        fetchUserOrders(userID.value).then((userOrders) => {
+          orders.value = userOrders;
+          filterOrders(selectedStatus.value);
+        });
+        cancelRemarks.value = "";
+      } catch (error) {
+        console.error("Error cancelling order: ", error);
+        useToast().toast({
+          title: "Error",
+          description: "There was an error cancelling the order.",
+          duration: 5000,
+          icon: "lucide:x",
+        });
+      }
+    }
+    cancelOrderDialog.value = false;
+  };
+
+  const viewOrderDialog = ref(false);
+  const selectedOrder = ref<(Order & { id: string; orderItems: ExtendedOrderItem[] }) | null>(null);
+
+  const openViewOrderDialog = async (orderID: string) => {
+    const order = orders.value.find((order) => order.id === orderID);
+    if (order) {
+      const orderItems = await fetchOrderItems(orderID);
+      selectedOrder.value = { ...order, orderItems };
+      viewOrderDialog.value = true;
+    }
+  };
+  const closeViewOrderDialog = () => {
+    viewOrderDialog.value = false;
+    selectedOrder.value = null;
+  };
+
+  const columns: ColumnDef<Order & { id: string }>[] = [
     { accessorKey: "uniqRefNumber", header: "Order Ref Number", enableHiding: true },
     {
       accessorKey: "orderStatus",
@@ -350,11 +511,49 @@
       cell: ({ row }) => {
         const status = row.original.orderStatus;
         let variant = "default";
-        if (status === "pending") variant = "secondary";
-        else if (status === "preparing") variant = "outline";
-        else if (status === "claimed") variant = "default";
-        else if (status === "cancelled") variant = "destructive";
-        return h(resolveComponent("UiBadge"), { variant }, { default: () => status });
+        let displayText = status;
+
+        if (status === "pending") {
+          variant = "secondary";
+          displayText = "Pending";
+        } else if (status === "preparing") {
+          variant = "outline";
+          displayText = "Preparing";
+        } else if (status === "ready") {
+          variant = "secondary";
+          displayText = "Ready";
+        } else if (status === "claimed") {
+          variant = "default";
+          displayText = "Claimed";
+        } else if (status === "cancelled") {
+          variant = "destructive";
+          displayText = "Cancelled";
+        }
+
+        return h(resolveComponent("UiBadge"), { variant }, { default: () => displayText });
+      },
+    },
+    {
+      accessorKey: "paymentStatus",
+      header: "Payment Status",
+      enableHiding: true,
+      cell: ({ row }) => {
+        const status = row.original.paymentStatus;
+        let variant = "default";
+        let displayText = status;
+
+        if (status === "not_paid") {
+          variant = "destructive";
+          displayText = "Not Paid";
+        } else if (status === "paid") {
+          variant = "default";
+          displayText = "Paid";
+        } else if (status === "cancelled") {
+          variant = "destructive";
+          displayText = "Cancelled";
+        }
+
+        return h(resolveComponent("UiBadge"), { variant }, { default: () => displayText });
       },
     },
     {
@@ -367,7 +566,7 @@
       accessorKey: "totalPrice",
       header: "Total Payment",
       enableHiding: true,
-      cell: ({ row }) => `$${row.original.totalPrice.toFixed(2)}`,
+      cell: ({ row }) => `₱${row.original.totalPrice.toFixed(2)}`,
     },
     {
       accessorKey: "actions",
@@ -389,18 +588,28 @@
             ),
           ]),
           h(resolveComponent("UiDropdownMenuContent"), {}, () => [
-            h(resolveComponent("UiDropdownMenuItem"), { title: "View Order" }, () => [
-              h(resolveComponent("Icon"), { name: "lucide:view", class: "mr-2" }),
-              "View Order",
-            ]),
-            h(resolveComponent("UiDropdownMenuItem"), { title: "Track Status" }, () => [
-              h(resolveComponent("Icon"), { name: "lucide:eye", class: "mr-2" }),
-              "Track Status",
-            ]),
-            h(resolveComponent("UiDropdownMenuItem"), { title: "Cancel Order" }, () => [
-              h(resolveComponent("Icon"), { name: "lucide:file-x", class: "mr-2" }),
-              "Cancel Order",
-            ]),
+            h(
+              resolveComponent("UiDropdownMenuItem"),
+              { title: "View Order", onClick: () => openViewOrderDialog(row.original.id) },
+              () => [
+                h(resolveComponent("Icon"), { name: "lucide:view", class: "mr-2" }),
+                "View Order",
+              ]
+            ),
+            h(
+              resolveComponent("UiDropdownMenuItem"),
+              {
+                title: "Cancel Order",
+                onClick: () => {
+                  selectedOrderID.value = row.original.id;
+                  cancelOrderDialog.value = true;
+                },
+              },
+              () => [
+                h(resolveComponent("Icon"), { name: "lucide:file-x", class: "mr-2" }),
+                "Cancel Order",
+              ]
+            ),
           ]),
         ]);
       },
