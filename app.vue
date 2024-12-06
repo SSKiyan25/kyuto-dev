@@ -13,14 +13,14 @@
     meta: [
       { property: "og:title", content: "Verch | Official Website for Merchandises" },
       { property: "og:description", content: "Discover the best merchandises on Verch." },
-      { property: "og:image", content: "https://verch-vs.vercel.app/logo-verch.webp" },
+      { property: "og:image", content: "https://verch-vs.vercel.app/display.png" },
       { property: "og:url", content: "https://verch-vs.vercel.app/" },
       { property: "og:type", content: "website" },
 
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Verch | Official Website for Merchandises" },
       { name: "twitter:description", content: "Discover the best merchandises on Verch." },
-      { name: "twitter:image", content: "/logo-verch.webp" },
+      { name: "twitter:image", content: "https://verch-vs.vercel.app/display.png" },
     ],
   });
 
