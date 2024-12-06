@@ -10,6 +10,20 @@
         href: "/logo-verch.webp",
       },
     ],
+    meta: [
+      // Open Graph meta tags
+      { property: "og:title", content: "Verch | Official Website for Merchandises" },
+      { property: "og:description", content: "Discover the best merchandises on Verch." },
+      { property: "og:image", content: "/logo-verch.webp" },
+      { property: "og:url", content: "https://verch-vs.vercel.app/" },
+      { property: "og:type", content: "website" },
+
+      // Twitter card meta tags (optional, for Twitter sharing)
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Verch | Official Website for Merchandises" },
+      { name: "twitter:description", content: "Discover the best merchandises on Verch." },
+      { name: "twitter:image", content: "/logo-verch.webp" },
+    ],
   });
 
   useSidebar();
