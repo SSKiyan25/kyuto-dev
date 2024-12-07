@@ -8,6 +8,7 @@ import {
   query,
   updateDoc,
   where,
+  writeBatch,
 } from "firebase/firestore";
 import type { Order, OrderItem } from "~/types/models/Order";
 import type { Product, Variation } from "~/types/models/Product";
@@ -152,11 +153,58 @@ export const useFetchOrders = () => {
     if (!remarks) {
       throw new Error("Remarks is required to cancel an order.");
     }
+
     const orderRef = doc(db, "orders", orderID);
-    await updateDoc(orderRef, {
+    const orderDoc = await getDoc(orderRef);
+    if (!orderDoc.exists()) {
+      throw new Error("Order not found");
+    }
+
+    const order = orderDoc.data() as Order;
+    const orderItems = await fetchOrderItems(orderID);
+
+    const batch = writeBatch(db);
+
+    // Update order status and remarks
+    batch.update(orderRef, {
       orderStatus: "cancelled",
       remarks: remarks,
     });
+
+    // Update variation details and add stock logs
+    for (const item of orderItems) {
+      const variationRef = doc(db, `products/${item.productID}/variations`, item.variationID);
+      const variationDoc = await getDoc(variationRef);
+      if (!variationDoc.exists()) {
+        continue;
+      }
+
+      const variation = variationDoc.data() as Variation;
+      const updatedPendingOrders = variation.pendingOrders - item.quantity;
+      const updatedCancelledOrders = variation.cancelledOrders + item.quantity;
+      const updatedRemainingStocks = variation.remainingStocks + item.quantity;
+
+      batch.update(variationRef, {
+        pendingOrders: updatedPendingOrders,
+        cancelledOrders: updatedCancelledOrders,
+        remainingStocks: updatedRemainingStocks,
+        lastStockUpdate: Date.now(),
+        lastModified: Date.now(),
+      });
+
+      if (!item.isPreOrder) {
+        const stockLogRef = doc(collection(variationRef, "stocksLogs"));
+        batch.set(stockLogRef, {
+          variationID: item.variationID,
+          quantity: item.quantity,
+          action: "cancelled",
+          remarks: remarks,
+          dateCreated: Date.now(),
+        });
+      }
+    }
+
+    await batch.commit();
   };
 
   return {

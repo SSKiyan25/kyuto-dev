@@ -61,12 +61,10 @@ export const useCheckoutCart = () => {
         uniqRefNumber: uniqRefNumber,
         paymentMethod: paymentMethod,
         paymentStatus: "not_paid",
-        isPreOrder: selectedItems.some((item) => item.isPreOrder),
         remarks: "",
         totalPrice: totalPrice,
         isDiscounted: false,
         discountValue: 0,
-        isPackage: selectedItems.some((item) => item.isPackage),
         receivedDate: null,
         dateOrdered: Timestamp.now(),
         lastModified: Timestamp.now(),
@@ -89,6 +87,7 @@ export const useCheckoutCart = () => {
         await addDoc(collection(orderDocRef, "orderItems"), {
           orderID: orderDocRef.id,
           productID: item.productID,
+          isPreOrder: item.isPreOrder,
           isPackage: item.isPackage,
           packageID: item.packageID,
           variationID: item.variationID,
@@ -111,10 +110,19 @@ export const useCheckoutCart = () => {
             variationID: item.variationID,
             quantity: item.quantity,
             action: "decrement",
-            remarks: "Order placed",
+            remarks: "ordered",
             dateCreated: Timestamp.now(),
           });
         }
+        await updateDoc(variationDocRef, {
+          pendingOrders: variationData.pendingOrders + item.quantity,
+          lastModified: Timestamp.now(),
+        });
+
+        // Increment totalOrders in the product document based on the quantity
+        await updateDoc(productDocRef, {
+          totalOrders: (productData.totalOrders || 0) + item.quantity,
+        });
 
         // Update cart item status to "done"
         const cartItemDocRef = doc(db, `accounts/${userID}/cart/${item.id}`);
@@ -131,7 +139,6 @@ export const useCheckoutCart = () => {
     }
     return uniqRefNumber;
   };
-
   const generateUniqueRefNumber = async (): Promise<string> => {
     let isUnique = false;
     let uniqRefNumber = "";

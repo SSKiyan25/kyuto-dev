@@ -63,6 +63,9 @@
                     </div>
                     <div class="flex flex-row items-center gap-8">
                       <div class="flex flex-col">
+                        <span v-if="cartItem.isPreOrder" class="text-[12px] text-muted-foreground"
+                          >Pre-Order</span
+                        >
                         <span class="text-[12px] text-muted-foreground">Subtotal:</span>
                         <span class="text-md font-semibold">
                           ₱{{ (variations[cartItem.variationID]?.price || 0) * cartItem.quantity }}
@@ -164,6 +167,11 @@
                               products[cartItem.productID]?.name
                             }}</span>
                             <span
+                              v-if="cartItem.isPreOrder"
+                              class="text-[12px] text-muted-foreground"
+                              >Pre-Order</span
+                            >
+                            <span
                               v-if="variations[cartItem.variationID]?.value !== 'None'"
                               class="text-[12px] text-muted-foreground"
                               >{{ variations[cartItem.variationID]?.value }}</span
@@ -258,7 +266,7 @@
       <div class="flex flex-col items-center justify-center gap-4">
         <Icon name="lucide:loader-circle" class="size-16 animate-spin text-primary" />
         <span class="text-sm font-semibold text-secondary-foreground">
-          {{ removeLoading ? "Removing Cart Item ..." : "Processing Order ..." }}
+          Processing Request ...
         </span>
         <!-- Add a GIF here -->
       </div>

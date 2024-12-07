@@ -572,7 +572,8 @@
                         <UiBadge v-else-if="log.action === 'Remove Stock'" variant="destructive">
                           Remove Stock
                         </UiBadge>
-                        <UiBadge v-else-if="log.action === 'ordered'" variant="destructive">
+                        <UiBadge v-else-if="log.remarks === 'ordered'"> Ordered </UiBadge>
+                        <UiBadge v-else-if="log.remarks === 'cancelled'" variant="destructive">
                           Ordered
                         </UiBadge>
                       </UiTableCell>

@@ -68,7 +68,7 @@
                   Pre-Order
                 </UiButton>
               </UiDrawerTrigger>
-              <UiDrawerContent :class="{ 'z-40': loadingButton }">
+              <UiDrawerContent>
                 <div class="min-w-md mx-auto w-full rounded-t-lg p-4 pb-10">
                   <UiDrawerTitle class="text-center font-semibold uppercase">
                     <Icon name="lucide:shopping-cart" />
@@ -132,7 +132,7 @@
                         :disabled="!selectedVariationPreOrder || quantityPreOrder === 0"
                         :loading="loadingButton"
                         v-wave
-                        @click="debouncedSubmitAddToCart(true)"
+                        @click="submitAddToCart(true)"
                       >
                         Add to Cart
                       </UiButton>
@@ -149,8 +149,7 @@
                   Add to Cart
                 </UiButton>
               </UiDrawerTrigger>
-              <UiDrawerOverlay :class="loadingButton ? 'z-30' : ''" />
-              <UiDrawerContent :class="loadingButton ? 'z-40' : ''">
+              <UiDrawerContent>
                 <div class="min-w-md mx-auto w-full rounded-t-lg p-4 pb-10">
                   <UiDrawerTitle class="text-center font-semibold uppercase">
                     <Icon name="lucide:shopping-cart" />
@@ -217,7 +216,7 @@
                         v-wave
                         :disabled="!selectedVariationAddToCart || quantityAddToCart === 0"
                         :loading="loadingButton"
-                        @click="debouncedSubmitAddToCart(false)"
+                        @click="submitAddToCart(false)"
                       >
                         <Icon name="lucide:shopping-cart" />
                         Add to Cart
@@ -376,6 +375,8 @@
     variation: Variation & { id: string },
     type: "addToCart" | "preOrder"
   ) => {
+    console.log("Selected Variation: ", variation);
+    console.log("Type: ", type);
     if (type === "addToCart") {
       if (selectedVariationAddToCart.value?.id === variation.id) {
         selectedVariationAddToCart.value = null;
@@ -389,6 +390,8 @@
         selectedVariationPreOrder.value = variation;
       }
     }
+    console.log("selectedVariationAddToCart: ", selectedVariationAddToCart.value);
+    console.log("selectedVariationPreOrder: ", selectedVariationPreOrder.value);
   };
 
   const { addToCart, loading, error } = useAddToCart();
@@ -412,42 +415,62 @@
         ? selectedVariationPreOrder.value
         : selectedVariationAddToCart.value;
       const quantity = preOrder ? quantityPreOrder.value : quantityAddToCart.value;
-
+      console.log("Adding to cart...");
+      console.log("Selected Variation: ", selectedVariation);
       if (selectedVariation) {
-        loadingButton.value = true;
-        loading.value = true;
-        console.log("Adding to cart...");
-        console.log("Selected Variation: ", selectedVariation);
-        console.log("Quantity: ", quantity);
-        // Trigger the drawer
-        if (!preOrder) {
-          if (quantity > selectedVariation.remainingStocks) {
-            toast.toast({
-              title: "Error",
-              description: "Quantity exceeds the available stocks.",
-              variant: "destructive",
-              icon: "lucide:alert-circle",
-            });
-            loading.value = false;
-            return;
+        try {
+          loadingButton.value = true;
+          loading.value = true;
+          console.log("Adding to cart...");
+          console.log("Selected Variation: ", selectedVariation);
+          console.log("Quantity: ", quantity);
+          // Trigger the drawer
+          if (!preOrder) {
+            if (quantity > selectedVariation.remainingStocks) {
+              toast.toast({
+                title: "Error",
+                description: "Quantity exceeds the available stocks.",
+                variant: "destructive",
+                icon: "lucide:alert-circle",
+              });
+              loading.value = false;
+              loadingButton.value = false;
+              return;
+            }
           }
+          await addToCart(
+            user.value.uid,
+            productID.value as string,
+            selectedVariation.id,
+            quantity,
+            preOrder
+          );
+          toast.toast({
+            title: "Added to Cart",
+            description: "Product has been added to your cart.",
+            variant: "success",
+            icon: "lucide:badge-check",
+          });
+          router.push(`/user/cart/${user.value.uid}`);
+        } catch (error) {
+          console.error("Error adding to cart:", error);
+          toast.toast({
+            title: "Error",
+            description: "An error occurred while adding the product to your cart.",
+            variant: "destructive",
+            icon: "lucide:alert-circle",
+          });
+        } finally {
+          loading.value = false;
+          loadingButton.value = false;
         }
-        await addToCart(
-          user.value.uid,
-          productID.value as string,
-          selectedVariation.id,
-          quantity,
-          preOrder
-        );
+      } else {
         toast.toast({
-          title: "Added to Cart",
-          description: "Product has been added to your cart.",
-          variant: "success",
-          icon: "lucide:badge-check",
+          title: "Error",
+          description: "Please select a variation before adding to cart.",
+          variant: "destructive",
+          icon: "lucide:alert-circle",
         });
-        loading.value = false;
-        loadingButton.value = false;
-        router.push(`/user/cart/${user.value.uid}`);
       }
     }
   };

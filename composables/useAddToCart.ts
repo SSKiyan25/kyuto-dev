@@ -26,7 +26,8 @@ export const useAddToCart = () => {
       const cartQuery = query(
         cartCollection,
         where("productID", "==", productID),
-        where("variationID", "==", variationID)
+        where("variationID", "==", variationID),
+        where("isPreOrder", "==", isPreOrder)
       );
       const cartSnapshot = await getDocs(cartQuery);
 

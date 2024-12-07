@@ -235,6 +235,7 @@
                       item.variationDetails?.value
                     }}</span>
                   </p>
+                  <p v-if="item.isPreOrder" class="font-semibold">Pre-Ordered</p>
                 </div>
               </div>
               <div class="flex flex-col">
@@ -314,23 +315,6 @@
     orders.value = allOrders;
     filterOrders(selectedStatus.value);
   });
-
-  // Test fetchOrderItems function
-  const testFetchOrderItems = async (orderID: string) => {
-    const orderItems = await fetchOrderItems(orderID);
-    console.log("Order Items for Order ID", orderID, ":", orderItems);
-  };
-
-  // Call the test function with a sample order ID
-  watch(
-    orders,
-    (newOrders) => {
-      if (newOrders.length > 0) {
-        testFetchOrderItems(newOrders[0].id);
-      }
-    },
-    { immediate: true }
-  );
 
   const steps = computed(() => {
     if (!recentOrder.value) return [];

@@ -8,6 +8,7 @@ export interface Product {
   description: string;
   isApproved: boolean;
   totalSales: number;
+  totalOrders: number;
   isDiscounted: boolean;
   discountType: string;
   discountTarget: string;
@@ -24,6 +25,9 @@ export interface Variation {
   value: string;
   price: number;
   discountPrice: number;
+  pendingOrders: number;
+  fulfilledOrders: number;
+  cancelledOrders: number;
   totalStocks: number;
   remainingStocks: number;
   lastStockUpdate: Date;

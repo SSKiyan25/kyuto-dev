@@ -6,7 +6,6 @@ export interface Order {
   uniqRefNumber: string;
   paymentMethod: string;
   paymentStatus: string;
-  isPreOrder: boolean;
   remarks: string;
   totalPrice: number;
   isDiscounted: boolean;
@@ -21,6 +20,7 @@ export interface Order {
 export interface OrderItem {
   orderID: string;
   productID: string;
+  isPreOrder: boolean;
   isPackage: boolean;
   packageID: string;
   variationID: string;
