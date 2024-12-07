@@ -2,7 +2,7 @@
   import { useSidebar } from "~/composables/misc/useSidebar";
 
   useHead({
-    title: "Verch | Official Website for Merchandises",
+    title: "Verch | The Central Store for Organization Merchandises",
     link: [
       {
         rel: "icon",
@@ -11,7 +11,7 @@
       },
     ],
     meta: [
-      { property: "og:title", content: "Verch | Official Website for Merchandises" },
+      { property: "og:title", content: "Verch | The Central Store for Organization Merchandises" },
       { property: "og:description", content: "Discover the best merchandises on Verch." },
       { property: "og:image", content: "https://verch-vs.vercel.app/display.png" },
       { property: "og:url", content: "https://verch-vs.vercel.app/" },
