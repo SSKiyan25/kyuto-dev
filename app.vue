@@ -13,7 +13,7 @@
     meta: [
       { property: "og:title", content: "Verch | The Central Store for Organization Merchandises" },
       { property: "og:description", content: "Discover the best merchandises on Verch." },
-      { property: "og:image", content: "https://verch-vs.vercel.app/display2.png?v=2" },
+      { property: "og:image", content: "https://verch-vs.vercel.app/display2.png?v=1" },
       { property: "og:url", content: "https://verch-vs.vercel.app/" },
       { property: "og:type", content: "website" },
 
