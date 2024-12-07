@@ -1,10 +1,16 @@
 <script setup lang="ts">
-  import { archiveProduct, fetchProducts } from "~/composables/organization/useProducts";
+  import {
+    addDiscountToProduct,
+    archiveProduct,
+    fetchProducts,
+    fetchVariations,
+  } from "~/composables/organization/useProducts";
   import { useFetchUser } from "~/composables/user/useFetchUser";
   import { QueryDocumentSnapshot, Timestamp } from "firebase/firestore";
   import { RouterLink } from "vue-router";
   import type { ColumnDef, Table } from "@tanstack/vue-table";
   import type { Crumbs } from "~/components/Ui/Breadcrumbs.vue";
+  import type { Variation } from "~/types/models/Product";
   import type { DocumentData } from "firebase/firestore";
 
   definePageMeta({
@@ -63,7 +69,12 @@
       enableHiding: true,
     },
     { accessorKey: "category", header: "Category", enableHiding: true },
-    { accessorKey: "price", header: "Price", enableHiding: true },
+    {
+      accessorKey: "price",
+      header: "Price",
+      enableHiding: true,
+      cell: ({ row }) => `₱${row.original.price}`,
+    },
     { accessorKey: "stock", header: "Remaining Stocks", enableHiding: true },
     { accessorKey: "date", header: "Date", enableHiding: true },
     {
@@ -93,6 +104,18 @@
                 "View",
               ]),
             ]),
+            h(
+              resolveComponent("UiDropdownMenuItem"),
+              {
+                title: "Add Discount",
+                onClick: () =>
+                  openAddDiscountDialog(productId as string, row.original.name as string),
+              },
+              () => [
+                h(resolveComponent("Icon"), { name: "lucide:tag", class: "mr-2 h-4 w-4" }),
+                "Add Discount",
+              ]
+            ),
             h(resolveComponent("UiDropdownMenuItem"), { title: "Edit" }, () => [
               h(RouterLink, { to: `/organization/products/edit/${productId}` }, () => [
                 h(resolveComponent("Icon"), { name: "lucide:pencil", class: "mr-2 h-4 w-4" }),
@@ -194,6 +217,82 @@
     () => table.value?.getState().pagination.pageIndex,
     () => fetchAndSetProducts()
   );
+
+  const openAddDiscount = ref(false);
+  const discountType = ref("percentage");
+  const discountTarget = ref("member");
+  const variations = ref<(Variation & { id: string })[]>([]);
+  const productName = ref("");
+  const productSelected = ref<string>("");
+  const isCustomDiscount = computed(() => discountType.value === "custom");
+
+  const discountTargetOptions = [
+    { value: "member", text: "Member" },
+    { value: "code", text: "Code" },
+  ];
+
+  const discountTypeOptions = [
+    { value: "percentage", text: "Percentage" },
+    { value: "custom", text: "Custom" },
+  ];
+
+  const { handleSubmit, resetForm, isSubmitting } = useForm({
+    validationSchema: toTypedSchema(DiscountSchema),
+  });
+
+  const onSubmit = handleSubmit(async (values) => {
+    console.log(discountTarget.value, discountType.value);
+    console.log("productSelected", productSelected.value);
+    console.log("Form values:", values);
+
+    const validCustomDiscountPrices = values.customDiscountPrices?.filter(
+      (item) => item.price !== undefined
+    ) as { id: string; price: number }[];
+
+    try {
+      await addDiscountToProduct(
+        productSelected.value,
+        values.discountType,
+        values.discountTarget,
+        values.discount,
+        values.discountCode,
+        validCustomDiscountPrices
+      );
+      toast.toast({
+        title: "Discount added",
+        description: "The discount has been added successfully.",
+        variant: "success",
+        icon: "lucide:check",
+      });
+    } catch (error: any) {
+      toast.toast({
+        title: "Error",
+        description: `An error occurred while adding the discount: ${error.message}`,
+        variant: "destructive",
+        icon: "lucide:alert-circle",
+      });
+      console.error("Error adding discount:", error);
+    }
+
+    closeDiscountDialog(true);
+    discountTarget.value = "member";
+    discountType.value = "percentage";
+    productSelected.value = "";
+  });
+
+  const openAddDiscountDialog = async (productId: string, name: string) => {
+    const variationsResult = await fetchVariations(productId);
+    variations.value = variationsResult;
+    productSelected.value = productId;
+    productName.value = name;
+    console.log("Fetched Variations:", variations.value);
+
+    openAddDiscount.value = true;
+  };
+
+  const closeDiscountDialog = (save: boolean) => {
+    openAddDiscount.value = false;
+  };
 
   onMounted(fetchAndSetProducts);
 </script>
@@ -297,4 +396,96 @@
     <!-- Dont remove -->
     <div class="min-h-32 text-secondary"></div>
   </div>
+
+  <UiDialog v-model:open="openAddDiscount">
+    <UiDialogContent
+      title="Add Discount"
+      description="Add a discount to your product."
+      class="overflow-y-auto bg-secondary sm:max-h-[700px] sm:max-w-[725px]"
+    >
+      <UiDialogTitle>Add Discount</UiDialogTitle>
+      <UiDialogDescription>
+        Add a discount to your product. If a discount is already applied, it will be replaced.
+      </UiDialogDescription>
+      <div class="text-lg font-semibold">{{ productName }}</div>
+      <form @submit.prevent="onSubmit">
+        <div class="space-y-4 p-6">
+          <UiVeeRadioGroup name="discountTarget" label="Discount Target" v-model="discountTarget">
+            <template v-for="(opt, i) in discountTargetOptions" :key="i">
+              <div class="mb-2 flex items-center gap-3">
+                <UiRadioGroupItem
+                  :value="opt.value"
+                  :id="opt.value"
+                  :checked="discountTarget === opt.value"
+                  @change="discountTarget = opt.value"
+                  :disabled="isSubmitting"
+                />
+                <UiLabel :for="opt.value">{{ opt.text }}</UiLabel>
+              </div>
+            </template>
+          </UiVeeRadioGroup>
+          <UiVeeRadioGroup name="discountType" label="Discount Type" v-model="discountType">
+            <template v-for="(opt, i) in discountTypeOptions" :key="i">
+              <div class="mb-2 flex items-center gap-3">
+                <UiRadioGroupItem
+                  :value="opt.value"
+                  :id="opt.value"
+                  :checked="discountType === opt.value"
+                  @change="discountType = opt.value"
+                  :disabled="isSubmitting"
+                />
+                <UiLabel :for="opt.value">{{ opt.text }}</UiLabel>
+              </div>
+            </template>
+          </UiVeeRadioGroup>
+          <div>
+            <UiVeeInput
+              name="discount"
+              label="Discount"
+              placeholder="10%"
+              :min="0"
+              :max="100"
+              :disabled="isCustomDiscount || isSubmitting"
+              v-percentage
+            />
+            <span v-if="isCustomDiscount" class="text-sm text-secondary-foreground/60">
+              Disabled when Custom is selected
+            </span>
+          </div>
+          <UiVeeInput
+            v-if="discountTarget === 'code'"
+            name="discountCode"
+            label="Discount Code"
+            placeholder="SUMMER10"
+            :disabled="isSubmitting"
+          />
+          <div v-if="discountType === 'custom'" class="space-y-4">
+            <div v-for="(variation, index) in variations" :key="variation.id" class="flex flex-col">
+              <UiVeeInput
+                :name="'customDiscountPrices[' + index + '].id'"
+                :label="'Variation ' + (index + 1) + ' ID'"
+                :placeholder="'Variation ID'"
+                v-model="variation.id"
+                hidden
+              />
+              <UiVeeInput
+                :name="'customDiscountPrices[' + index + '].price'"
+                :label="'Variation ' + (index + 1) + ' Price'"
+                :placeholder="variation.price.toString()"
+                :max="variation.price"
+                :disabled="isSubmitting"
+                :min="0"
+              />
+            </div>
+          </div>
+          <div class="flex justify-end space-x-2">
+            <UiButton variant="outline" :disabled="isSubmitting" @click="closeDiscountDialog(false)"
+              >Cancel</UiButton
+            >
+            <UiButton :loading="isSubmitting" type="submit">Save</UiButton>
+          </div>
+        </div>
+      </form>
+    </UiDialogContent>
+  </UiDialog>
 </template>

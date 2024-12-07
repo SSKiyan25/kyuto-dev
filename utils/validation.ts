@@ -1,4 +1,4 @@
-import { array, mixed, object, string } from "yup";
+import { array, mixed, number, object, string } from "yup";
 
 export const LoginSchema = object({
   email: string().required().label("Email").email(),
@@ -96,4 +96,31 @@ export const EditStudentInfoSchema = object({
     .label("College")
     .max(50)
     .matches(/^[^<@#`]*$/, "College cannot contain the characters <, @, `, or #"),
+});
+
+export const DiscountSchema = object({
+  discountTarget: string().required().oneOf(["member", "code"]).label("Discount Target"),
+  discountType: string().required().oneOf(["percentage", "custom"]).label("Discount Type"),
+  discount: number()
+    .label("Discount")
+    .when("discountType", {
+      is: "percentage",
+      then: (schema) => schema.min(1).max(100),
+      otherwise: (schema) => schema.min(0),
+    }),
+  discountCode: string().when("discountTarget", {
+    is: "code",
+    then: (schema) => schema.required().label("Discount Code"),
+  }),
+  customDiscountPrices: array()
+    .of(
+      object({
+        id: string().required(),
+        price: number().min(0),
+      })
+    )
+    .when("discountType", {
+      is: "custom",
+      then: (schema) => schema.required().min(1, "At least one custom discount price is required"),
+    }),
 });

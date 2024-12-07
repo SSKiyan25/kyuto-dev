@@ -42,6 +42,8 @@ export const useAddProduct = async (values: any, canPreOrder: boolean) => {
       isApproved: false,
       totalSales: 0,
       isDiscounted: false,
+      discountType: "",
+      discountTarget: "",
       featuredPhotoURL: featuredPhotoURL,
       photosURL: [],
       canPreOrder: canPreOrder,

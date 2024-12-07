@@ -121,10 +121,10 @@
             <span class="text-md font-extrabold text-muted-foreground">Total:</span>
             <span class="text-2xl font-bold">₱ {{ totalPrice }}</span>
           </div>
-          <div class="flex flex-row items-center gap-2 pt-2">
+          <!-- <div class="flex flex-row items-center gap-2 pt-2">
             <span class="text-md text-muted-foreground line-through">₱ 150.00</span>
             <span class="text-[12px] text-muted-foreground">(Membership Discount)</span>
-          </div>
+          </div> -->
           <UiDivider class="mt-2" />
           <div class="w-full pt-4">
             <UiDialog v-model:open="dialog">
@@ -216,19 +216,18 @@
                       </div>
                     </div>
                     <UiDivider class="my-2" />
-                    <!-- Voucher Section -->
+                    <!-- Discount Section -->
                     <div>
-                      <h3 class="text-lg font-semibold">Voucher</h3>
+                      <h3 class="text-lg font-semibold">Avail Discount</h3>
                       <UiDivider class="my-2" />
                       <div class="flex flex-col gap-2">
                         <input
                           type="text"
-                          placeholder="Enter voucher code"
+                          placeholder="Enter student id"
                           class="rounded border p-2"
+                          name="discount"
                         />
-                        <UiButton class="mt-2 bg-blue-500 hover:bg-blue-700"
-                          >Apply Voucher</UiButton
-                        >
+                        <UiButton class="mt-2 bg-blue-500 hover:bg-blue-700">Send Request</UiButton>
                       </div>
                     </div>
                     <UiDivider class="my-2" />

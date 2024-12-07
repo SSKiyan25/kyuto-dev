@@ -9,6 +9,9 @@ export interface Product {
   isApproved: boolean;
   totalSales: number;
   isDiscounted: boolean;
+  discountType: string;
+  discountTarget: string;
+  discountPercentageValue: number;
   featuredPhotoURL: string;
   photosURL: string[];
   canPreOrder: boolean;
