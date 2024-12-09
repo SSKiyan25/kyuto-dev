@@ -8,32 +8,20 @@
     </template>
   </div>
   <UiDivider />
-  <div class="mt-4">
-    <UiDatatable :options="options" :columns="columns" :data="orders">
-      <template #actions="{ cellData }: { cellData: ExtendedOrder }">
-        <UiButton
-          class="h-7 text-xs"
-          size="sm"
-          @click.stop="
-            useSonner('Editing...', {
-              description: `You are editing the order ${cellData?.uniqRefNumber}.`,
-            })
-          "
-          >Edit</UiButton
-        >
-      </template>
-      <template #empty>
-        <div class="flex w-full flex-col items-center justify-center gap-5 py-5">
-          <Icon
-            v-if="loading"
-            name="lucide:loader-circle"
-            class="h-12 w-12 animate-spin text-primary"
-          />
-          <span v-else class="mt-2">No data available.</span>
-        </div>
-      </template>
-    </UiDatatable>
+  <div class="mt-4 w-full">
+    <div v-if="!loading" class="w-full">
+      <UiDatatable :options="options" :columns="columns" :data="orders">
+        <template #actions="{ cellData }: { cellData: ExtendedOrder }">
+          <UiButton class="h-7 text-xs" size="sm">Actions</UiButton>
+        </template>
+      </UiDatatable>
+    </div>
+    <div v-if="loading" class="flex w-full flex-col items-center justify-center gap-5 py-5">
+      <Icon name="lucide:loader-circle" class="h-24 w-24 animate-spin text-primary" />
+      <span class="text-lg text-gray-600">Loading orders...</span>
+    </div>
   </div>
+  <Icon name="lucide:ellipsis" class="h-54 w-54 cursor-pointer text-gray-600" />
 </template>
 
 <script lang="ts" setup>
