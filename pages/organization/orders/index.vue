@@ -197,78 +197,7 @@
           />
         </div>
       </div>
-
-      <UiDivider class="my-4" />
-      <div class="flex flex-row pt-8 opacity-70">
-        <template v-for="(status, i) in statuses" :key="i">
-          <UiButton :variant="statusVariant(status.value)">{{ status.status }}</UiButton>
-        </template>
-      </div>
-      <UiDivider />
-
-      <div class="mt-4 w-full bg-secondary p-4 shadow">
-        <div class="flex w-full flex-col justify-between gap-5 md:flex-row md:items-center">
-          <UiInput type="search" v-model="search" placeholder="Search" class="w-full md:w-96" />
-          <div class="flex flex-row items-center space-x-4">
-            <UiDropdownMenu>
-              <UiDropdownMenuTrigger as-child>
-                <UiButton variant="outline">
-                  <span>View</span>
-                  <Icon name="lucide:chevron-down" class="h-4 w-4" />
-                </UiButton>
-              </UiDropdownMenuTrigger>
-              <UiDropdownMenuContent :side-offset="10" align="start" class="w-[300px] md:w-[200px]">
-                <UiDropdownMenuLabel> Toggle Columns </UiDropdownMenuLabel>
-                <UiDropdownMenuSeparator />
-                <UiDropdownMenuGroup>
-                  <UiDropdownMenuCheckboxItem
-                    v-for="column in table?.getAllColumns().filter((column) => column.getCanHide())"
-                    :key="column.id"
-                    :checked="column.getIsVisible()"
-                    @update:checked="tableRef?.toggleColumnVisibility(column)"
-                  >
-                    <span class="text-sm capitalize">{{ column?.id }}</span>
-                  </UiDropdownMenuCheckboxItem>
-                </UiDropdownMenuGroup>
-              </UiDropdownMenuContent>
-            </UiDropdownMenu>
-            <UiDropdownMenu>
-              <UiDropdownMenuTrigger as-child>
-                <UiButton variant="outline">
-                  <span>Choose Variations</span>
-                  <Icon name="lucide:chevron-down" class="h-4 w-4" />
-                </UiButton>
-              </UiDropdownMenuTrigger>
-              <UiDropdownMenuContent :side-offset="10" align="start" class="w-[300px] md:w-[200px]">
-                <UiDropdownMenuLabel> List of Variations </UiDropdownMenuLabel>
-                <UiDropdownMenuSeparator />
-                <UiDropdownMenuGroup>
-                  <UiDropdownMenuItem>Product Variation 1</UiDropdownMenuItem>
-                  <UiDropdownMenuItem>Product Variation 2</UiDropdownMenuItem>
-                  <UiDropdownMenuItem>Product Variation 3</UiDropdownMenuItem>
-                </UiDropdownMenuGroup>
-              </UiDropdownMenuContent>
-            </UiDropdownMenu>
-          </div>
-        </div>
-
-        <UiTanStackTable
-          @ready="table = $event"
-          ref="tableRef"
-          show-select
-          :search="search"
-          :data="data"
-          :columns="columns"
-          class="mt-5 rounded-md border"
-        >
-          <template #empty>
-            <div class="flex w-full flex-col items-center justify-center gap-5 py-5">
-              <Icon name="lucide:database" class="h-12 w-12 text-muted-foreground" />
-              <span class="mt-2">No data available.</span>
-            </div>
-          </template>
-        </UiTanStackTable>
-      </div>
+      <OrganizationOrdersData v-if="organizationID" :organizationID="organizationID" />
     </div>
 
     <div
@@ -289,10 +218,7 @@
 
 <script lang="ts" setup>
   import { useFetchOrders } from "~/composables/organization/orders/useFetchOrders";
-  import type { ColumnDef, Table } from "@tanstack/vue-table";
   import type { ExtendedOrder } from "~/composables/organization/orders/useFetchOrders";
-  import type { ButtonVariant } from "~/types/Button";
-  import type { Order, OrderItem } from "~/types/models/Order";
   import type { Product, Variation } from "~/types/models/Product";
 
   definePageMeta({
@@ -303,12 +229,13 @@
   type ExtendedProduct = Product & { id: string };
 
   const user = useCurrentUser();
-  console.log("User iud", user.value?.uid);
+  console.log("User uid", user.value?.uid);
   const products = ref<ExtendedProduct[]>([]);
   const selectedProduct = ref<ExtendedProduct | null>(null);
   const orders = ref<ExtendedOrder[]>([]);
   const organizationOrders = ref<ExtendedOrder[]>([]);
   const loadingFetchingOrgOrdersSummary = ref(false);
+  const organizationID = ref<string | null>(null);
 
   // Test the useFetchOrders composable
   const { fetchOrganizationProducts, fetchProductOrders, fetchOrganizationOrders } =
@@ -322,9 +249,9 @@
         console.log("Fetched Products:", products.value);
         // Fetch orders for the organization
         loadingFetchingOrgOrdersSummary.value = true;
-        const organizationID = fetchedProducts[0]?.organizationID;
-        if (organizationID) {
-          const fetchedOrganizationOrders = await fetchOrganizationOrders(organizationID);
+        organizationID.value = fetchedProducts[0]?.organizationID;
+        if (organizationID.value) {
+          const fetchedOrganizationOrders = await fetchOrganizationOrders(organizationID.value);
           organizationOrders.value = fetchedOrganizationOrders;
           console.log("Fetched Organization Orders:", organizationOrders.value);
         }
@@ -336,12 +263,7 @@
   });
 
   const productsDialog = ref(false);
-  const selectedStatus = ref<string>("all");
   const loadingFetchProductOrders = ref(false);
-
-  const tableRef = ref();
-  const table = ref<Table<Payment> | null>(null);
-  const search = ref("");
 
   const closeDialog = async (save: boolean) => {
     loadingFetchProductOrders.value = true;
@@ -405,112 +327,4 @@
     });
     return summary;
   });
-
-  const statusVariant = (status: string) => {
-    return selectedStatus.value === status ? "linkHover1" : "linkHover2";
-  };
-
-  const statuses: { status: string; value: string; variant: ButtonVariant }[] = [
-    {
-      status: "All",
-      value: "all",
-      variant: "linkHover1",
-    },
-    {
-      status: "Unpaid",
-      value: "not_paid",
-      variant: "linkHover2",
-    },
-    {
-      status: "Completed",
-      value: "completed",
-      variant: "linkHover2",
-    },
-    {
-      status: "Cancelled",
-      value: "cancelled",
-      variant: "linkHover2",
-    },
-  ];
-
-  type Payment = {
-    id: string;
-    amount: number;
-    status: "pending" | "processing" | "success" | "cancelled" | "refunded";
-    email: string;
-  };
-
-  const data: Payment[] = [
-    {
-      id: "m5gr84i9",
-      amount: 316,
-      status: "success",
-      email: "ken99@yahoo.com",
-    },
-    {
-      id: "3u1reuv4",
-      amount: 242,
-      status: "success",
-      email: "Abe45@gmail.com",
-    },
-    {
-      id: "derv1ws0",
-      amount: 837,
-      status: "processing",
-      email: "Monserrat44@gmail.com",
-    },
-    {
-      id: "5kma53ae",
-      amount: 874,
-      status: "success",
-      email: "Silas22@gmail.com",
-    },
-    {
-      id: "bhqecj4p",
-      amount: 721,
-      status: "refunded",
-      email: "carmella@hotmail.com",
-    },
-    {
-      id: "5kma53ae",
-      amount: 874,
-      status: "success",
-      email: "ujmovto@tezotu.bb",
-    },
-    {
-      id: "bhqecj4p",
-      amount: 721,
-      status: "cancelled",
-      email: "gi@po.tz",
-    },
-  ];
-
-  const columns: ColumnDef<Payment>[] = [
-    { accessorKey: "id", header: "ID", enableHiding: true },
-    { accessorKey: "amount", header: "Amount", enableHiding: true },
-    {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ row }) => {
-        return h(resolveComponent("UiBadge"), { variant: "outline", class: "capitalize" }, () => [
-          row.original.status,
-        ]);
-      },
-      enableHiding: true,
-    },
-    { accessorKey: "email", header: "Email", enableHiding: true },
-    {
-      accessorKey: "actions",
-      header: "",
-      enableSorting: false,
-      enableHiding: false,
-      cell: ({ row }) => {
-        return h(
-          resolveComponent("UiButton"),
-          { variant: "ghost", size: "icon", class: "w-9 h-9" },
-          () => [h(resolveComponent("Icon"), { name: "lucide:more-horizontal", class: "h-4 w-4" })]
-        );
-      },
-    },
-  ];
 </script>

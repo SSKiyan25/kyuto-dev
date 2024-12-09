@@ -9,6 +9,8 @@ export interface Order {
   remarks: string;
   totalPrice: number;
   isDiscounted: boolean;
+  isRequestedForDiscount: boolean;
+  discountCode: string;
   discountValue: number;
   isPackage: boolean;
   receivedDate: Date;

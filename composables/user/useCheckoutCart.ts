@@ -11,8 +11,7 @@ import {
   where,
 } from "firebase/firestore";
 import type { Cart } from "~/types/models/Cart";
-import type { Order, OrderItem } from "~/types/models/Order";
-import type { Product, StocksLogs, Variation } from "~/types/models/Product";
+import type { Product, Variation } from "~/types/models/Product";
 
 export const useCheckoutCart = () => {
   const db = useFirestore();
@@ -124,11 +123,8 @@ export const useCheckoutCart = () => {
           totalOrders: (productData.totalOrders || 0) + item.quantity,
         });
 
-        // Update cart item status to "done"
-        const cartItemDocRef = doc(db, `accounts/${userID}/cart/${item.id}`);
-        await updateDoc(cartItemDocRef, {
-          status: "done",
-        });
+        // Remove cart item from user's cart
+        await removeCartItem(userID, item.id);
       }
 
       console.log("Order created successfully");
@@ -139,6 +135,7 @@ export const useCheckoutCart = () => {
     }
     return uniqRefNumber;
   };
+
   const generateUniqueRefNumber = async (): Promise<string> => {
     let isUnique = false;
     let uniqRefNumber = "";
