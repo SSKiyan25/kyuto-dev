@@ -140,11 +140,36 @@
         text: "Columns",
         columns: ":not(.no-export)",
       },
-      "copy",
-      "excel",
-      "pdf",
-      "print",
-      "csv",
+      {
+        extend: "copy",
+        exportOptions: {
+          columns: ":not(.no-export)",
+        },
+      },
+      {
+        extend: "excel",
+        exportOptions: {
+          columns: ":not(.no-export)",
+        },
+      },
+      {
+        extend: "pdf",
+        exportOptions: {
+          columns: ":not(.no-export)",
+        },
+      },
+      {
+        extend: "print",
+        exportOptions: {
+          columns: ":not(.no-export)",
+        },
+      },
+      {
+        extend: "csv",
+        exportOptions: {
+          columns: ":not(.no-export)",
+        },
+      },
     ],
     dom: "Q<'flex flex-col lg:flex-row w-full lg:items-start lg:justify-between gap-5 mb-5'Bf><'border rounded-lg't><'flex flex-col lg:flex-row gap-5 lg:items-center lg:justify-between pt-3 p-5'li><''p>",
     responsive: true,

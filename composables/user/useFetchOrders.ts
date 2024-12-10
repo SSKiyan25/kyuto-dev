@@ -180,7 +180,7 @@ export const useFetchOrders = () => {
       }
 
       const variation = variationDoc.data() as Variation;
-      const updatedPendingOrders = variation.pendingOrders - item.quantity;
+      const updatedPendingOrders = variation.reservedStocks - item.quantity;
       const updatedCancelledOrders = variation.cancelledOrders + item.quantity;
       const updatedRemainingStocks = variation.remainingStocks + item.quantity;
 

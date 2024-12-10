@@ -89,10 +89,10 @@
                   <UiTableHead>Variation Name</UiTableHead>
                   <UiTableHead>Price</UiTableHead>
                   <UiTableHead>Remaining Stocks</UiTableHead>
-                  <UiTableHead>Pending Orders</UiTableHead>
+                  <UiTableHead>Reserved Orders</UiTableHead>
+                  <UiTableHead>Pre-Ordered Stocks</UiTableHead>
                   <UiTableHead>Fulfilled Orders</UiTableHead>
                   <UiTableHead>Cancelled Orders</UiTableHead>
-                  <UiTableHead>Total Orders</UiTableHead>
                 </UiTableRow>
               </UiTableHeader>
               <UiTableBody class="last:border-b">
@@ -100,10 +100,10 @@
                   <UiTableCell>{{ summary.variationName }}</UiTableCell>
                   <UiTableCell>₱ {{ summary.price }}</UiTableCell>
                   <UiTableCell>{{ summary.remainingStocks }}</UiTableCell>
-                  <UiTableCell>{{ summary.pendingOrders }}</UiTableCell>
+                  <UiTableCell>{{ summary.reservedStocks }}</UiTableCell>
+                  <UiTableCell>{{ summary.preOrderStocks }}</UiTableCell>
                   <UiTableCell>{{ summary.fulfilledOrders }}</UiTableCell>
                   <UiTableCell>{{ summary.cancelledOrders }}</UiTableCell>
-                  <UiTableCell>{{ summary.totalOrders }}</UiTableCell>
                 </UiTableRow>
               </UiTableBody>
               <UiTableFooter class="opacity-70">
@@ -114,16 +114,16 @@
                     variationSummaries.reduce((acc, summary) => acc + summary.remainingStocks, 0)
                   }}</UiTableCell>
                   <UiTableCell>{{
-                    variationSummaries.reduce((acc, summary) => acc + summary.pendingOrders, 0)
+                    variationSummaries.reduce((acc, summary) => acc + summary.reservedStocks, 0)
+                  }}</UiTableCell>
+                  <UiTableCell>{{
+                    variationSummaries.reduce((acc, summary) => acc + summary.preOrderStocks, 0)
                   }}</UiTableCell>
                   <UiTableCell>{{
                     variationSummaries.reduce((acc, summary) => acc + summary.fulfilledOrders, 0)
                   }}</UiTableCell>
                   <UiTableCell>{{
                     variationSummaries.reduce((acc, summary) => acc + summary.cancelledOrders, 0)
-                  }}</UiTableCell>
-                  <UiTableCell>{{
-                    variationSummaries.reduce((acc, summary) => acc + summary.totalOrders, 0)
                   }}</UiTableCell>
                 </UiTableRow>
               </UiTableFooter>
@@ -212,12 +212,30 @@
         <!-- Add a GIF here -->
       </div>
     </div>
-    <div class="h-lvh">,</div>
+    <!-- For testing -->
+    <div class="flex h-lvh flex-col">
+      <span>For testing purposes</span>
+      <UiButton @click="deleteAllOrders">Delete All Orders</UiButton>
+    </div>
+    <div
+      v-if="deleteLoading"
+      class="fixed inset-0 z-50 flex min-h-screen w-full items-center justify-center bg-secondary/40 backdrop-blur"
+    >
+      <div class="flex flex-col items-center justify-center gap-4">
+        <Icon name="lucide:loader-circle" class="size-16 animate-spin text-primary" />
+        <span class="text-sm font-semibold text-secondary-foreground"> Deleting Orders </span>
+        <!-- Add a GIF here -->
+      </div>
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
   import { useFetchOrders } from "~/composables/organization/orders/useFetchOrders";
+  //For Testing
+  import { useFetchUser } from "~/composables/user/useFetchUser";
+  import { collection, deleteDoc, doc, getDocs, query, where } from "firebase/firestore";
+  // ...
   import type { ExtendedOrder } from "~/composables/organization/orders/useFetchOrders";
   import type { Product, Variation } from "~/types/models/Product";
 
@@ -296,10 +314,10 @@
             variationName: item.variationDetails?.value || "Unknown",
             price: item.price,
             remainingStocks: item.variationDetails?.remainingStocks || 0,
-            pendingOrders: item.variationDetails?.pendingOrders || 0,
+            reservedStocks: item.variationDetails?.reservedStocks || 0,
+            preOrderStocks: item.variationDetails?.preOrderStocks || 0,
             fulfilledOrders: item.variationDetails?.fulfilledOrders || 0,
             cancelledOrders: item.variationDetails?.cancelledOrders || 0,
-            totalOrders: 0,
           };
         }
         summaries[item.variationID].totalOrders += item.quantity;
@@ -327,4 +345,54 @@
     });
     return summary;
   });
+
+  // For testing purposes
+  const deleteLoading = ref(false);
+  const db = useFirestore();
+  const { userData } = await useFetchUser();
+  console.log("Organization ID:", userData?.organizationID);
+  const router = useRouter();
+
+  const deleteAllOrders = async () => {
+    if (!userData) {
+      return;
+    }
+    console.log("Organization ID:", userData?.organizationID);
+    deleteLoading.value = true;
+    try {
+      // Fetch all orders for the organization
+      const ordersQuery = query(
+        collection(db, "orders"),
+        where("organizationID", "==", userData.organizationID)
+      );
+      const querySnapshot = await getDocs(ordersQuery);
+
+      // Delete each order document and its subcollections from Firestore
+      const deletePromises = querySnapshot.docs.map(async (orderDoc) => {
+        const orderID = orderDoc.id;
+
+        // Fetch and delete all orderItems subcollection documents
+        const orderItemsQuery = collection(db, "orders", orderID, "orderItems");
+        const orderItemsSnapshot = await getDocs(orderItemsQuery);
+        const deleteOrderItemsPromises = orderItemsSnapshot.docs.map(async (orderItemDoc) => {
+          await deleteDoc(orderItemDoc.ref);
+        });
+
+        // Wait for all orderItems delete operations to complete
+        await Promise.all(deleteOrderItemsPromises);
+
+        // Delete the order document
+        await deleteDoc(doc(db, "orders", orderID));
+      });
+
+      // Wait for all Firestore delete operations to complete
+      await Promise.all(deletePromises);
+      router.push("/organization/products");
+      console.log("All orders and their subcollections deleted successfully.");
+    } catch (error) {
+      console.error("Error deleting orders:", error);
+    } finally {
+      deleteLoading.value = false;
+    }
+  };
 </script>

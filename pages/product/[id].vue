@@ -281,7 +281,6 @@
         <!-- Add a GIF here -->
       </div>
     </div>
-    <div class="h-96">.</div>
   </div>
 </template>
 

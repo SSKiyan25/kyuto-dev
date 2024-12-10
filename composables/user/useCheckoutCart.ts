@@ -104,6 +104,11 @@ export const useCheckoutCart = () => {
             lastStockUpdate: Timestamp.now(),
           });
 
+          await updateDoc(variationDocRef, {
+            reservedStocks: variationData.reservedStocks + item.quantity,
+            lastModified: Timestamp.now(),
+          });
+
           // Log stock changes in the sub-collection of the variation
           await addDoc(collection(variationDocRef, "stocksLogs"), {
             variationID: item.variationID,
@@ -113,14 +118,17 @@ export const useCheckoutCart = () => {
             dateCreated: Timestamp.now(),
           });
         }
-        await updateDoc(variationDocRef, {
-          pendingOrders: variationData.pendingOrders + item.quantity,
-          lastModified: Timestamp.now(),
-        });
+
+        if (item.isPreOrder) {
+          await updateDoc(variationDocRef, {
+            preOrderStocks: variationData.preOrderStocks + item.quantity,
+            lastModified: Timestamp.now(),
+          });
+        }
 
         // Increment totalOrders in the product document based on the quantity
         await updateDoc(productDocRef, {
-          totalOrders: (productData.totalOrders || 0) + item.quantity,
+          totalOrders: (productData.totalOrders || 0) + 1,
         });
 
         // Remove cart item from user's cart
