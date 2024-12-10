@@ -21,7 +21,6 @@
       <span class="text-lg text-gray-600">Loading orders...</span>
     </div>
   </div>
-  <Icon name="lucide:ellipsis" class="h-54 w-54 cursor-pointer text-gray-600" />
 </template>
 
 <script lang="ts" setup>
