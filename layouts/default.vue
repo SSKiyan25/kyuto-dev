@@ -5,7 +5,7 @@
     >
       <UiContainer class="flex h-16 items-center justify-between sm:h-20">
         <div class="flex items-center gap-10">
-          <NuxtLink to="#" class="flex items-center gap-3">
+          <NuxtLink to="/" class="flex items-center gap-3">
             <!-- eslint-disable-next-line vue/html-self-closing -->
             <img
               src="/logo-verch-2.png"

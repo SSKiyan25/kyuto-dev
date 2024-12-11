@@ -1,7 +1,7 @@
 <template>
-  <div class="flex h-screen w-full flex-col items-start p-12">
-    <div><UiBreadcrumbs class="justify-center" :items="crumbs" /></div>
-    <div v-if="product" class="mt-8 grid w-full grid-cols-2 gap-4">
+  <div class="flex h-screen w-full flex-col items-start p-4 sm:p-12">
+    <!-- <div><UiBreadcrumbs class="justify-center text-[12px] sm:text-sm" :items="crumbs" /></div> -->
+    <div v-if="product" class="grid w-full gap-4 sm:mt-4 sm:grid-cols-2">
       <!-- Product Gallery -->
       <div class="h-auto rounded-sm bg-muted px-2 py-8">
         <Carousel id="gallery" :items-to-show="1" :wrap-around="false" v-model="currentSlide">
@@ -30,8 +30,8 @@
       <!-- Product Details -->
       <div class="flex w-full flex-col">
         <div class="flex w-full flex-col space-y-4">
-          <h1 class="w-full text-wrap text-4xl font-semibold">{{ product.name }}</h1>
-          <div class="flex flex-row items-center space-x-1">
+          <h1 class="w-full text-wrap text-xl font-semibold sm:text-4xl">{{ product.name }}</h1>
+          <div class="flex flex-row items-center space-x-1 text-[12px] sm:text-sm">
             <Icon name="lucide:building-2" />
             <span class="pr-4">{{ product.organization }}</span>
             <Icon name="lucide:credit-card" class="" />
@@ -41,24 +41,29 @@
           </div>
           <p
             v-if="product.description"
-            class="text-md text-wrap py-4 text-justify indent-8 opacity-60"
+            class="sm:text-md text-wrap py-4 text-justify indent-8 text-[12px] opacity-60"
           >
             {{ product.description }}
           </p>
           <div class="flex flex-col">
-            <span class="pb-4 text-sm font-semibold text-muted-foreground"
+            <span class="pb-4 text-[12px] font-semibold text-muted-foreground sm:text-sm"
               >Price: {{ priceRange }}</span
             >
-            <span class="text-xl font-semibold">Variations</span>
+            <span class="text-sm font-semibold sm:text-xl">Variations</span>
             <div class="flex flex-row flex-wrap gap-4 px-4 pt-4">
               <div v-for="(vari, i) in variations" :key="i">
-                <div class="cursor-default rounded-sm border p-2 opacity-90" v-wave>
+                <div
+                  class="cursor-default rounded-sm border p-2 text-[12px] opacity-90 sm:text-sm"
+                  v-wave
+                >
                   {{ vari.value }} | ₱{{ vari.price }}
                 </div>
               </div>
             </div>
           </div>
-          <p class="text-sm text-muted-foreground">This Product has a discount for its members!</p>
+          <p v-if="product.isDiscounted" class="text-sm text-muted-foreground">
+            This Product has a discount for its members!
+          </p>
           <div class="flex flex-row items-center gap-2 pt-8">
             <!-- Pre-Order -->
             <UiDrawer>
@@ -75,22 +80,28 @@
                     Pre-Order
                   </UiDrawerTitle>
                   <UiDrawerDescription>
-                    <p class="pt-2 text-center">
+                    <p class="pt-2 text-center text-[12px] sm:text-sm">
                       Select the variation you want to pre-order. This will be added to your cart as
                       well.
                     </p>
                   </UiDrawerDescription>
                   <div class="relative">
                     <!-- Variation -->
-                    <span class="my-5 pl-5 text-lg font-semibold">Choose Variation</span>
+                    <span class="text-md my-5 font-semibold sm:pl-5 sm:text-lg"
+                      >Choose Variation</span
+                    >
                     <UiDivider class="px-5" />
-                    <div class="flex flex-row flex-wrap justify-center gap-4 px-16 py-4">
+                    <div
+                      class="flex flex-row flex-wrap justify-center gap-2 px-4 py-4 sm:gap-4 sm:px-16"
+                    >
                       <div v-for="(vari, i) in variations" :key="i">
                         <UiButton
                           @click="selectVariation(vari, 'preOrder')"
+                          class=""
                           :class="{
-                            'bg-primary text-white': selectedVariationPreOrder?.id === vari.id,
-                            'border-primary bg-white text-primary':
+                            'bg-primary text-[12px] text-white sm:text-sm':
+                              selectedVariationPreOrder?.id === vari.id,
+                            'border-2 bg-white text-[12px] text-primary sm:text-sm':
                               selectedVariationPreOrder?.id !== vari.id,
                           }"
                         >
@@ -102,7 +113,7 @@
 
                     <!-- Quantity -->
                     <div class="flex w-full flex-row items-center justify-center py-4">
-                      <span class="pr-2">Quantity:</span>
+                      <span class="pr-2 text-[12px] sm:text-sm">Quantity:</span>
                       <form>
                         <fieldset>
                           <UiNumberField
@@ -156,23 +167,28 @@
                     Add to Cart
                   </UiDrawerTitle>
                   <UiDrawerDescription>
-                    <p class="pt-2 text-center">
+                    <p class="pt-2 text-center text-[12px] sm:text-sm">
                       Select the variation you want to add to your cart. You can adjust the quantity
                       in the cart.
                     </p>
                   </UiDrawerDescription>
                   <div class="relative">
                     <!-- Variation -->
-                    <span class="my-5 pl-5 text-lg font-semibold">Choose Variation</span>
+                    <span class="text-md my-5 font-semibold sm:pl-5 sm:text-lg"
+                      >Choose Variation</span
+                    >
                     <UiDivider class="px-5" />
-                    <div class="flex flex-row flex-wrap justify-center gap-4 px-16 py-4">
+                    <div
+                      class="flex flex-row flex-wrap justify-center gap-2 px-4 py-4 sm:gap-4 sm:px-16"
+                    >
                       <div v-for="(vari, i) in variations" :key="i">
                         <UiButton
                           @click="selectVariation(vari, 'addToCart')"
                           :disabled="vari.remainingStocks === 0"
                           :class="{
-                            'bg-primary text-white': selectedVariationAddToCart?.id === vari.id,
-                            'border-primary bg-white text-primary':
+                            'bg-primary text-[12px] text-primary text-white':
+                              selectedVariationAddToCart?.id === vari.id,
+                            'border-primary bg-white text-[12px] text-primary':
                               selectedVariationAddToCart?.id !== vari.id,
                           }"
                         >
@@ -186,7 +202,7 @@
 
                     <!-- Quantity -->
                     <div class="flex w-full flex-row items-center justify-center py-4">
-                      <span class="pr-2">Quantity:</span>
+                      <span class="pr-2 text-[12px] sm:text-sm">Quantity:</span>
                       <form>
                         <fieldset>
                           <UiNumberField
@@ -238,16 +254,16 @@
 
     <UiDivider class="my-10" />
     <div v-if="orgProducts.length === 0">No products available</div>
-    <div v-else class="flex h-auto w-full flex-col">
-      <span class="text-lg font-medium">More Products from this Organization</span>
-      <div class="mt-6 flex flex-row flex-wrap gap-6 px-9">
+    <div v-else class="flex h-auto w-full flex-col pb-32">
+      <span class="text-md font-medium sm:text-lg">More Products from this Organization</span>
+      <div class="mt-6 flex flex-row flex-wrap gap-2 sm:gap-6 sm:px-9">
         <div v-for="(orgProduct, i) in orgProducts" :key="i">
           <NuxtLink :to="`/product/${orgProduct.id}`">
             <div
               class="flex max-h-[40rem] max-w-[24rem] flex-col rounded-sm border p-2 hover:shadow-lg"
             >
               <div class="flex justify-center border-b p-2">
-                <div class="h-52 w-52 overflow-hidden">
+                <div class="h-32 w-32 overflow-hidden sm:h-52 sm:w-52">
                   <img
                     :src="orgProduct.featuredPhotoURL"
                     :alt="orgProduct.name"
@@ -256,11 +272,15 @@
                 </div>
               </div>
               <div class="flex w-full flex-col items-start pt-1">
-                <span class="text-sm text-muted-foreground">P{{ orgProduct.price }}</span>
-                <p class="w-full truncate pt-2">
+                <span class="text-[12px] text-muted-foreground sm:text-sm"
+                  >P{{ orgProduct.price }}</span
+                >
+                <p class="w-full truncate pt-2 text-[12px] sm:text-sm">
                   {{ orgProduct.name }}
                 </p>
-                <div class="flex w-full flex-row justify-between pt-4 text-[12px] opacity-50">
+                <div
+                  class="flex w-full flex-row justify-between pt-4 text-[10px] opacity-50 sm:text-[12px]"
+                >
                   <span>0 views</span>
                   <span>{{ orgProduct.totalSales }} sales</span>
                 </div>
@@ -473,8 +493,6 @@
       }
     }
   };
-
-  const debouncedSubmitAddToCart = debounce(submitAddToCart, 2000);
 
   const handlePreOrder = async () => {
     if (!user.value) {

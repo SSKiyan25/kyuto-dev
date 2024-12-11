@@ -19,7 +19,7 @@
                   ? 'text-muted-foreground hover:underline'
                   : 'font-semibold text-primary',
               ]"
-              class="text-sm text-foreground"
+              class="text-[12px] text-foreground sm:text-sm"
               @click="item?.click?.()"
               >{{ item.label }}</NuxtLink
             >
