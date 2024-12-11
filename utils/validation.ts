@@ -124,3 +124,20 @@ export const DiscountSchema = object({
       then: (schema) => schema.required().min(1, "At least one custom discount price is required"),
     }),
 });
+
+export const OrganizationProfileSchema = object({
+  name: string().required("Name is required").max(100, "Name cannot be longer than 100 characters"),
+  contactEmail: string()
+    .required("Contact Email is required")
+    .email("Contact Email must be a valid email"),
+  phoneNumber: string()
+    .required("Phone Number is required")
+    .matches(
+      /^\+?[1-9]\d{1,14}$/,
+      "Phone Number must be a valid international phone number. Example +639201948834"
+    ),
+  description: string().max(500, "Description cannot be longer than 500 characters"),
+  address: string()
+    .required("Address is required")
+    .max(200, "Address cannot be longer than 200 characters"),
+});
