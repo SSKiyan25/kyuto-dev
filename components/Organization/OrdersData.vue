@@ -348,6 +348,16 @@
       variant: "linkHover2",
     },
     {
+      status: "Preparing",
+      value: "preparing",
+      variant: "linkHover2",
+    },
+    {
+      status: "Ready",
+      value: "ready",
+      variant: "linkHover2",
+    },
+    {
       status: "Completed",
       value: "completed",
       variant: "linkHover2",

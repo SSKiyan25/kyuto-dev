@@ -109,7 +109,7 @@
                   <UiTableCell>{{ summary.remainingStocks }}</UiTableCell>
                   <UiTableCell>{{ summary.reservedStocks }}</UiTableCell>
                   <UiTableCell>{{ summary.preOrderStocks }}</UiTableCell>
-                  <UiTableCell>{{ summary.fulfilledOrders }}</UiTableCell>
+                  <UiTableCell>{{ summary.completedOrders }}</UiTableCell>
                   <UiTableCell>{{ summary.cancelledOrders }}</UiTableCell>
                 </UiTableRow>
               </UiTableBody>
@@ -127,7 +127,7 @@
                     variationSummaries.reduce((acc, summary) => acc + summary.preOrderStocks, 0)
                   }}</UiTableCell>
                   <UiTableCell>{{
-                    variationSummaries.reduce((acc, summary) => acc + summary.fulfilledOrders, 0)
+                    variationSummaries.reduce((acc, summary) => acc + summary.completedOrders, 0)
                   }}</UiTableCell>
                   <UiTableCell>{{
                     variationSummaries.reduce((acc, summary) => acc + summary.cancelledOrders, 0)
@@ -136,6 +136,14 @@
               </UiTableFooter>
             </UiTable>
           </div>
+        </div>
+        <div class="space-x-4">
+          <UiButton variant="outline" @click="setPendingOrdersToPreparing"
+            >Set Pending Orders to Preparing</UiButton
+          >
+          <UiButton class="bg-blue-400" @click="setPendingOrdersToReady"
+            >Set Pending Orders to Ready</UiButton
+          >
         </div>
       </div>
       <UiDivider class="my-4" />
@@ -219,6 +227,19 @@
         <!-- Add a GIF here -->
       </div>
     </div>
+
+    <div
+      v-if="loadingSetOrderStatus"
+      class="fixed inset-0 z-50 flex min-h-screen w-full items-center justify-center bg-secondary/40 backdrop-blur"
+    >
+      <div class="flex flex-col items-center justify-center gap-4">
+        <Icon name="lucide:loader-circle" class="size-16 animate-spin text-primary" />
+        <span class="text-sm font-semibold text-secondary-foreground">
+          Updating order status...
+        </span>
+        <!-- Add a GIF here -->
+      </div>
+    </div>
     <!-- For testing -->
     <div class="flex h-lvh flex-col py-8">
       <span>For testing purposes</span>
@@ -261,9 +282,10 @@
   const organizationOrders = ref<ExtendedOrder[]>([]);
   const loadingFetchingOrgOrdersSummary = ref(false);
   const organizationID = ref<string | null>(null);
+  const loadingSetOrderStatus = ref(false);
 
   // Test the useFetchOrders composable
-  const { fetchOrganizationProducts, fetchProductOrders, fetchOrganizationOrders } =
+  const { fetchOrganizationProducts, fetchProductOrders, fetchOrganizationOrders, setOrderStatus } =
     useFetchOrders();
   onMounted(async () => {
     if (user.value?.uid) {
@@ -310,6 +332,34 @@
       duration: 5000,
       icon: save ? "lucide:check" : "lucide:x",
     });
+  };
+
+  const setPendingOrdersToPreparing = async () => {
+    if (selectedProduct.value) {
+      loadingSetOrderStatus.value = true;
+      try {
+        await setOrderStatus(selectedProduct.value.id, "preparing");
+        console.log("Set pending orders to preparing");
+      } catch (error) {
+        console.error("Error setting orders to preparing:", error);
+      } finally {
+        loadingSetOrderStatus.value = false;
+      }
+    }
+  };
+
+  const setPendingOrdersToReady = async () => {
+    if (selectedProduct.value) {
+      loadingSetOrderStatus.value = true;
+      try {
+        await setOrderStatus(selectedProduct.value.id, "ready");
+        console.log("Set pending orders to ready");
+      } catch (error) {
+        console.error("Error setting orders to ready:", error);
+      } finally {
+        loadingSetOrderStatus.value = false;
+      }
+    }
   };
 
   const variationSummaries = computed(() => {

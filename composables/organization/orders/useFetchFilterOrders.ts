@@ -149,7 +149,11 @@ export const useFetchFilterOrders = () => {
   ): Promise<void> => {
     const orderRef = doc(db, "orders", orderID);
     const newStatus = currentStatus === "completed" ? "pending" : "completed";
-    await updateDoc(orderRef, { orderStatus: newStatus, lastModified: new Date() });
+    await updateDoc(orderRef, {
+      orderStatus: newStatus,
+      lastModified: new Date(),
+      receivedDate: new Date(),
+    });
 
     if (newStatus === "completed") {
       for (const item of orderItems) {

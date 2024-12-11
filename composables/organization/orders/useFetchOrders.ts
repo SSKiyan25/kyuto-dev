@@ -1,10 +1,11 @@
-import { collection, doc, getDoc, getDocs, query, where } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import type { Account } from "~/types/models/Account";
 import type { Order, OrderItem } from "~/types/models/Order";
 import type { Product, Variation } from "~/types/models/Product";
 
 // Define a new type that extends OrderItem to include additional properties
 export type ExtendedOrderItem = OrderItem & {
+  id: string;
   productDetails?: Product | null;
   variationDetails?: Variation | null;
 };
@@ -55,6 +56,7 @@ export const useFetchOrders = () => {
         console.log("Variation details fetched: ", variationDetails);
         orderItems.push({
           ...orderItem,
+          id: doc.id,
           productDetails,
           variationDetails,
         });
@@ -146,10 +148,35 @@ export const useFetchOrders = () => {
     return orders;
   };
 
+  const setOrderStatus = async (
+    productID: string,
+    orderStatus: "preparing" | "ready"
+  ): Promise<void> => {
+    console.log(`Setting orders for product ${productID} to ${orderStatus}`);
+    try {
+      const orders = await fetchProductOrders(productID);
+      for (const order of orders) {
+        const orderRef = doc(db, `orders/${order.id}`);
+        const orderDoc = await getDoc(orderRef);
+        const currentStatus = orderDoc.data()?.orderStatus;
+
+        if (currentStatus !== "claimed" && currentStatus !== "cancelled") {
+          await updateDoc(orderRef, { orderStatus });
+          console.log(`Order ${order.id} status set to ${orderStatus}`);
+        } else {
+          console.log(`Order ${order.id} status is ${currentStatus}, not updating`);
+        }
+      }
+    } catch (error) {
+      console.error("Error setting order status:", error);
+    }
+  };
+
   return {
     fetchOrganizationOrders,
     fetchOrganizationProducts,
     fetchProductOrders,
     fetchOrderItems,
+    setOrderStatus,
   };
 };
