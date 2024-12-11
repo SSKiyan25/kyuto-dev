@@ -4,36 +4,36 @@
       <div>
         <UiBadge to="#" variant="outline" class="px-3 py-1.5 text-sm font-normal lg:py-2"
           >New Products! Check out our new products
-          <Icon class="ml-3 h-4 w-4" name="lucide:arrow-right"
+          <Icon class="ml-3 h-4 w-4" name="lucide:arrow-down"
         /></UiBadge>
       </div>
 
       <h1
-        class="mb-4 mt-7 text-4xl font-bold lg:mb-6 lg:mt-5 lg:text-center lg:text-5xl xl:text-6xl"
+        class="mb-4 mt-7 text-2xl font-bold sm:mb-6 sm:mt-5 sm:text-5xl lg:text-center xl:text-6xl"
       >
         Official VSU Merchandise Collection.
         <!-- eslint-disable-next-line vue/html-self-closing -->
         <br />Proudly Represent Yourself.
       </h1>
-      <p class="mx-auto max-w-[760px] text-lg text-muted-foreground lg:text-center lg:text-xl">
+      <p class="mx-auto max-w-[760px] text-[12px] text-muted-foreground sm:text-xl lg:text-center">
         Explore our range of high-quality VSU-branded apparel and accessories. From stylish T-shirts
         and hoodies to practical lanyards and stickers, we’ve got everything you need to showcase
         your school spirit.
       </p>
 
-      <div
+      <!-- <div
         class="mt-8 grid w-full grid-cols-1 items-center gap-3 sm:flex sm:justify-center lg:mt-10"
       >
         <UiButton size="lg" variant="outline"> <Icon name="lucide:mail" /> Contact Us </UiButton>
         <UiButton size="lg"> <Icon name="lucide:shopping-basket" />Shop now</UiButton>
-      </div>
+      </div> -->
     </UiContainer>
 
     <ClientOnly>
-      <UiGradientDivider class="my-5" />
+      <UiGradientDivider class="sm:my-5" />
     </ClientOnly>
     <!-- Categories -->
-    <div
+    <!-- <div
       class="mx-auto my-4 flex h-auto w-11/12 flex-col items-start justify-center rounded bg-muted p-4"
     >
       <span class="font-semibold uppercase text-muted-foreground">Categories</span>
@@ -47,7 +47,7 @@
           :title="item.title"
         />
       </div>
-    </div>
+    </div> -->
 
     <!-- Ad Space
     <div
@@ -64,16 +64,16 @@
     </div> -->
 
     <!-- Products -->
-    <div class="mx-auto mb-24 flex min-h-lvh w-11/12 flex-col pt-8">
+    <div class="mx-auto mb-24 flex min-h-lvh w-11/12 flex-col pt-4 sm:pt-8">
       <div
-        class="flex w-full flex-row items-center justify-between rounded-md bg-primary/90 p-4 text-primary-foreground shadow"
+        class="flex w-full flex-row flex-wrap items-center justify-between rounded-md bg-primary/90 p-4 text-primary-foreground shadow"
       >
-        <div class="flex flex-row items-start justify-start gap-2">
+        <div class="flex flex-row items-start justify-start gap-1.5 sm:gap-2">
           <div class="" v-for="(show, index) in showAs" :key="index">
             <button
               @click="toggleActive(index)"
               :class="[
-                'flex flex-row rounded-sm p-2 text-sm font-medium uppercase tracking-wider',
+                'flex flex-row rounded-sm p-1 text-[11px] font-medium uppercase tracking-wider sm:p-2 sm:text-sm',
                 show.isActive
                   ? 'bg-secondary text-secondary-foreground'
                   : 'border text-primary-foreground opacity-90',
@@ -84,9 +84,14 @@
           </div>
         </div>
 
-        <UiButton @click="toggleFilterCommands" variant="secondary" size="sm">
+        <UiButton
+          @click="toggleFilterCommands"
+          variant="secondary"
+          size="sm"
+          class="px-2 py-1 text-[10px] sm:mt-0 sm:px-4 sm:py-2 sm:text-sm"
+        >
           Filter By
-          <Icon name="lucide:list-filter" class="h-4 w-4" />
+          <Icon name="lucide:list-filter" class="h-3 w-3 sm:h-4 sm:w-4" />
         </UiButton>
       </div>
 
@@ -100,7 +105,7 @@
           <div class="">
             <UiDropdownMenu>
               <UiDropdownMenuTrigger as-child>
-                <UiButton variant="outline">
+                <UiButton variant="outline" class="text-[12px] sm:text-sm">
                   Select Category
                   <Icon name="lucide:chevron-down" class="h-4 w-4" />
                 </UiButton>
@@ -131,8 +136,8 @@
           <div class="flex flex-row items-center">
             <UiDropdownMenu>
               <UiDropdownMenuTrigger as-child>
-                <UiButton variant="outline"
-                  >Sort by price
+                <UiButton variant="outline" class="text-[12px] sm:text-sm">
+                  Sort by price
                   <Icon name="lucide:chevron-down" class="h-4 w-4" />
                 </UiButton>
               </UiDropdownMenuTrigger>
@@ -173,7 +178,7 @@
       </transition>
 
       <!-- Products Container -->
-      <div class="mt-6 flex flex-row flex-wrap gap-6 px-9">
+      <div class="mt-4 flex flex-row flex-wrap gap-1 sm:mt-6 sm:gap-6 sm:px-9">
         <template v-if="loading">
           <div v-for="i in 10" :key="i" class="flex flex-col items-center space-x-4">
             <UiSkeleton class="h-52 w-52 rounded-sm" />
@@ -185,10 +190,10 @@
         <div v-for="(product, i) in products" :key="i">
           <NuxtLink :to="`/product/${product.id}`">
             <div
-              class="flex max-h-[40rem] max-w-[24rem] flex-col rounded-sm border p-2 hover:shadow-lg"
+              class="flex max-h-[32rem] max-w-[16rem] flex-col rounded-sm border p-2 hover:shadow-lg sm:max-h-[40rem] sm:max-w-[24rem]"
             >
               <div class="flex justify-center border-b p-2">
-                <div class="h-52 w-52 overflow-hidden">
+                <div class="h-32 w-32 overflow-hidden sm:h-52 sm:w-52">
                   <img
                     :src="product.featuredPhotoURL"
                     :alt="product.name"
@@ -197,11 +202,15 @@
                 </div>
               </div>
               <div class="flex w-full flex-col items-start pt-1">
-                <span class="text-sm text-muted-foreground">₱{{ product.price }}</span>
-                <p class="w-full truncate pt-2">
+                <span class="text-[12px] text-muted-foreground sm:text-sm"
+                  >₱{{ product.price }}</span
+                >
+                <p class="w-full truncate pt-2 text-[12px] font-semibold sm:text-sm">
                   {{ product.name }}
                 </p>
-                <div class="flex w-full flex-row justify-between pt-4 text-[12px] opacity-50">
+                <div
+                  class="flex w-full flex-row justify-between pt-4 text-[10px] opacity-50 sm:text-[12px]"
+                >
                   <span>0 views</span>
                   <span>{{ product.totalSales }} sales</span>
                 </div>
@@ -210,7 +219,7 @@
           </NuxtLink>
         </div>
         <div class="flex w-full items-end justify-end">
-          <UiPagination :total="100" :sibling-count="1"></UiPagination>
+          <UiPagination :total="2" :sibling-count="1"></UiPagination>
         </div>
       </div>
       <div class="min-h-96">.</div>
