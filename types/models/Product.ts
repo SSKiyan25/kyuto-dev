@@ -27,7 +27,7 @@ export interface Variation {
   discountPrice: number;
   reservedStocks: number;
   preOrderStocks: number;
-  fulfilledOrders: number;
+  completedOrders: number;
   cancelledOrders: number;
   totalStocks: number;
   remainingStocks: number;

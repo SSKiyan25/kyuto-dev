@@ -90,7 +90,7 @@ export const useAddProduct = async (values: any, canPreOrder: boolean) => {
         discountPrice: variation.discountPrice ?? 0,
         reservedStocks: 0,
         preOrderStocks: 0,
-        fulfilledOrders: 0,
+        completedOrders: 0,
         cancelledOrders: 0,
         totalStocks: variation.stocks ?? 0,
         remainingStocks: variation.stocks ?? 0,

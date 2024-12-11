@@ -8,7 +8,7 @@
 </script>
 
 <template>
-  <div class="flex w-full flex-col p-12">
-    <div><span class="text-2xl font-bold">Inbox</span></div>
+  <div class="flex w-full flex-col">
+    <ADComingSoon />
   </div>
 </template>

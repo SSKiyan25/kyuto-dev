@@ -77,6 +77,13 @@
           </UiDialogContent>
         </UiDialog>
       </div>
+      <div v-if="!selectedProduct" class="w-full">
+        <UiDivider class="my-4" />
+        <div class="my-4 flex h-36 w-full flex-col items-center border py-4">
+          <Icon name="lucide:briefcase" class="h-16 w-16 text-muted-foreground" />
+          <span class="text-lg font-semibold">Select a product to view its orders</span>
+        </div>
+      </div>
       <div v-if="orders.length > 0 && selectedProduct" class="w-full">
         <div class="my-4 flex w-full flex-col justify-center">
           <span class="text-lg font-medium">{{ selectedProduct?.name }}</span>
@@ -174,7 +181,7 @@
         <div class="flex w-2/12 flex-col justify-center">
           <span class="text-[12px] text-muted-foreground">Fulfilled Orders</span>
           <span v-if="!loadingFetchingOrgOrdersSummary" class="text-sm font-semibold">{{
-            organizationOrderSummary.fulfilledOrders
+            organizationOrderSummary.completedOrders
           }}</span>
           <Icon
             v-if="loadingFetchingOrgOrdersSummary"
@@ -213,7 +220,7 @@
       </div>
     </div>
     <!-- For testing -->
-    <div class="flex h-lvh flex-col">
+    <div class="flex h-lvh flex-col py-8">
       <span>For testing purposes</span>
       <UiButton @click="deleteAllOrders">Delete All Orders</UiButton>
     </div>
@@ -316,7 +323,7 @@
             remainingStocks: item.variationDetails?.remainingStocks || 0,
             reservedStocks: item.variationDetails?.reservedStocks || 0,
             preOrderStocks: item.variationDetails?.preOrderStocks || 0,
-            fulfilledOrders: item.variationDetails?.fulfilledOrders || 0,
+            completedOrders: item.variationDetails?.completedOrders || 0,
             cancelledOrders: item.variationDetails?.cancelledOrders || 0,
           };
         }
@@ -330,15 +337,15 @@
     const summary = {
       totalOrders: 0,
       pendingOrders: 0,
-      fulfilledOrders: 0,
+      completedOrders: 0,
       cancelledOrders: 0,
     };
     organizationOrders.value.forEach((order) => {
       summary.totalOrders += 1;
       if (order.orderStatus === "pending") {
         summary.pendingOrders += 1;
-      } else if (order.orderStatus === "fulfilled") {
-        summary.fulfilledOrders += 1;
+      } else if (order.orderStatus === "completed") {
+        summary.completedOrders += 1;
       } else if (order.orderStatus === "cancelled") {
         summary.cancelledOrders += 1;
       }

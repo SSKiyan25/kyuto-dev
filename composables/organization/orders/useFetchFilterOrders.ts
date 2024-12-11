@@ -1,4 +1,15 @@
-import { collection, doc, getDoc, getDocs, orderBy, query, where } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  updateDoc,
+  where,
+} from "firebase/firestore";
+import type { Account } from "~/types/models/Account";
 import type { Order, OrderItem } from "~/types/models/Order";
 import type { Product, Variation } from "~/types/models/Product";
 
@@ -13,6 +24,7 @@ export type ExtendedOrder = Order & {
   id: string;
   orderItems: ExtendedOrderItem[];
   buyerEmail?: string;
+  buyerAccountDetails?: Account;
 };
 
 export const useFetchFilterOrders = () => {
@@ -56,15 +68,31 @@ export const useFetchFilterOrders = () => {
     return orderItems;
   };
 
-  // Helper function to fetch buyer email
-  const fetchBuyerEmail = async (buyerID: string): Promise<string | undefined> => {
+  // Helper function to fetch buyer account details
+  const fetchBuyerAccountDetails = async (buyerID: string): Promise<Account | undefined> => {
     const buyerRef = doc(db, "accounts", buyerID);
     const buyerDoc = await getDoc(buyerRef);
-    return buyerDoc.exists() ? (buyerDoc.data().email as string) : undefined;
+    return buyerDoc.exists() ? (buyerDoc.data() as Account) : undefined;
+  };
+
+  // Helper function to fetch order details
+  const fetchOrderDetails = async (orderID: string): Promise<ExtendedOrder | null> => {
+    const orderRef = doc(db, "orders", orderID);
+    const orderDoc = await getDoc(orderRef);
+    if (orderDoc.exists()) {
+      const orderData = orderDoc.data() as Order;
+      const buyerAccountDetails = await fetchBuyerAccountDetails(orderData.buyerID);
+      const orderItems = await fetchOrderItems(orderID);
+      return { ...orderData, id: orderDoc.id, orderItems, buyerAccountDetails };
+    }
+    return null;
   };
 
   // Fetch orders for the organization with filters
-  const fetchFilteredOrders = async (
+  const fetchFilteredOrders: (
+    organizationID: string,
+    orderStatus?: string
+  ) => Promise<ExtendedOrder[]> = async (
     organizationID: string,
     orderStatus: string = "all"
   ): Promise<ExtendedOrder[]> => {
@@ -89,8 +117,8 @@ export const useFetchFilterOrders = () => {
         console.log("Processing order: ", order);
         const orderItems = await fetchOrderItems(doc.id);
         console.log("Order items fetched: ", orderItems);
-        const buyerEmail = await fetchBuyerEmail(order.buyerID);
-        orders.push({ ...order, id: doc.id, orderItems, buyerEmail });
+        const buyerAccountDetails = await fetchBuyerAccountDetails(order.buyerID);
+        orders.push({ ...order, id: doc.id, orderItems, buyerAccountDetails });
       }
       return orders;
     } catch (error) {
@@ -99,7 +127,126 @@ export const useFetchFilterOrders = () => {
     }
   };
 
+  // Function to mark order as ready or pending
+  const markAsReady = async (orderID: string, currentStatus: string): Promise<void> => {
+    const orderRef = doc(db, "orders", orderID);
+    const newStatus = currentStatus === "ready" ? "pending" : "ready";
+    await updateDoc(orderRef, { orderStatus: newStatus, lastModified: new Date() });
+  };
+
+  // Function to mark order as paid or unpaid
+  const markAsPaid = async (orderID: string, currentStatus: string): Promise<void> => {
+    const orderRef = doc(db, "orders", orderID);
+    const newStatus = currentStatus === "paid" ? "not_paid" : "paid";
+    await updateDoc(orderRef, { paymentStatus: newStatus, lastModified: new Date() });
+  };
+
+  // Function to mark order as claimed or pending
+  const markAsClaimed = async (
+    orderID: string,
+    currentStatus: string,
+    orderItems: ExtendedOrderItem[]
+  ): Promise<void> => {
+    const orderRef = doc(db, "orders", orderID);
+    const newStatus = currentStatus === "completed" ? "pending" : "completed";
+    await updateDoc(orderRef, { orderStatus: newStatus, lastModified: new Date() });
+
+    if (newStatus === "completed") {
+      for (const item of orderItems) {
+        const variationRef = doc(db, `products/${item.productID}/variations`, item.variationID);
+        const variationDoc = await getDoc(variationRef);
+        if (variationDoc.exists()) {
+          const variation = variationDoc.data() as Variation;
+          const updatedVariationData: Partial<Variation> = {
+            completedOrders: variation.completedOrders + item.quantity,
+            lastStockUpdate: new Date(),
+            lastModified: new Date(),
+          };
+          if (item.isPreOrder) {
+            updatedVariationData.preOrderStocks = variation.preOrderStocks - item.quantity;
+          } else {
+            updatedVariationData.reservedStocks = variation.reservedStocks - item.quantity;
+          }
+          await updateDoc(variationRef, updatedVariationData);
+
+          // Update the product's total sales
+          const productRef = doc(db, "products", item.productID);
+          const productDoc = await getDoc(productRef);
+          if (productDoc.exists()) {
+            const product = productDoc.data() as Product;
+            const updatedProductData: Partial<Product> = {
+              totalSales: product.totalSales + item.quantity,
+              lastModified: new Date(),
+            };
+            await updateDoc(productRef, updatedProductData);
+          }
+        }
+      }
+    }
+  };
+
+  // Function to cancel order
+  const cancelOrder = async (
+    orderID: string,
+    remarks: string,
+    orderItems: ExtendedOrderItem[]
+  ): Promise<void> => {
+    if (!remarks) {
+      throw new Error("Remarks is required to cancel an order.");
+    }
+
+    const orderRef = doc(db, "orders", orderID);
+    const orderDoc = await getDoc(orderRef);
+    if (!orderDoc.exists()) {
+      throw new Error("Order not found");
+    }
+
+    await updateDoc(orderRef, {
+      orderStatus: "cancelled",
+      remarks,
+      lastModified: new Date(),
+    });
+
+    for (const item of orderItems) {
+      const variationRef = doc(db, `products/${item.productID}/variations`, item.variationID);
+      const variationDoc = await getDoc(variationRef);
+      if (variationDoc.exists()) {
+        const variation = variationDoc.data() as Variation;
+        const updatedData: Partial<Variation> = {
+          cancelledOrders: variation.cancelledOrders + item.quantity,
+          remainingStocks: variation.remainingStocks + item.quantity,
+          lastStockUpdate: new Date(),
+          lastModified: new Date(),
+        };
+        if (item.isPreOrder) {
+          updatedData.preOrderStocks = variation.preOrderStocks - item.quantity;
+        } else {
+          updatedData.reservedStocks = variation.reservedStocks - item.quantity;
+        }
+        await updateDoc(variationRef, updatedData);
+
+        // Update the stocks logs
+        const stocksLogRef = collection(
+          db,
+          `products/${item.productID}/variations/${item.variationID}/stocksLogs`
+        );
+        await addDoc(stocksLogRef, {
+          variationID: item.variationID,
+          quantity: item.quantity,
+          action: "cancelled",
+          remarks: `Order ${orderID} cancelled`,
+          dateCreated: new Date(),
+        });
+      }
+    }
+  };
+
   return {
     fetchFilteredOrders,
+    fetchOrderDetails,
+    markAsReady,
+    markAsPaid,
+    markAsClaimed,
+    cancelOrder,
   };
 };

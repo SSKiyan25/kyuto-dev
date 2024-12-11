@@ -357,7 +357,7 @@
         { step: 3, title: "Ready", description: "Your order is ready for pickup" },
         { step: 4, title: "Claimed", description: "Your order has been claimed" },
       ];
-    } else if (status === "claimed") {
+    } else if (status === "completed") {
       return [
         { step: 1, title: "Pending", description: "Order request received" },
         {
