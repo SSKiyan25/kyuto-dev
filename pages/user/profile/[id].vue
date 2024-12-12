@@ -1,33 +1,35 @@
 <template>
-  <div class="flex h-auto w-full flex-col space-y-6 rounded-md p-16 shadow-sm">
-    <span class="text-xl font-semibold">My Profile</span>
+  <div class="flex h-auto w-full flex-col space-y-3 rounded-md p-8 shadow-sm sm:space-y-6 sm:p-16">
+    <span class="text-md font-semibold sm:text-xl">My Profile</span>
     <!-- Profile Card -->
     <div
-      class="flex w-full items-center justify-between space-x-6 rounded-md border bg-secondary px-12 py-6 shadow-md"
+      class="flex w-full items-center justify-between space-x-6 rounded-md border bg-secondary px-4 py-6 shadow-md sm:px-12"
     >
       <div class="flex flex-row items-center space-x-2">
         <img src="/profile-icon.jpg" alt="profile" class="h-20 w-20 rounded-full object-cover" />
         <div class="flex flex-col">
-          <span class="text-md font-semibold"
+          <span class="sm:text-md text-sm font-semibold"
             >{{ userData?.firstname || "None" }} {{ userData?.lastname || "None" }}</span
           >
-          <span class="text-sm text-muted-foreground">{{ userData?.course || "None" }}</span>
+          <span class="text-[12px] text-muted-foreground sm:text-sm">{{
+            userData?.course || "None"
+          }}</span>
         </div>
       </div>
     </div>
 
     <!-- Personal Information -->
     <div
-      class="flex w-full flex-col space-x-6 rounded-md border bg-secondary px-12 py-10 shadow-md"
+      class="flex w-full flex-col space-x-6 rounded-md border bg-secondary px-4 py-4 shadow-md sm:px-12 sm:py-10"
     >
       <!-- Title and Edit Button -->
       <div class="flex flex-row items-center justify-between">
-        <span class="font-semibold">Personal Information</span>
+        <span class="text-[12px] font-semibold sm:text-sm">Personal Information</span>
         <div class="flex justify-end">
           <UiDialog v-model:open="profileDialog">
             <UiDialogTrigger as-child>
-              <UiButton variant="outline">
-                <span class="text-[12px]">Edit </span>
+              <UiButton variant="outline" class="px-2 py-1 sm:px-2 sm:py-4">
+                <span class="text-[10px] sm:text-[12px]">Edit </span>
                 <Icon name="lucide:pencil" class="size-3" />
               </UiButton>
             </UiDialogTrigger>
@@ -37,11 +39,11 @@
               description="Make changes to your profile here. Click save when you're done."
             >
               <UiDialogTitle>Edit Personal Information</UiDialogTitle>
-              <UiDialogDescription>
+              <UiDialogDescription class="text-[12px] sm:text-sm">
                 Make changes to your personal information here. Click save when you're done.
               </UiDialogDescription>
               <form @submit.prevent="submitProfile">
-                <div class="space-y-4 p-8">
+                <div class="space-y-4 p-4 sm:p-8">
                   <fieldset :disabled="isSubmittingProfile">
                     <UiVeeInput
                       name="firstname"
@@ -86,50 +88,76 @@
         </div>
       </div>
       <!-- Name and Contact Information -->
-      <div class="grid grid-cols-3 gap-8 pt-6">
+      <div class="grid grid-cols-1 gap-4 pt-6 sm:grid-cols-2 sm:gap-8">
         <div class="flex flex-col space-y-1">
-          <span class="text-[12px] font-semibold text-muted-foreground">First Name</span>
-          <span class="text-sm font-semibold">{{ userData?.firstname || "None" }}</span>
+          <span class="text-[10px] font-semibold text-muted-foreground sm:text-[12px]"
+            >First Name</span
+          >
+          <span class="text-[12px] font-semibold sm:text-sm">{{
+            userData?.firstname || "None"
+          }}</span>
         </div>
         <div class="flex flex-col space-y-1">
-          <span class="text-[12px] font-semibold text-muted-foreground">Last Name</span>
-          <span class="text-sm font-semibold">{{ userData?.lastname || "None" }}</span>
+          <span class="text-[10px] font-semibold text-muted-foreground sm:text-[12px]"
+            >Last Name</span
+          >
+          <span class="text-[12px] font-semibold sm:text-sm">{{
+            userData?.lastname || "None"
+          }}</span>
         </div>
         <div class="flex flex-col space-y-1">
-          <span class="text-[12px] font-semibold text-muted-foreground">Username</span>
-          <span class="text-sm font-semibold">{{ userData?.username || "None" }}</span>
+          <span class="text-[10px] font-semibold text-muted-foreground sm:text-[12px]"
+            >Email address</span
+          >
+          <span class="text-[12px] font-semibold sm:text-sm">{{ userData?.email || "None" }}</span>
         </div>
         <div class="flex flex-col space-y-1">
-          <span class="text-[12px] font-semibold text-muted-foreground">Email address</span>
-          <span class="text-sm font-semibold">{{ userData?.email || "None" }}</span>
+          <span class="text-[10px] font-semibold text-muted-foreground sm:text-[12px]"
+            >Phone Number</span
+          >
+          <span class="text-[12px] font-semibold sm:text-sm">{{
+            userData?.phoneNumber || "None"
+          }}</span>
         </div>
         <div class="flex flex-col space-y-1">
-          <span class="text-[12px] font-semibold text-muted-foreground">Phone Number</span>
-          <span class="text-sm font-semibold">{{ userData?.phoneNumber || "None" }}</span>
+          <span class="text-[10px] font-semibold text-muted-foreground sm:text-[12px]"
+            >Username</span
+          >
+          <span class="text-[12px] font-semibold sm:text-sm">{{
+            userData?.username || "None"
+          }}</span>
         </div>
       </div>
       <div></div>
     </div>
     <!-- Student Information -->
-    <div class="flex flex-col rounded-md border bg-secondary px-12 py-6 shadow-md">
+    <div class="flex flex-col rounded-md border bg-secondary px-4 py-6 shadow-md sm:px-12">
       <div class="flex flex-row items-center justify-between">
-        <span class="font-semibold">Student Information</span>
+        <span class="text-[12px] font-semibold sm:text-sm">Student Information</span>
         <div class="flex justify-end">
           <FormsStudent :userID="userID" />
         </div>
       </div>
       <div class="grid grid-cols-3 pt-4">
         <div class="flex flex-col space-y-1">
-          <span class="text-[12px] font-semibold text-muted-foreground">Student ID</span>
-          <span class="text-sm font-semibold">{{ userData?.studentID || "None" }}</span>
+          <span class="text-[10px] font-semibold text-muted-foreground sm:text-[12px]"
+            >Student ID</span
+          >
+          <span class="text-[12px] font-semibold sm:text-sm">{{
+            userData?.studentID || "None"
+          }}</span>
         </div>
         <div class="flex flex-col space-y-1">
-          <span class="text-[12px] font-semibold text-muted-foreground">Course</span>
-          <span class="text-sm font-semibold">{{ userData?.course || "None" }}</span>
+          <span class="text-[10px] font-semibold text-muted-foreground sm:text-[12px]">Course</span>
+          <span class="text-[12px] font-semibold sm:text-sm">{{ userData?.course || "None" }}</span>
         </div>
         <div class="flex flex-col space-y-1">
-          <span class="text-[12px] font-semibold text-muted-foreground">College</span>
-          <span class="text-sm font-semibold">{{ userData?.college || "None" }}</span>
+          <span class="text-[10px] font-semibold text-muted-foreground sm:text-[12px]"
+            >College</span
+          >
+          <span class="text-[12px] font-semibold sm:text-sm">{{
+            userData?.college || "None"
+          }}</span>
         </div>
       </div>
     </div>

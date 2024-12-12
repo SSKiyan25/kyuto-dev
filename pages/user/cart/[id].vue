@@ -4,10 +4,13 @@
     <!-- <div class="flex flex-row items-center gap-4 px-12 pt-2 text-4xl font-bold">
       <Icon name="lucide:shopping-cart" /> <span>Shopping Cart</span>
     </div> -->
-    <div class="flex h-auto w-full flex-row justify-between gap-8 px-12 pt-6">
-      <div class="flex h-auto w-3/4 flex-col rounded border p-4">
-        <p>
-          <span class="font-bold">{{ userCart.length }}</span> Item(s) in Cart
+    <div
+      class="flex h-auto w-full flex-col justify-between px-4 pt-6 sm:flex-row sm:gap-8 sm:px-12"
+    >
+      <div class="flex h-auto w-full flex-col rounded border p-4 sm:w-3/4">
+        <p class="text-[12px] sm:text-sm">
+          <span class="text-[12px] font-bold sm:text-sm">{{ userCart.length }}</span> Item(s) in
+          Cart
         </p>
         <UiDivider class="my-2" />
         <div class="flex w-full flex-row justify-between pt-2">
@@ -15,28 +18,28 @@
             <div
               v-for="(cartItems, organization) in groupedCartItems"
               :key="organization"
-              class="w-full px-4 pb-8"
+              class="w-full px-2 pb-8 sm:px-4"
             >
-              <h2 class="text-lg font-semibold">{{ organization }}</h2>
+              <h2 class="text-md font-semibold sm:text-lg">{{ organization }}</h2>
               <UiDivider class="my-2" />
               <div v-for="cartItem in cartItems" :key="cartItem?.productID" class="w-full">
                 <template v-if="cartItem">
                   <div
-                    class="flex w-full flex-row items-center justify-between gap-6 p-4"
+                    class="flex w-full flex-col items-start justify-between gap-2 p-1 sm:flex-row sm:items-center sm:gap-6 sm:p-4"
                     :class="{
                       'round-sm bg-secondary': isSelected(cartItem),
                       'opacity-50': isOtherGroupSelected(cartItem),
                     }"
                   >
-                    <div class="flex flex-row items-center gap-6">
+                    <div class="flex flex-row items-center gap-2 sm:gap-6">
                       <input
                         type="checkbox"
-                        class="h-6 w-6"
+                        class="h-4 w-4 sm:h-6 sm:w-6"
                         :checked="isSelected(cartItem)"
                         @change="toggleSelection(cartItem)"
                         :disabled="isOtherGroupSelected(cartItem)"
                       />
-                      <div class="h-24 w-24 overflow-hidden">
+                      <div class="h-16 w-16 overflow-hidden sm:h-24 sm:w-24">
                         <img
                           :src="products[cartItem.productID]?.featuredPhotoURL"
                           :alt="products[cartItem.productID]?.name"
@@ -44,30 +47,34 @@
                         />
                       </div>
                       <div class="flex flex-col">
-                        <span class="text-lg font-semibold hover:underline">{{
+                        <span class="text-sm font-semibold hover:underline sm:text-lg">{{
                           products[cartItem.productID]?.name
                         }}</span>
                         <span
                           v-if="variations[cartItem.variationID]?.value !== 'None'"
-                          class="text-[12px] text-muted-foreground"
+                          class="text-[10px] text-muted-foreground sm:text-[12px]"
                         >
                           {{ variations[cartItem.variationID]?.value }}
                         </span>
-                        <span class="text-[12px] text-muted-foreground"
+                        <span class="text-[10px] text-muted-foreground sm:text-[12px]"
                           >Quantity: {{ cartItem.quantity }}</span
                         >
-                        <span class="text-[12px] text-muted-foreground"
+                        <span class="text-[10px] text-muted-foreground sm:text-[12px]"
                           >Price per quantity: {{ variations[cartItem.variationID]?.price }}</span
                         >
                       </div>
                     </div>
                     <div class="flex flex-row items-center gap-8">
                       <div class="flex flex-col">
-                        <span v-if="cartItem.isPreOrder" class="text-[12px] text-muted-foreground"
+                        <span
+                          v-if="cartItem.isPreOrder"
+                          class="text-[10px] text-muted-foreground sm:text-[12px]"
                           >Pre-Order</span
                         >
-                        <span class="text-[12px] text-muted-foreground">Subtotal:</span>
-                        <span class="text-md font-semibold">
+                        <span class="text-[10px] text-muted-foreground sm:text-[12px]"
+                          >Subtotal:</span
+                        >
+                        <span class="sm:text-md text-sm font-semibold">
                           ₱{{ (variations[cartItem.variationID]?.price || 0) * cartItem.quantity }}
                         </span>
                       </div>
@@ -76,7 +83,7 @@
                           <UiAlertDialogTrigger as-child>
                             <UiButton
                               variant="destructive"
-                              class="rounded-sm p-4 opacity-75 hover:opacity-100"
+                              class="rounded-sm p-2 opacity-75 hover:opacity-100 sm:p-4"
                               @click="openRemoveDialog(cartItem)"
                               >Remove
                             </UiButton>
@@ -113,16 +120,18 @@
         </div>
       </div>
 
-      <div class="flex h-auto w-1/4 flex-col">
+      <div class="flex h-auto w-full flex-col sm:w-1/4">
         <div class="sticky top-20 p-4 shadow-sm">
           <div class="flex flex-col space-y-2 py-2 pt-0">
-            <p class="text-[12px] text-muted-foreground">Select an Item to Proceed to Checkout</p>
-            <p>
+            <p class="text-[10px] text-muted-foreground sm:text-[12px]">
+              Select an Item to Proceed to Checkout
+            </p>
+            <p class="text-[12px] sm:text-sm">
               <span class="font-bold">{{ selectedItems.length }}</span> Item(s) Selected
             </p>
             <UiDivider class="my-2" />
-            <span class="text-md font-extrabold text-muted-foreground">Total:</span>
-            <span class="text-2xl font-bold">₱ {{ totalPrice }}</span>
+            <span class="sm:text-md text-sm font-extrabold text-muted-foreground">Total:</span>
+            <span class="text-lg font-bold sm:text-2xl">₱ {{ totalPrice }}</span>
           </div>
           <!-- <div class="flex flex-row items-center gap-2 pt-2">
             <span class="text-md text-muted-foreground line-through">₱ 150.00</span>
@@ -139,12 +148,12 @@
               <UiDialogContent
                 :class="{ 'z-40': orderLoading }"
                 :overlayClass="orderLoading ? 'z-40' : ''"
-                class="overflow-y-auto bg-stone-50 p-12 sm:max-h-[700px] sm:max-w-[725px]"
+                class="max-h-[500px] overflow-y-auto bg-stone-50 p-4 sm:max-h-[700px] sm:max-w-[725px] sm:p-12"
                 title="Checkout Order"
                 description="Please review your order details before proceeding to payment. Ensure that all items and quantities are correct."
               >
                 <template #content>
-                  <div class="flex flex-col gap-4 py-6">
+                  <div class="flex flex-col gap-4 py-0 sm:py-6">
                     <!-- Order Summary Section -->
                     <div>
                       <h3 class="text-md font-semibold">Order Summary</h3>
@@ -152,7 +161,7 @@
                       <div
                         v-for="cartItem in selectedItems"
                         :key="cartItem.productID"
-                        class="flex flex-row items-center justify-between gap-4 px-8 py-4"
+                        class="flex flex-row items-center justify-between gap-4 px-2 py-4 sm:px-8"
                       >
                         <div class="flex flex-row items-center gap-4">
                           <div class="h-16 w-16 overflow-hidden">
@@ -163,7 +172,7 @@
                             />
                           </div>
                           <div class="flex flex-col">
-                            <span class="text-md font-semibold">{{
+                            <span class="sm:text-md text-sm font-semibold">{{
                               products[cartItem.productID]?.name
                             }}</span>
                             <span
@@ -225,7 +234,7 @@
                     </div>
                     <UiDivider class="my-2" />
                     <!-- Discount Section -->
-                    <div>
+                    <!-- <div>
                       <h3 class="text-lg font-semibold">Avail Discount</h3>
                       <UiDivider class="my-2" />
                       <div class="flex flex-col gap-2">
@@ -237,7 +246,7 @@
                         />
                         <UiButton class="mt-2 bg-blue-500 hover:bg-blue-700">Send Request</UiButton>
                       </div>
-                    </div>
+                    </div> -->
                     <UiDivider class="my-2" />
                     <!-- Submit Order Button -->
                     <div class="flex flex-row items-center justify-between">

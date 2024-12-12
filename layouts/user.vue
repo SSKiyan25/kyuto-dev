@@ -194,12 +194,15 @@
     <!-- Sidebar main content -->
     <UiSidebarInset>
       <!-- Navbar -->
-      <UiNavbar sticky class="flex h-16 shrink-0 items-center gap-2 border-b bg-secondary px-4">
-        <UiSidebarTrigger class="-ml-1" icon="lucide:panel-left-close" />
+      <UiNavbar
+        sticky
+        class="flex h-16 shrink-0 items-center gap-2 border-b bg-primary px-4 text-primary-foreground"
+      >
+        <UiSidebarTrigger class="-ml-1" icon="lucide:menu" />
         <UiSeparator orientation="vertical" class="mr-2 h-4" />
         <UiBreadcrumbs v-if="breadcrumbs && breadcrumbs.length" :items="breadcrumbs" />
       </UiNavbar>
-      <div class="flex flex-1 flex-col gap-4 p-4">
+      <div class="flex flex-1 flex-col sm:gap-4 sm:p-4">
         <slot />
       </div>
     </UiSidebarInset>

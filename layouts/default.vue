@@ -112,7 +112,7 @@
                       <UiButton v-if="!user" to="/login" class="text-secondary-foreground"
                         >Log in</UiButton
                       >
-                      <UiButton v-else variant="destructive" to="/login" class="text-secondary"
+                      <UiButton v-else variant="destructive" @click="logout" class="text-secondary"
                         >Sign out</UiButton
                       >
                     </div>
@@ -161,6 +161,7 @@
   console.log("User iud", user.value?.uid);
 
   const cartNum = ref(0);
+  const userId = ref<string | null>(null);
 
   const userDocRef = computed(() => (user.value ? doc(db, "accounts", user.value.uid) : null));
   const userData = useDocument<Partial<Account>>(userDocRef) as Partial<Account> | undefined;
@@ -185,6 +186,7 @@
   );
 
   const auth = useFirebaseAuth();
+
   const logout = async () => {
     await signOut(auth!);
     navigateTo("/login");
@@ -192,8 +194,16 @@
 
   const mobileLinks = computed(() => [
     { name: "Home", to: "/", icon: "lucide:house" },
-    { name: "My Profile", to: `/user/profile/${userData?.id}`, icon: "lucide:user" },
-    { name: "Cart", to: `/user/cart/${userData?.id}`, icon: "lucide:shopping-cart" },
+    {
+      name: "My Profile",
+      to: user.value ? `/user/profile/${user.value.uid}` : "",
+      icon: "lucide:user",
+    },
+    {
+      name: "Cart",
+      to: user.value ? `/user/cart/${user.value.uid}` : "",
+      icon: "lucide:shopping-cart",
+    },
     { name: "My Store", to: "/organization/products", icon: "lucide:store" },
   ]);
 </script>

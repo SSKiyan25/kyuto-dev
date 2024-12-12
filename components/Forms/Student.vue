@@ -1,8 +1,8 @@
 <template>
   <UiDialog v-model:open="studentDialog">
     <UiDialogTrigger as-child>
-      <UiButton variant="outline">
-        <span class="text-[12px]">Edit </span>
+      <UiButton variant="outline" class="px-2 py-1 sm:px-2 sm:py-4">
+        <span class="text-[10px] sm:text-[12px]">Edit </span>
         <Icon name="lucide:pencil" class="size-3" />
       </UiButton>
     </UiDialogTrigger>

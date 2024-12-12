@@ -3,7 +3,7 @@
     <ADUserOrderMore />
     <div class="flex h-screen w-full flex-col space-y-1 pt-12">
       <div class="flex flex-row items-center justify-between">
-        <span class="text-lg font-semibold">Your Latest Order</span>
+        <span class="text-md font-semibold sm:text-lg">Your Latest Order</span>
         <UiButton @click="refreshLatestOrder()" variant="ghost">
           <span>Refresh</span>
           <Icon name="lucide:refresh-cw" class="size-4 hover:animate-spin" />
@@ -12,7 +12,7 @@
       <div class="flex w-full flex-row items-center bg-secondary p-4 shadow-md">
         <template v-if="recentOrder">
           <div class="flex w-full flex-col space-y-1">
-            <p class="text-lg font-bold">
+            <p class="text-md font-bold sm:text-lg">
               Reference Number: <span class="text-primary">{{ recentOrder.uniqRefNumber }}</span>
             </p>
             <p class="text-[12px] opacity-70">
@@ -20,17 +20,24 @@
               <span class="text-primary">{{ formatDate(recentOrder.dateOrdered) }}</span>
             </p>
             <div class="py-8">
-              <UiStepper class="flex w-full items-start gap-2">
+              <UiStepper
+                :orientation="isMobile ? 'vertical' : 'horizontal'"
+                class="mx-auto flex w-full flex-col justify-start gap-10 sm:max-w-full sm:flex-row sm:items-start sm:justify-center sm:gap-2"
+              >
                 <UiStepperItem
                   v-for="step in steps"
                   :key="step.step"
                   :state="getStepState(step.step)"
-                  class="group relative flex w-full flex-col items-center justify-center text-secondary-foreground"
+                  class="group relative flex w-full items-start gap-4 text-[12px] text-secondary-foreground sm:flex-col sm:items-center sm:justify-center sm:gap-0 sm:text-sm"
                   :step="step.step"
                 >
                   <UiStepperSeparator
                     v-if="step.step != steps[steps.length - 1].step"
-                    class="absolute left-[calc(50%+20px)] right-[calc(-50%+10px)] top-5 block h-0.5 shrink-0 rounded-full bg-secondary-foreground/20 group-data-[state=completed]:bg-primary"
+                    :class="
+                      isMobile
+                        ? 'absolute left-[18px] top-[38px] block h-[105%] w-0.5 shrink-0 rounded-full bg-muted group-data-[state=completed]:bg-primary'
+                        : 'absolute left-[calc(50%+20px)] right-[calc(-50%+10px)] top-5 block h-0.5 shrink-0 rounded-full bg-secondary-foreground/20 group-data-[state=completed]:bg-primary'
+                    "
                   />
                   <UiStepperTrigger as-child>
                     <UiButton
@@ -47,11 +54,7 @@
                       :class="[
                         getStepState(step.step) == 'active' &&
                           'ring-2 ring-ring ring-offset-2 ring-offset-background',
-                        recentOrder.orderStatus === 'cancelled' &&
-                          getStepState(step.step) == 'active' &&
-                          'bg-destructive',
                       ]"
-                      :disabled="true"
                     >
                       <TransitionScale mode="out-in" :scale="0.8">
                         <Icon
@@ -78,29 +81,32 @@
                     </UiButton>
                   </UiStepperTrigger>
 
-                  <div class="mt-5 flex flex-col items-center text-center">
+                  <div class="mt-0 flex flex-col sm:mt-5 sm:items-center sm:text-center">
                     <UiStepperTitle
                       :class="[
                         getStepState(step.step) == 'active' && 'text-primary',
                         recentOrder.orderStatus === 'cancelled' && 'text-destructive',
                       ]"
-                      class="text-sm font-semibold transition lg:text-base"
-                      >{{ step.title }}</UiStepperTitle
-                    >
+                      class="text-sm font-semibold transition sm:text-base"
+                      >{{ step.title }}
+                    </UiStepperTitle>
                     <UiStepperDescription
                       :class="[
                         getStepState(step.step) == 'active' && 'text-primary',
                         recentOrder.orderStatus === 'cancelled' && 'text-destructive',
                       ]"
-                      class="sr-only text-xs text-muted-foreground transition md:not-sr-only lg:text-sm"
-                      >{{ step.description }}</UiStepperDescription
+                      class="text-xs text-muted-foreground transition sm:text-sm"
                     >
+                      {{ step.description }}
+                    </UiStepperDescription>
                   </div>
                 </UiStepperItem>
               </UiStepper>
             </div>
 
-            <div class="flex w-full flex-row justify-between pt-2 text-sm opacity-70">
+            <div
+              class="flex w-full flex-row justify-between pt-2 text-[12px] opacity-70 sm:text-sm"
+            >
               <p class="">
                 Total Payment: <span class="text-primary">{{ recentOrder.totalPrice }}</span>
               </p>
@@ -125,37 +131,35 @@
         <UiDivider />
         <div class="flex w-full flex-row items-center justify-between pt-3">
           <div class="w-1/2">
-            <UiVeeInput
-              type="text"
-              placeholder="Search your order"
-              icon="lucide:search"
-              v-model="search"
-            />
+            <UiVeeInput type="text" placeholder="Search your order" icon="lucide:search" />
           </div>
-          <!-- <UiButton variant="outline">
-            <Icon name="lucide:list-filter" class="size-4" />
-            <span>Filter</span>
-          </UiButton> -->
         </div>
-        <UiTanStackTable
-          @ready="table = $event"
-          ref="tableRef"
-          :showPagination="false"
-          :show-select="false"
-          :search="search"
-          :data="filteredOrders"
-          :columns="columns"
-          :page-size="rowsPerPage"
-          @page-size-change="handlePageSizeChange"
-          class="mt-5 rounded-md border"
-        >
-          <template #empty>
-            <div class="flex w-full flex-col items-center justify-center gap-5 py-5">
-              <Icon name="lucide:database" class="h-12 w-12 text-muted-foreground" />
-              <span class="mt-2">No data available.</span>
-            </div>
-          </template>
-        </UiTanStackTable>
+        <div>
+          <UiDatatable :options="options" :columns="columns" :data="filteredOrders">
+            <template #actions="{ cellData }: { cellData: Order & { id: string } }">
+              <UiDropdownMenu>
+                <UiDropdownMenuTrigger as-child>
+                  <UiButton class="h-7 text-xs" size="sm"> Actions </UiButton>
+                </UiDropdownMenuTrigger>
+                <UiDropdownMenuContent class="w-32">
+                  <UiDropdownMenuItem @click="openViewOrderDialog(cellData.id)">
+                    <Icon name="lucide:view" class="mr-2" />
+                    View Order
+                  </UiDropdownMenuItem>
+                  <UiDropdownMenuItem
+                    @click="
+                      selectedOrderID = cellData.id;
+                      cancelOrderDialog = true;
+                    "
+                  >
+                    <Icon name="lucide:file-x" class="mr-2" />
+                    Cancel Order
+                  </UiDropdownMenuItem>
+                </UiDropdownMenuContent>
+              </UiDropdownMenu>
+            </template>
+          </UiDatatable>
+        </div>
       </div>
       <div class="min-h-24"></div>
     </div>
@@ -265,6 +269,7 @@
   import type { ExtendedOrderItem } from "~/composables/user/useFetchOrders";
   import type { ButtonVariant } from "~/types/Button";
   import type { Order, OrderItem } from "~/types/models/Order";
+  import type { Config, ConfigColumns } from "datatables.net";
 
   definePageMeta({
     middleware: "auth",
@@ -278,6 +283,21 @@
   const route = useRoute();
   const userID = computed(() => route.params.id as string);
   const rowsPerPage = ref<number>(10);
+
+  const isMobile = ref(false);
+
+  const handleResize = () => {
+    isMobile.value = window.innerWidth < 640; // Tailwind's sm breakpoint is 640px
+  };
+
+  onMounted(() => {
+    handleResize();
+    window.addEventListener("resize", handleResize);
+  });
+
+  onUnmounted(() => {
+    window.removeEventListener("resize", handleResize);
+  });
 
   const { fetchUserOrders, fetchLatestOrder, fetchOrders, cancelOrder, fetchOrderItems } =
     useFetchOrders();
@@ -413,10 +433,6 @@
     },
   ];
 
-  const tableRef = ref();
-  const table = ref<Table<Order & { id: string }> | null>(null);
-  const search = ref("");
-
   const handlePageSizeChange = (newPageSize: number) => {
     rowsPerPage.value = newPageSize;
     fetchOrders(userID.value, selectedStatus.value, "", rowsPerPage.value).then((newOrders) => {
@@ -425,15 +441,6 @@
       filterOrders(selectedStatus.value);
     });
   };
-
-  watch(
-    () => table.value?.getState().pagination.pageSize,
-    (newPageSize) => {
-      if (newPageSize) {
-        handlePageSizeChange(newPageSize);
-      }
-    }
-  );
 
   const cancelOrderDialog = ref(false);
   const cancelRemarks = ref("");
@@ -486,119 +493,113 @@
     selectedOrder.value = null;
   };
 
-  const columns: ColumnDef<Order & { id: string }>[] = [
-    { accessorKey: "uniqRefNumber", header: "Order Ref Number", enableHiding: true },
+  const columns: ConfigColumns[] = [
+    { title: "Reference Number", data: "uniqRefNumber" },
     {
-      accessorKey: "orderStatus",
-      header: "Order Status",
-      enableHiding: true,
-      cell: ({ row }) => {
-        const status = row.original.orderStatus;
-        let variant = "default";
-        let displayText = status;
-
-        if (status === "pending") {
-          variant = "secondary";
-          displayText = "Pending";
-        } else if (status === "preparing") {
-          variant = "outline";
-          displayText = "Preparing";
-        } else if (status === "ready") {
-          variant = "secondary";
-          displayText = "Ready";
-        } else if (status === "claimed") {
-          variant = "default";
-          displayText = "Claimed";
-        } else if (status === "cancelled") {
-          variant = "destructive";
-          displayText = "Cancelled";
+      title: "Order Status",
+      data: "orderStatus",
+      render: (data: string) => {
+        let colorClass = "bg-gray-200 text-gray-800";
+        if (data === "pending") {
+          colorClass = "bg-yellow-200 text-yellow-800";
+        } else if (data === "cancelled") {
+          colorClass = "bg-red-200 text-red-800";
+        } else if (data === "completed") {
+          colorClass = "bg-green-200 text-green-800";
         }
-
-        return h(resolveComponent("UiBadge"), { variant }, { default: () => displayText });
+        return `
+      <div class="flex items-center gap-3">
+        <div class="flex cursor-pointer items-center gap-2">
+          <span class="px-2 py-1 rounded ${colorClass} capitalize">${data}</span>
+        </div>
+      </div>`;
       },
     },
     {
-      accessorKey: "paymentStatus",
-      header: "Payment Status",
-      enableHiding: true,
-      cell: ({ row }) => {
-        const status = row.original.paymentStatus;
-        let variant = "default";
-        let displayText = status;
-
-        if (status === "not_paid") {
-          variant = "destructive";
-          displayText = "Not Paid";
-        } else if (status === "paid") {
-          variant = "default";
-          displayText = "Paid";
-        } else if (status === "cancelled") {
-          variant = "destructive";
-          displayText = "Cancelled";
+      title: "Payment Status",
+      data: "paymentStatus",
+      render: (data: string) => {
+        let colorClass = "bg-gray-200 text-gray-800";
+        if (data === "not_paid") {
+          colorClass = "bg-red-200 text-red-800";
+        } else if (data === "paid") {
+          colorClass = "bg-green-200 text-green-800";
+        } else if (data === "cancelled") {
+          colorClass = "bg-red-200 text-red-800";
         }
-
-        return h(resolveComponent("UiBadge"), { variant }, { default: () => displayText });
+        return `
+      <div class="flex items-center gap-3">
+        <div class="flex cursor-pointer items-center gap-2">
+          <span class="px-2 py-1 rounded ${colorClass} capitalize">${data}</span>
+        </div>
+      </div>`;
       },
     },
     {
-      accessorKey: "dateOrdered",
-      header: "Date",
-      enableHiding: true,
-      cell: ({ row }) => formatDate(row.original.dateOrdered),
+      title: "Date",
+      data: "dateOrdered",
+      render: (data: any) => formatDate(data),
     },
     {
-      accessorKey: "totalPrice",
-      header: "Total Payment",
-      enableHiding: true,
-      cell: ({ row }) => `₱${row.original.totalPrice.toFixed(2)}`,
+      title: "Total Payment",
+      data: "totalPrice",
+      render: (data: number) => `₱${data.toFixed(2)}`,
     },
     {
-      accessorKey: "actions",
-      header: "",
-      enableSorting: false,
-      enableHiding: false,
-      cell: ({ row }) => {
-        return h(resolveComponent("UiDropdownMenu"), {}, () => [
-          h(resolveComponent("UiDropdownMenuTrigger"), { asChild: true }, () => [
-            h(
-              resolveComponent("UiButton"),
-              { variant: "ghost", size: "icon", class: "w-9 h-9" },
-              () => [
-                h(resolveComponent("Icon"), {
-                  name: "lucide:more-horizontal",
-                  class: "h-4 w-4",
-                }),
-              ]
-            ),
-          ]),
-          h(resolveComponent("UiDropdownMenuContent"), {}, () => [
-            h(
-              resolveComponent("UiDropdownMenuItem"),
-              { title: "View Order", onClick: () => openViewOrderDialog(row.original.id) },
-              () => [
-                h(resolveComponent("Icon"), { name: "lucide:view", class: "mr-2" }),
-                "View Order",
-              ]
-            ),
-            h(
-              resolveComponent("UiDropdownMenuItem"),
-              {
-                title: "Cancel Order",
-                onClick: () => {
-                  selectedOrderID.value = row.original.id;
-                  cancelOrderDialog.value = true;
-                },
-              },
-              () => [
-                h(resolveComponent("Icon"), { name: "lucide:file-x", class: "mr-2" }),
-                "Cancel Order",
-              ]
-            ),
-          ]),
-        ]);
-      },
+      data: null,
+      title: "",
+      className: "no-export",
+      searchable: false,
+      orderable: false,
+      name: "actions",
+      render: "#actions",
+      responsivePriority: 1,
     },
   ];
+
+  const options: Config = {
+    dom: "Q<'flex flex-col sm:flex-row w-full sm:items-start sm:justify-between gap-5 mb-5'Bf><'border rounded-lg't><'flex flex-col sm:flex-row gap-5 sm:items-center sm:justify-between pt-3 p-5'li><''p>",
+    responsive: true,
+    autoWidth: true,
+    select: true,
+    buttons: [
+      {
+        extend: "colvis",
+        text: "Columns",
+        columns: ":not(.no-export)",
+      },
+      {
+        extend: "copy",
+        exportOptions: {
+          columns: ":not(.no-export)",
+        },
+      },
+      {
+        extend: "excel",
+        exportOptions: {
+          columns: ":not(.no-export)",
+        },
+      },
+      {
+        extend: "pdf",
+        exportOptions: {
+          columns: ":not(.no-export)",
+        },
+      },
+      {
+        extend: "print",
+        exportOptions: {
+          columns: ":not(.no-export)",
+        },
+      },
+      {
+        extend: "csv",
+        exportOptions: {
+          columns: ":not(.no-export)",
+        },
+      },
+    ],
+  };
 
   // Utility function to format date
   const formatDate = (timestamp: any): string => {
