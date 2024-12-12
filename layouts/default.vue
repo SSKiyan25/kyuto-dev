@@ -62,7 +62,13 @@
                       </div>
 
                       <div class="flex flex-row items-center">
-                        <Icon name="lucide:shopping-cart" class="h-5 w-5" />
+                        <UiChip
+                          :class="cartNum > 0 ? 'bg-red-700 text-white' : ''"
+                          size="lg"
+                          :text="cartNum > 0 ? cartNum.toString() : ''"
+                        >
+                          <Icon name="lucide:shopping-cart" class="h-5 w-5" />
+                        </UiChip>
                         <UiButton
                           variant="ghost"
                           class="justify-start text-sm"
@@ -123,9 +129,110 @@
           </UiSheet>
         </div>
         <div class="hidden items-center gap-3 sm:flex">
-          <UiButton to="/login" variant="outline" size="sm" class="text-secondary-foreground"
-            >Log in</UiButton
-          >
+          <template v-if="user">
+            <UiButton :to="`/user/cart/${userData?.id}`" variant="ghost">
+              <UiChip
+                :class="cartNum > 0 ? 'bg-red-700 text-white' : ''"
+                size="lg"
+                :text="cartNum > 0 ? cartNum.toString() : ''"
+              >
+                <Icon name="lucide:shopping-cart" class="h-6 w-6 cursor-pointer hover:shadow-md" />
+              </UiChip>
+            </UiButton>
+            <!-- User -->
+            <UiNavigationMenu>
+              <UiNavigationMenuList>
+                <UiNavigationMenuItem>
+                  <UiNavigationMenuTrigger
+                    class="rounded-full bg-secondary text-secondary-foreground"
+                  >
+                    <div
+                      class="flex flex-row items-center gap-1 rounded-full text-secondary-foreground"
+                    >
+                      <Icon name="lucide:user" class="h-6 w-6 cursor-pointer hover:shadow-md" />
+                    </div>
+                  </UiNavigationMenuTrigger>
+                  <UiNavigationMenuContent>
+                    <div class="flex w-[200px] flex-col justify-start px-4 py-4 text-sm">
+                      <span></span>
+                      <!-- User Profile -->
+                      <NuxtLink :to="`/user/profile/${userData?.id}`">
+                        <div
+                          class="flex flex-row items-center justify-between rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
+                        >
+                          <div class="flex items-center">
+                            <Icon name="lucide:user" class="h-4 w-4" />
+                            <div class="pl-2">Profile</div>
+                          </div>
+
+                          <Icon name="lucide:move-up-right" class="h-2 w-2 opacity-70" />
+                        </div>
+                      </NuxtLink>
+                      <NuxtLink :to="`/user/orders/track-orders/${userData?.id}`">
+                        <div
+                          class="flex flex-row items-center justify-between rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
+                        >
+                          <NuxtLink :to="`/user/orders/track-orders/${userData?.id}`">
+                            <div class="flex items-center">
+                              <Icon name="lucide:box" class="h-4 w-4" />
+                              <div class="pl-2">Your Orders</div>
+                            </div>
+                          </NuxtLink>
+
+                          <Icon name="lucide:move-up-right" class="h-2 w-2 opacity-70" />
+                        </div>
+                      </NuxtLink>
+                      <NuxtLink :to="`/user/inbox/${userData?.id}`">
+                        <div
+                          class="flex flex-row items-center justify-between rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
+                        >
+                          <div class="flex items-center">
+                            <Icon name="lucide:inbox" class="h-4 w-4" />
+                            <div class="pl-2">Inbox</div>
+                          </div>
+
+                          <Icon name="lucide:move-up-right" class="h-2 w-2 opacity-70" />
+                        </div>
+                      </NuxtLink>
+                      <div v-if="userData && userData.hasOrganization">
+                        <UiDivider class="py-2" />
+                        <!-- Organization Dashboard -->
+                        <NuxtLink to="/organization/dashboard">
+                          <div
+                            class="flex flex-row items-center justify-start rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
+                          >
+                            <Icon name="lucide:store" class="h-4 w-4" />
+                            <div class="pl-2">Manage Store</div>
+                          </div>
+                        </NuxtLink>
+                        <NuxtLink to="/organization/orders">
+                          <div
+                            class="flex flex-row items-center justify-start rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
+                          >
+                            <UiChip class="bg-red-700 text-white" size="lg" text="7">
+                              <Icon name="lucide:shopping-bag" class="h-4 w-4" />
+                            </UiChip>
+                            <div class="pl-2">Manage Orders</div>
+                          </div>
+                        </NuxtLink>
+                      </div>
+                      <UiDivider class="py-2" />
+                      <!-- Logout -->
+                      <UiButton @click="logout" size="sm" class="flex w-full flex-row items-center">
+                        <Icon name="lucide:log-out" class="h-4 w-4" />
+                        Log Out
+                      </UiButton>
+                    </div>
+                  </UiNavigationMenuContent>
+                </UiNavigationMenuItem>
+              </UiNavigationMenuList>
+            </UiNavigationMenu>
+          </template>
+          <template v-else>
+            <UiButton to="/login" variant="outline" size="sm" class="text-secondary-foreground">
+              Log in
+            </UiButton>
+          </template>
         </div>
       </UiContainer>
     </header>
