@@ -153,73 +153,80 @@
             </UiDropdownMenu>
           </div>
           <!-- Price Range -->
-          <div class="flex w-auto flex-row items-center pl-4">
-            <!-- <span class="pr-1 text-sm">Price Range:</span>
-            <div class="">
-              <UiNumberField :min="0" :max="10000" v-model="priceRangeMin">
-                <UiNumberFieldInput placeholder="Min" class="w-16" />
-              </UiNumberField>
-            </div> -->
-            <!-- <span class="px-1">-</span>
-            <div class="">
-              <UiNumberField :min="0" :max="10000" v-model="priceRangeMax">
-                <UiNumberFieldInput placeholder="Max" class="w-16" />
-              </UiNumberField>
-            </div> -->
-            <!-- <div>
-              <UiButton @click="applyFilters" variant="secondary" class="ml-1">Set</UiButton>
-            </div> -->
-          </div>
-          <!-- Clear Filter-->
-          <!-- <div>
-            <UiButton @click="clearFilters" variant="destructive">Clear Filters</UiButton>
-          </div> -->
+          <div class="flex w-auto flex-row items-center pl-4"></div>
         </div>
       </transition>
 
       <!-- Products Container -->
       <div class="mt-4 flex flex-row flex-wrap gap-1 sm:mt-6 sm:gap-6 sm:px-9">
-        <template v-if="loading">
-          <div v-for="i in 10" :key="i" class="flex flex-col items-center space-x-4">
-            <UiSkeleton class="h-52 w-52 rounded-sm" />
-            <UiSkeleton class="mt-2 h-6 w-24" />
-            <UiSkeleton class="mt-1 h-4 w-32" />
-            <UiSkeleton class="mt-1 h-4 w-16" />
-          </div>
-        </template>
-        <div v-for="(product, i) in products" :key="i">
-          <NuxtLink :to="`/product/${product.id}`">
+        <template v-if="loadingProducts">
+          <div v-for="i in 5" :key="i" class="flex flex-col items-center space-x-4">
             <div
-              class="flex max-h-[32rem] max-w-[16rem] flex-col rounded-sm border p-2 hover:shadow-lg sm:max-h-[40rem] sm:max-w-[24rem]"
+              class="flex max-h-[32rem] max-w-[16rem] flex-col rounded-md border border-secondary p-2 sm:max-h-[40rem] sm:max-w-[24rem]"
             >
               <div class="flex justify-center border-b p-2">
                 <div class="h-32 w-32 overflow-hidden sm:h-52 sm:w-52">
-                  <img
-                    :src="product.featuredPhotoURL"
-                    :alt="product.name"
-                    class="h-full w-full transform object-cover transition-transform duration-300 ease-in-out hover:scale-110"
-                  />
+                  <UiSkeleton loading class="h-full w-full rounded-sm" />
                 </div>
               </div>
               <div class="flex w-full flex-col items-start pt-1">
-                <span class="text-[12px] text-muted-foreground sm:text-sm"
-                  >₱{{ product.price }}</span
-                >
-                <p class="w-full truncate pt-2 text-[12px] font-semibold sm:text-sm">
-                  {{ product.name }}
-                </p>
-                <div
-                  class="flex w-full flex-row justify-between pt-4 text-[10px] opacity-50 sm:text-[12px]"
-                >
-                  <span>0 views</span>
-                  <span>{{ product.totalSales }} sales</span>
-                </div>
+                <UiSkeleton loading class="h-4 w-24 rounded-sm" />
+                <UiSkeleton loading class="mt-2 h-6 w-32 rounded-sm" />
+                <UiSkeleton loading class="mt-1 h-4 w-16 rounded-sm" />
               </div>
             </div>
-          </NuxtLink>
-        </div>
-        <div class="flex w-full items-end justify-end">
-          <UiPagination :total="2" :sibling-count="1"></UiPagination>
+          </div>
+        </template>
+        <template v-else>
+          <div v-for="(product, i) in products" :key="i">
+            <NuxtLink :to="`/product/${product.id}`">
+              <div
+                class="flex max-h-[32rem] max-w-[16rem] flex-col rounded-sm border p-2 hover:shadow-lg sm:max-h-[40rem] sm:max-w-[24rem]"
+              >
+                <div class="flex justify-center border-b p-2">
+                  <div class="h-32 w-32 overflow-hidden sm:h-52 sm:w-52">
+                    <img
+                      :src="product.featuredPhotoURL"
+                      :alt="product.name"
+                      class="h-full w-full transform object-cover transition-transform duration-300 ease-in-out hover:scale-110"
+                    />
+                  </div>
+                </div>
+                <div class="flex w-full flex-col items-start pt-1">
+                  <span class="text-[12px] text-muted-foreground sm:text-sm"
+                    >₱{{ product.price }}</span
+                  >
+                  <p class="w-full truncate pt-2 text-[12px] font-semibold sm:text-sm">
+                    {{ product.name }}
+                  </p>
+                  <div
+                    class="flex w-full flex-row justify-between pt-4 text-[10px] opacity-50 sm:text-[12px]"
+                  >
+                    <span>0 views</span>
+                    <span>{{ product.totalSales }} sales</span>
+                  </div>
+                </div>
+              </div>
+            </NuxtLink>
+          </div>
+        </template>
+        <div class="flex w-full items-end justify-end space-x-4">
+          <UiButton
+            :disabled="currentPage === 1"
+            @click="prevPage"
+            class="flex items-center p-2 px-3"
+          >
+            <Icon :name="prevIcon" class="h-6 w-6" />
+            <span class="text-[12px]">Previous</span>
+          </UiButton>
+          <UiButton
+            :disabled="currentPage === totalPages"
+            @click="nextPage"
+            class="flex items-center p-2 px-3"
+          >
+            <span class="text-[12px]">Next</span>
+            <Icon :name="nextIcon" class="h-6 w-6" />
+          </UiButton>
         </div>
       </div>
       <div class="min-h-96">.</div>
@@ -232,9 +239,55 @@
 
   const { products, loading, fetchProducts } = useViewProducts();
 
+  const currentPage = ref(1);
+  const totalPages = ref(1);
+
+  const prevIcon = "lucide:chevron-left";
+  const nextIcon = "lucide:chevron-right";
+  const loadingProducts = ref(false);
+
+  const updateProducts = async () => {
+    loadingProducts.value = true;
+    console.log("Current Page in script:", currentPage.value);
+    const activeFilter = showAs.value.find((item) => item.isActive);
+    const sortBy = activeFilter ? activeFilter.name : "all";
+    const selectedCategoryTitles = selectedCategories.value
+      .map((key) => {
+        const category = filterCategories.find((c) => c.key === key);
+        return category ? category.title : "";
+      })
+      .filter((title) => title !== "");
+    const { totalProducts } = await fetchProducts(
+      sortBy,
+      selectedCategoryTitles,
+      sortPrice.value,
+      10,
+      currentPage.value
+    );
+    totalPages.value = Math.ceil(totalProducts / 10);
+    console.log("Total Pages in script:", totalPages.value); // Adjust the divisor based on your limitCount
+    loadingProducts.value = false;
+  };
+
   onMounted(() => {
-    fetchProducts();
+    updateProducts();
   });
+
+  const nextPage = () => {
+    if (currentPage.value < totalPages.value) {
+      console.log("Current Page:", currentPage.value);
+      currentPage.value++;
+      updateProducts();
+    }
+  };
+
+  const prevPage = () => {
+    if (currentPage.value > 1) {
+      console.log("Current Page:", currentPage.value);
+      currentPage.value--;
+      updateProducts();
+    }
+  };
 
   const { categories } = useCategoryValues();
   const showAs = ref<{ value: string; isActive: boolean; name: string }[]>([
@@ -276,16 +329,21 @@
   const priceRangeMin = ref(0);
   const priceRangeMax = ref(0);
 
+  // const applyFilters = () => {
+  //   const activeFilter = showAs.value.find((item) => item.isActive);
+  //   const sortBy = activeFilter ? activeFilter.name : "all";
+  //   const selectedCategoryTitles = selectedCategories.value
+  //     .map((key) => {
+  //       const category = filterCategories.find((c) => c.key === key);
+  //       return category ? category.title : "";
+  //     })
+  //     .filter((title) => title !== "");
+  //   fetchProducts(sortBy, selectedCategoryTitles, sortPrice.value);
+  // };
+
   const applyFilters = () => {
-    const activeFilter = showAs.value.find((item) => item.isActive);
-    const sortBy = activeFilter ? activeFilter.name : "all";
-    const selectedCategoryTitles = selectedCategories.value
-      .map((key) => {
-        const category = filterCategories.find((c) => c.key === key);
-        return category ? category.title : "";
-      })
-      .filter((title) => title !== "");
-    fetchProducts(sortBy, selectedCategoryTitles, sortPrice.value);
+    currentPage.value = 1;
+    updateProducts();
   };
 
   const clearFilters = () => {
@@ -293,7 +351,7 @@
     sortPrice.value = "none";
     priceRangeMin.value = 0;
     priceRangeMax.value = 0;
-    fetchProducts();
+    updateProducts();
   };
 
   watch([selectedCategories, sortPrice, showAs], applyFilters);

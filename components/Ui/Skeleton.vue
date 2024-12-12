@@ -9,7 +9,7 @@
   import type { PrimitiveProps } from "radix-vue";
 
   const styles = tv({
-    base: "animate-pulse rounded-md bg-muted",
+    base: "animate-pulse rounded-md bg-secondary",
     variants: {
       loading: { true: "cursor-wait", false: "cursor-default" },
     },

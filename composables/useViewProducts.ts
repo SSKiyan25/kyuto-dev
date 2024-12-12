@@ -1,4 +1,4 @@
-import { collection, getDocs, limit, orderBy, query, where } from "firebase/firestore";
+import { collection, getDocs, limit, orderBy, query, startAfter, where } from "firebase/firestore";
 import type { Product, Variation } from "~/types/models/Product";
 
 interface EnhancedProduct extends Product {
@@ -24,8 +24,9 @@ export const useViewProducts = () => {
     sortBy: string = "all",
     categories: string[] = [],
     sortPrice: string = "none",
-    limitCount: number = 20
-  ) => {
+    limitCount: number = 10,
+    page: number = 1
+  ): Promise<{ products: EnhancedProduct[]; totalProducts: number }> => {
     loading.value = true;
     try {
       let productsQuery = query(
@@ -44,7 +45,23 @@ export const useViewProducts = () => {
         productsQuery = query(productsQuery, orderBy("totalSales", "desc"));
       }
 
-      productsQuery = query(productsQuery, limit(limitCount));
+      // Get total count of products
+      const totalSnapshot = await getDocs(productsQuery);
+      const totalProducts = totalSnapshot.size;
+
+      console.log("Total products:", totalProducts);
+      // Apply limit and orderBy
+      productsQuery = query(productsQuery, orderBy("dateCreated", "desc"), limit(limitCount));
+
+      // Calculate the offset
+      if (page > 1) {
+        const offset = (page - 1) * limitCount;
+        const snapshot = await getDocs(productsQuery);
+        const lastVisible = snapshot.docs[offset - 1];
+        if (lastVisible) {
+          productsQuery = query(productsQuery, startAfter(lastVisible));
+        }
+      }
 
       const productsSnapshot = await getDocs(productsQuery);
       let fetchedProducts = productsSnapshot.docs.map((doc) => {
@@ -77,8 +94,11 @@ export const useViewProducts = () => {
       }
 
       products.value = enhancedProducts;
+      console.log("Fetched products:", enhancedProducts);
+      return { products: enhancedProducts, totalProducts };
     } catch (error) {
       console.error("Error fetching products:", error);
+      return { products: [], totalProducts: 0 };
     } finally {
       loading.value = false;
     }
