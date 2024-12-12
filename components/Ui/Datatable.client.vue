@@ -340,7 +340,7 @@
   /* Table Styles */
 
   table.dataTable {
-    @apply w-full table-auto border-collapse;
+    @apply w-[300px] table-auto border-collapse overflow-x-auto sm:w-full;
   }
 
   /* Table header styles */
@@ -538,7 +538,7 @@
   .dataTables_wrapper .dt-buttons {
     @apply inline-flex flex-wrap items-center gap-2;
     button {
-      @apply inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-md border bg-background px-3 text-sm text-muted-foreground hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+      @apply inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-md border bg-background px-3 text-[12px] text-muted-foreground hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:text-sm;
     }
   }
   /* V2 of datatables button styles. 
@@ -546,7 +546,7 @@
   .dt-buttons {
     @apply inline-flex flex-wrap items-center gap-2;
     button {
-      @apply inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-md border bg-background px-3 text-sm text-muted-foreground hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+      @apply inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-md border bg-background px-3 text-[12px] text-muted-foreground hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:text-sm;
     }
   }
 
@@ -558,9 +558,9 @@
   /* Select box at bottom showing number of records being displayed - v1 of datatables */
   .dataTables_wrapper .dataTables_length {
     label {
-      @apply inline-flex items-center gap-2 text-sm font-normal text-muted-foreground;
+      @apply inline-flex items-center gap-2 text-[12px] font-normal text-muted-foreground sm:text-sm;
       select {
-        @apply h-9 w-[70px] cursor-pointer rounded-md border border-border bg-background px-2 py-1 transition focus:border-primary focus:outline-none focus-visible:border-input focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:text-sm;
+        @apply h-9 w-[70px] cursor-pointer rounded-md border border-border bg-background px-2 py-1 text-[12px] transition focus:border-primary focus:outline-none focus-visible:border-input focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:text-sm;
       }
     }
   }
@@ -568,19 +568,19 @@
   .dt-length {
     @apply inline-flex items-center gap-2;
     label {
-      @apply text-sm font-normal text-muted-foreground;
+      @apply text-[12px] font-normal text-muted-foreground sm:text-sm;
     }
     select {
-      @apply h-9 w-[70px] cursor-pointer rounded-md border border-border bg-background px-2 py-1 transition focus:border-primary focus:outline-none focus-visible:border-input focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:text-sm;
+      @apply h-9 w-[70px] cursor-pointer rounded-md border border-border bg-background px-2 py-1 text-[12px] transition focus:border-primary focus:outline-none focus-visible:border-input focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:text-sm;
     }
   }
 
   /* Search box at the top styles - v1 of datatables */
   .dataTables_wrapper .dataTables_filter {
     label {
-      @apply inline-flex w-full cursor-pointer items-center gap-2 text-sm font-normal text-muted-foreground;
+      @apply inline-flex w-full cursor-pointer items-center gap-2 text-[12px] font-normal text-muted-foreground sm:text-sm;
       input {
-        @apply h-9 w-full rounded-md border border-border bg-background px-2 py-1 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background focus-visible:border-input sm:text-sm;
+        @apply h-9 w-full rounded-md border border-border bg-background px-2 py-1 text-[12px] transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background focus-visible:border-input sm:text-sm;
       }
     }
   }
@@ -589,28 +589,28 @@
   .dt-search {
     @apply flex items-center gap-3;
     label {
-      @apply inline-flex cursor-pointer items-center gap-2 text-sm font-normal text-muted-foreground;
+      @apply inline-flex cursor-pointer items-center gap-2 text-[12px] font-normal text-muted-foreground sm:text-sm;
     }
     input {
-      @apply h-9 w-full rounded-md border border-border bg-background px-2 py-1 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background focus-visible:border-input sm:text-sm md:w-[50%] lg:w-[250px];
+      @apply h-9 w-full rounded-md border border-border bg-background px-2 py-1 text-[12px] transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background focus-visible:border-input sm:text-sm md:w-[50%] lg:w-[250px];
     }
   }
 
   /* Info text that shows `Showing X to XX of XXXX entries - v1  */
   .dataTables_wrapper .dataTables_info,
   .dt-info {
-    @apply flex items-center gap-3 text-sm !text-muted-foreground;
+    @apply flex items-center gap-3 text-[12px] !text-muted-foreground sm:text-sm;
   }
 
   /* Pagination button styles - v1 datatables */
   .dataTables_wrapper .dataTables_paginate {
     .paginate_button {
-      @apply ml-1 box-border inline-flex h-9 min-w-[36px] cursor-pointer items-center justify-center rounded bg-transparent px-3 py-2 text-center text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+      @apply ml-1 box-border inline-flex h-9 min-w-[36px] cursor-pointer items-center justify-center rounded bg-transparent px-3 py-2 text-center text-[12px] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:text-sm;
     }
   }
   /* Pagination button - v2 */
   .dt-paging-button {
-    @apply ml-1 box-border inline-flex h-9 min-w-[36px] cursor-pointer items-center justify-center rounded bg-transparent px-3 py-2 text-center text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+    @apply ml-1 box-border inline-flex h-9 min-w-[36px] cursor-pointer items-center justify-center rounded bg-transparent px-3 py-2 text-center text-[12px] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:text-sm;
     &.current,
     &:hover {
       @apply bg-muted;

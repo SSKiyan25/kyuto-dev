@@ -114,12 +114,10 @@ export const useFetchOrders = () => {
   const fetchOrders = async (
     userID: string,
     orderStatus: string = "all",
-    paymentStatus: string = "",
-    limitNumber: number = 10
+    paymentStatus: string = ""
   ): Promise<(Order & { id: string; orderItems: OrderItem[] })[]> => {
     const ordersRef = collection(db, "orders");
-    console.log("limitNumber:", limitNumber);
-    let q = query(ordersRef, where("buyerID", "==", userID), limit(limitNumber));
+    let q = query(ordersRef, where("buyerID", "==", userID));
 
     if (orderStatus !== "all") {
       q = query(q, where("orderStatus", "==", orderStatus));

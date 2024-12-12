@@ -121,25 +121,29 @@
         </template>
       </div>
       <div class="mb-24 flex flex-col py-8">
-        <div class="flex flex-row opacity-70">
+        <div class="flex w-[300px] flex-row overflow-x-auto opacity-70 sm:w-full">
           <template v-for="(status, i) in statuses" :key="i">
-            <UiButton :variant="statusVariant(status.value)" @click="filterOrders(status.value)">{{
-              status.status
-            }}</UiButton>
+            <UiButton
+              :variant="statusVariant(status.value)"
+              @click="filterOrders(status.value)"
+              class="text-[12px] sm:text-sm"
+              >{{ status.status }}</UiButton
+            >
           </template>
         </div>
         <UiDivider />
-        <div class="flex w-full flex-row items-center justify-between pt-3">
-          <div class="w-1/2">
-            <UiVeeInput type="text" placeholder="Search your order" icon="lucide:search" />
-          </div>
-        </div>
-        <div>
-          <UiDatatable :options="options" :columns="columns" :data="filteredOrders">
+        <div class="flex w-full flex-row items-center justify-between pt-3"></div>
+        <div class="w-[300px] overflow-x-auto sm:w-full">
+          <UiDatatable
+            :options="options"
+            :columns="columns"
+            :data="filteredOrders"
+            class="text-[12px] sm:text-sm"
+          >
             <template #actions="{ cellData }: { cellData: Order & { id: string } }">
               <UiDropdownMenu>
                 <UiDropdownMenuTrigger as-child>
-                  <UiButton class="h-7 text-xs" size="sm"> Actions </UiButton>
+                  <UiButton class="h-6 text-[10px] sm:h-7 sm:text-xs"> Opts </UiButton>
                 </UiDropdownMenuTrigger>
                 <UiDropdownMenuContent class="w-32">
                   <UiDropdownMenuItem @click="openViewOrderDialog(cellData.id)">
@@ -160,6 +164,7 @@
             </template>
           </UiDatatable>
         </div>
+        <!-- <MockOrderTable /> -->
       </div>
       <div class="min-h-24"></div>
     </div>
@@ -265,7 +270,6 @@
 
 <script lang="ts" setup>
   import { useFetchOrders } from "~/composables/user/useFetchOrders";
-  import type { ColumnDef, Table } from "@tanstack/vue-table";
   import type { ExtendedOrderItem } from "~/composables/user/useFetchOrders";
   import type { ButtonVariant } from "~/types/Button";
   import type { Order, OrderItem } from "~/types/models/Order";
@@ -282,7 +286,6 @@
   const selectedStatus = ref<string>("all");
   const route = useRoute();
   const userID = computed(() => route.params.id as string);
-  const rowsPerPage = ref<number>(10);
 
   const isMobile = ref(false);
 
@@ -330,7 +333,7 @@
   refreshLatestOrder();
 
   // Fetch and log all orders with filters
-  fetchOrders(userID.value, "all", "", rowsPerPage.value).then((allOrders) => {
+  fetchOrders(userID.value, "all", "").then((allOrders) => {
     console.log("All Orders:", allOrders);
     orders.value = allOrders;
     filterOrders(selectedStatus.value);
@@ -417,8 +420,18 @@
       variant: "linkHover1",
     },
     {
-      status: "Unpaid",
-      value: "not_paid",
+      status: "Pending",
+      value: "pending",
+      variant: "linkHover2",
+    },
+    {
+      status: "Preparing",
+      value: "preparing",
+      variant: "linkHover2",
+    },
+    {
+      status: "Ready",
+      value: "ready",
       variant: "linkHover2",
     },
     {
@@ -432,15 +445,6 @@
       variant: "linkHover2",
     },
   ];
-
-  const handlePageSizeChange = (newPageSize: number) => {
-    rowsPerPage.value = newPageSize;
-    fetchOrders(userID.value, selectedStatus.value, "", rowsPerPage.value).then((newOrders) => {
-      console.log("New Orders:", newOrders);
-      orders.value = newOrders;
-      filterOrders(selectedStatus.value);
-    });
-  };
 
   const cancelOrderDialog = ref(false);
   const cancelRemarks = ref("");
@@ -494,10 +498,16 @@
   };
 
   const columns: ConfigColumns[] = [
-    { title: "Reference Number", data: "uniqRefNumber" },
     {
-      title: "Order Status",
+      title: "<span class='text-[10px] sm:text-sm'>Reference Number</span>",
+      data: "uniqRefNumber",
+      responsivePriority: 1,
+      render: (data: string) => `<span class="text-[10px] sm:text-sm">${data}</span>`,
+    },
+    {
+      title: "<span class='text-[10px] sm:text-sm'>Order Status</span>",
       data: "orderStatus",
+      responsivePriority: 2,
       render: (data: string) => {
         let colorClass = "bg-gray-200 text-gray-800";
         if (data === "pending") {
@@ -508,7 +518,7 @@
           colorClass = "bg-green-200 text-green-800";
         }
         return `
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-3 text-[10px] sm:text-sm">
         <div class="flex cursor-pointer items-center gap-2">
           <span class="px-2 py-1 rounded ${colorClass} capitalize">${data}</span>
         </div>
@@ -516,8 +526,10 @@
       },
     },
     {
-      title: "Payment Status",
+      title: "<span class='text-[10px] sm:text-sm'>Payment Status</span>",
       data: "paymentStatus",
+      responsivePriority: 2,
+      // className: "hidden sm:table-cell",
       render: (data: string) => {
         let colorClass = "bg-gray-200 text-gray-800";
         if (data === "not_paid") {
@@ -528,7 +540,7 @@
           colorClass = "bg-red-200 text-red-800";
         }
         return `
-      <div class="flex items-center gap-3">
+      <div class="flex flex-row items-center gap-3 text-[10px] sm:text-sm">
         <div class="flex cursor-pointer items-center gap-2">
           <span class="px-2 py-1 rounded ${colorClass} capitalize">${data}</span>
         </div>
@@ -536,30 +548,39 @@
       },
     },
     {
-      title: "Date",
+      title: "<span class='text-[10px] sm:text-sm'>Date</span>",
       data: "dateOrdered",
-      render: (data: any) => formatDate(data),
+      responsivePriority: 2,
+      // className: "hidden sm:table-cell",
+      render: (data: any) => `<span class="text-[10px] sm:text-sm">${formatDate(data)}</span>`,
     },
     {
-      title: "Total Payment",
+      title: "<span class='text-[10px] sm:text-sm'>Total Payment</span>",
       data: "totalPrice",
-      render: (data: number) => `₱${data.toFixed(2)}`,
+      responsivePriority: 2,
+      // className: "hidden sm:table-cell",
+      render: (data: number) => `<span class="text-[10px] sm:text-sm">₱${data.toFixed(2)}</span>`,
     },
     {
       data: null,
-      title: "",
+      title: "<span class='text-[10px] sm:text-sm'></span>",
       className: "no-export",
       searchable: false,
       orderable: false,
       name: "actions",
-      render: "#actions",
       responsivePriority: 1,
+      render: "#actions",
     },
   ];
 
   const options: Config = {
-    dom: "Q<'flex flex-col sm:flex-row w-full sm:items-start sm:justify-between gap-5 mb-5'Bf><'border rounded-lg't><'flex flex-col sm:flex-row gap-5 sm:items-center sm:justify-between pt-3 p-5'li><''p>",
-    responsive: true,
+    dom: "Q<'flex flex-col sm:flex-row w-full sm:items-start sm:justify-between gap-5 mb-5'Bf><'border rounded-lg't><'flex flex-col sm:flex-row gap-5 sm:items-center sm:justify-between pt-3 p-2'li><''p>",
+    responsive: {
+      details: {
+        type: "column",
+        target: "tr",
+      },
+    },
     autoWidth: true,
     select: true,
     buttons: [
@@ -575,25 +596,7 @@
         },
       },
       {
-        extend: "excel",
-        exportOptions: {
-          columns: ":not(.no-export)",
-        },
-      },
-      {
         extend: "pdf",
-        exportOptions: {
-          columns: ":not(.no-export)",
-        },
-      },
-      {
-        extend: "print",
-        exportOptions: {
-          columns: ":not(.no-export)",
-        },
-      },
-      {
-        extend: "csv",
         exportOptions: {
           columns: ":not(.no-export)",
         },
@@ -607,5 +610,3 @@
     return date.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
   };
 </script>
-
-<style></style>
