@@ -241,16 +241,16 @@
     </div>
     <footer class="fixed bottom-0 left-0 right-0 border-t bg-white shadow-sm sm:hidden">
       <div class="flex w-full flex-row items-center justify-between">
-        <UiButton
-          v-for="link in mobileLinks"
-          :key="link.name"
-          :to="link.to"
-          variant="ghost"
-          class="flex h-16 flex-1 flex-col justify-center border-l py-2 text-sm text-muted-foreground"
-        >
-          <Icon :name="link.icon" class="h-5 w-5" />
-          {{ link.name }}
-        </UiButton>
+        <template v-for="link in mobileLinks" :key="link.name" :to="link.to">
+          <UiButton
+            variant="ghost"
+            class="flex h-16 flex-1 flex-col justify-center border-l py-2 text-sm text-muted-foreground"
+            v-if="!(link.name === 'My Store' && !userData?.hasOrganization)"
+          >
+            <Icon :name="link.icon" class="h-5 w-5" />
+            {{ link.name }}
+          </UiButton>
+        </template>
       </div>
     </footer>
   </div>
