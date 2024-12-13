@@ -209,6 +209,11 @@
               </div>
             </NuxtLink>
           </div>
+          <template v-if="products.length === 0">
+            <div class="flex h-32 w-full flex-col items-center justify-center">
+              <p>No Available Products.</p>
+            </div>
+          </template>
         </template>
         <div class="flex w-full items-end justify-end space-x-4">
           <UiButton

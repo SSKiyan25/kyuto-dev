@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-  import { useGoogleLogin } from "~/composables/auth/useGoogle";
+  import { signInWithGoogle as signGoogle } from "~/composables/auth/useGoogle";
   import { signInWithEmailAndPassword } from "firebase/auth";
 
   const auth = useFirebaseAuth();
@@ -25,8 +25,9 @@
   });
 
   const signInWithGoogle = async () => {
-    await useGoogleLogin();
+    await signGoogle(auth);
   };
+
   const user = useCurrentUser();
   console.log("Check user: ", user);
 </script>

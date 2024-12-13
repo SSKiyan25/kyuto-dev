@@ -197,7 +197,7 @@
                       <div v-if="userData && userData.hasOrganization">
                         <UiDivider class="py-2" />
                         <!-- Organization Dashboard -->
-                        <NuxtLink to="/organization/dashboard">
+                        <NuxtLink to="/organization/products">
                           <div
                             class="flex flex-row items-center justify-start rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
                           >
@@ -209,9 +209,9 @@
                           <div
                             class="flex flex-row items-center justify-start rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
                           >
-                            <UiChip class="bg-red-700 text-white" size="lg" text="7">
-                              <Icon name="lucide:shopping-bag" class="h-4 w-4" />
-                            </UiChip>
+                            <!-- <UiChip class="bg-red-700 text-white" size="lg" text="7"> -->
+                            <Icon name="lucide:shopping-bag" class="h-4 w-4" />
+                            <!-- </UiChip> -->
                             <div class="pl-2">Manage Orders</div>
                           </div>
                         </NuxtLink>

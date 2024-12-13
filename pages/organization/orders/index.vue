@@ -241,7 +241,7 @@
       </div>
     </div>
     <!-- For testing -->
-    <div class="flex h-lvh flex-col py-8">
+    <!-- <div class="flex h-lvh flex-col py-8">
       <span>For testing purposes</span>
       <UiButton @click="deleteAllOrders">Delete All Orders</UiButton>
     </div>
@@ -252,9 +252,8 @@
       <div class="flex flex-col items-center justify-center gap-4">
         <Icon name="lucide:loader-circle" class="size-16 animate-spin text-primary" />
         <span class="text-sm font-semibold text-secondary-foreground"> Deleting Orders </span>
-        <!-- Add a GIF here -->
       </div>
-    </div>
+    </div> -->
   </div>
 </template>
 

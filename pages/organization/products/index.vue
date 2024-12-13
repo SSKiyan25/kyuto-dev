@@ -572,7 +572,8 @@
       </form>
     </UiDialogContent>
   </UiDialog>
-  <div class="flex h-96 w-1/2 flex-col space-y-2 px-12">
+  <!-- Delete Products-->
+  <!-- <div class="flex h-96 w-1/2 flex-col space-y-2 px-12">
     <span>For testing purposes only</span>
     <UiButton @click="deleteAllProducts" variant="destructive">Delete All Products</UiButton>
   </div>
@@ -583,7 +584,6 @@
     <div class="flex flex-col items-center justify-center gap-4">
       <Icon name="lucide:loader-circle" class="size-16 animate-spin text-primary" />
       <span class="text-sm font-semibold text-secondary-foreground"> Deleting Products </span>
-      <!-- Add a GIF here -->
     </div>
-  </div>
+  </div> -->
 </template>

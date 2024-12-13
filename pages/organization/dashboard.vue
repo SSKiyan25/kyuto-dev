@@ -175,8 +175,8 @@
 </script>
 
 <template>
-  <div class="flex w-full flex-col p-12">
-    <div><span class="text-2xl font-bold">Dashboard</span></div>
+  <!-- <div class="flex w-full flex-col p-12"> -->
+  <!-- <div><span class="text-2xl font-bold">Dashboard</span></div>
 
     <div value="overview" class="space-y-4 pt-4">
       <div class="grid gap-4 space-x-4 md:grid-cols-2 lg:grid-cols-4">
@@ -225,5 +225,6 @@
         </UiCard>
       </div>
     </div>
-  </div>
+  </div> -->
+  <ADComingSoon />
 </template>
