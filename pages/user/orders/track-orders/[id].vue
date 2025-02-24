@@ -292,7 +292,7 @@
   const isMobile = ref(false);
 
   const handleResize = () => {
-    isMobile.value = window.innerWidth < 640; // Tailwind's sm breakpoint is 640px
+    isMobile.value = window.innerWidth < 640;
   };
 
   onMounted(() => {
