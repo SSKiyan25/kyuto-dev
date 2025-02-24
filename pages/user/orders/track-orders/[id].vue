@@ -143,7 +143,7 @@
             <template #actions="{ cellData }: { cellData: Order & { id: string } }">
               <UiDropdownMenu>
                 <UiDropdownMenuTrigger as-child>
-                  <UiButton class="h-6 text-[10px] sm:h-7 sm:text-xs"> Opts </UiButton>
+                  <UiButton class="h-6 text-[10px] sm:h-7 sm:text-xs"> Actions </UiButton>
                 </UiDropdownMenuTrigger>
                 <UiDropdownMenuContent class="w-32">
                   <UiDropdownMenuItem @click="openViewOrderDialog(cellData.id)">
@@ -198,7 +198,7 @@
       description="Your order details"
     >
       <template #content>
-        <div class="max-h-96 space-y-4 overflow-y-auto px-8 py-2">
+        <div class="max-h-128 space-y-4 overflow-y-auto px-8 py-2">
           <div>
             <h3 class="text-lg font-semibold">Order Reference Number</h3>
             <p class="text-sm">{{ selectedOrder?.uniqRefNumber }}</p>
@@ -213,11 +213,13 @@
           </div>
           <div>
             <h3 class="text-md font-semibold">Order Status</h3>
-            <p class="text-sm text-muted-foreground">{{ selectedOrder?.orderStatus }}</p>
+            <p class="text-sm capitalize text-muted-foreground">{{ selectedOrder?.orderStatus }}</p>
           </div>
           <div>
             <h3 class="text-md font-semibold">Payment Status</h3>
-            <p class="text-sm text-muted-foreground">{{ selectedOrder?.paymentStatus }}</p>
+            <p class="text-sm capitalize text-muted-foreground">
+              {{ selectedOrder?.paymentStatus }}
+            </p>
           </div>
           <UiDivider class="my-2" />
           <div>

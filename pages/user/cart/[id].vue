@@ -211,14 +211,8 @@
                       <UiDivider class="my-2" />
                       <div class="flex flex-col gap-2 px-4 text-sm">
                         <label class="flex items-center opacity-50" title="Available soon">
-                          <input
-                            disabled
-                            type="radio"
-                            name="paymentMethod"
-                            value="gcash"
-                            class="mr-2"
-                          />
-                          GCash (Available Soon)
+                          <input type="radio" name="paymentMethod" value="gcash" class="mr-2" />
+                          GCash
                         </label>
                         <label class="flex items-center">
                           <input

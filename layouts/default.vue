@@ -20,7 +20,8 @@
             <UiNavigationMenuList class="gap-2">
               <UiNavigationMenuItem>
                 <UiNavigationMenuLink as-child>
-                  <UiButton to="#" variant="ghost" size="sm"> Home </UiButton>
+                  <UiButton to="/" variant="ghost" size="sm" class="rounded-sm"> Home </UiButton>
+                  <UiButton to="/" variant="ghost" size="sm" class="rounded-sm"> Stores </UiButton>
                 </UiNavigationMenuLink>
               </UiNavigationMenuItem>
               <UiNavigationMenuItem></UiNavigationMenuItem>
