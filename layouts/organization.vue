@@ -194,10 +194,10 @@
       icon: "lucide:bar-chart-3",
       link: `/organization/dashboard/${organizationID}`,
     },
-    { title: "Inbox", icon: "lucide:inbox", link: "/organization/inbox" },
+    { title: "Inbox", icon: "lucide:inbox", link: `/organization/inbox/${organizationID}` },
     { title: "Products", icon: "lucide:package", link: "/organization/products" },
     { title: "Orders", icon: "lucide:list-checks", link: "/organization/orders" },
-    { title: "Members", icon: "lucide:users", link: "/organization/members" },
+    { title: "Members", icon: "lucide:users", link: `/organization/members/${organizationID}` },
   ];
 
   const bottomNav = [
