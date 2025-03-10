@@ -184,11 +184,16 @@
 
   console.log("Organization id:", userData?.organizationID);
   const organizationPath = `/organization/${orgData.id}`;
+  const organizationID = orgData.id || userData?.organizationID;
   console.log(organizationPath);
 
   const topNav = [
     { title: "Organization", icon: "lucide:newspaper", link: organizationPath },
-    { title: "Dashboard", icon: "lucide:bar-chart-3", link: "/organization/dashboard" },
+    {
+      title: "Dashboard",
+      icon: "lucide:bar-chart-3",
+      link: `/organization/dashboard/${organizationID}`,
+    },
     { title: "Inbox", icon: "lucide:inbox", link: "/organization/inbox" },
     { title: "Products", icon: "lucide:package", link: "/organization/products" },
     { title: "Orders", icon: "lucide:list-checks", link: "/organization/orders" },
