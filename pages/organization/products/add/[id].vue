@@ -109,7 +109,7 @@
       icon: "lucide:badge-check",
     });
     // Navigate back to products page
-    router.push("/organization/products/");
+    router.push(`/organization/products/${organizationID}`);
   });
 </script>
 

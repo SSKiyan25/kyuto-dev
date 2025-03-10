@@ -195,7 +195,7 @@
       link: `/organization/dashboard/${organizationID}`,
     },
     { title: "Inbox", icon: "lucide:inbox", link: `/organization/inbox/${organizationID}` },
-    { title: "Products", icon: "lucide:package", link: "/organization/products" },
+    { title: "Products", icon: "lucide:package", link: `/organization/products/${organizationID}` },
     { title: "Orders", icon: "lucide:list-checks", link: "/organization/orders" },
     { title: "Members", icon: "lucide:users", link: `/organization/members/${organizationID}` },
   ];

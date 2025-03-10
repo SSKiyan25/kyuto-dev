@@ -31,10 +31,23 @@
   });
 
   const toast = useToast();
+  const route = useRoute();
+  const organizationIDLink = computed(() => route.params.id as string);
+  const orgIDLink = route.params.id as string;
 
+  console.log("Organization ID Link:", organizationIDLink);
   const crumbs: Crumbs[] = [
-    { label: "Dashboard", link: "/organization/dashboard", icon: "lucide:newspaper" },
-    { label: "All Products", link: "/organization/products", icon: "lucide:package" },
+    {
+      label: "Dashboard",
+      link: `/organization/dashboard/${orgIDLink}`,
+      icon: "lucide:newspaper",
+    },
+    {
+      label: "All Products",
+      link: `/organization/products/${organizationIDLink}`,
+      icon: "lucide:package",
+      disabled: true,
+    },
   ];
 
   // Filters
@@ -442,7 +455,10 @@
             </UiDropdownMenuRadioGroup>
           </UiDropdownMenuContent>
         </UiDropdownMenu>
-        <UiButton to="/organization/products/add" class="flex flex-row items-center">
+        <UiButton
+          :to="`/organization/products/add/${organizationIDLink}`"
+          class="flex flex-row items-center"
+        >
           <Icon name="lucide:circle-plus" class="size-4" />Add Product
         </UiButton>
       </div>
