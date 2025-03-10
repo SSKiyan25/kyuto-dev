@@ -69,7 +69,7 @@
           <!--<AuthLogin />-->
           <div>
             <form @submit="submit">
-              <fieldset :disabled="isSubmitting" class="grid gap-8">
+              <fieldset :disabled="isSubmitting" class="grid gap-4">
                 <UiVeeInput
                   icon="lucide:user"
                   name="email"
@@ -84,6 +84,7 @@
                   label="Password"
                   placeholder="********"
                 />
+                <span class="-pt-8 text-[12px] underline opacity-50">Forgot password?</span>
                 <UiButton type="submit" class="w-full"> Sign In </UiButton>
               </fieldset>
               <div class="pt-4">

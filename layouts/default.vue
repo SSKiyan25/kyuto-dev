@@ -21,7 +21,12 @@
               <UiNavigationMenuItem>
                 <UiNavigationMenuLink as-child>
                   <UiButton to="/" variant="ghost" size="sm" class="rounded-sm"> Home </UiButton>
-                  <UiButton to="/" variant="ghost" size="sm" class="rounded-sm"> Stores </UiButton>
+                  <UiButton to="/stores" variant="ghost" size="sm" class="rounded-sm">
+                    Stores
+                  </UiButton>
+                  <UiButton to="/products" variant="ghost" size="sm" class="rounded-sm">
+                    Products
+                  </UiButton>
                 </UiNavigationMenuLink>
               </UiNavigationMenuItem>
               <UiNavigationMenuItem></UiNavigationMenuItem>

@@ -1,5 +1,7 @@
 <script lang="ts" setup>
   import { _colors } from "#tailwind-config/theme";
+  import { _muted, _violet } from "#tailwind-config/theme/colors";
+  import type { ApexOptions } from "apexcharts";
 
   definePageMeta({
     layout: "organization",
@@ -128,10 +130,10 @@
       subtext: "+19% from last month",
     },
     {
-      title: "Active Now",
-      icon: "lucide:activity",
+      title: "Total Products",
+      icon: "lucide:box",
       amount: "+573",
-      subtext: "+201 since last hour",
+      subtext: "+4 since last month",
     },
   ];
 
@@ -172,11 +174,46 @@
       amount: "+₱39.00",
     },
   ];
+
+  const series: ApexOptions["series"] = [70, 30, 60];
+
+  const options: ApexOptions = {
+    plotOptions: {
+      pie: {
+        dataLabels: {
+          minAngleToShowLabel: 50,
+          offset: -10,
+        },
+        expandOnClick: true,
+      },
+    },
+    legend: {
+      fontFamily: "inherit",
+      fontWeight: 500,
+      show: true,
+      position: "bottom",
+      labels: {
+        colors: _muted.foreground,
+      },
+    },
+    stroke: {
+      lineCap: "round",
+      colors: ["transparent"],
+      width: 2,
+    },
+    colors: [_violet["400"], _violet["700"], _violet["900"]],
+    chart: {
+      toolbar: {
+        show: window.innerWidth > 768,
+      },
+    },
+    labels: ["T-shirt", "Lanyard", "CS Polo Shirt"],
+  };
 </script>
 
 <template>
-  <!-- <div class="flex w-full flex-col p-12"> -->
-  <!-- <div><span class="text-2xl font-bold">Dashboard</span></div>
+  <div class="flex w-full flex-col p-12">
+    <div><span class="text-2xl font-bold">Dashboard</span></div>
 
     <div value="overview" class="space-y-4 pt-4">
       <div class="grid gap-4 space-x-4 md:grid-cols-2 lg:grid-cols-4">
@@ -225,6 +262,22 @@
         </UiCard>
       </div>
     </div>
-  </div> -->
-  <ADComingSoon />
+    <div class="h-[500px] w-full py-4">
+      <span> Product Sales </span>
+      <apexchart width="100%" height="100%" type="pie" :options="options" :series="series" />
+    </div>
+    <div class="flex justify-end">
+      <UiButton> Export All Data </UiButton>
+    </div>
+  </div>
+  <!-- <ADComingSoon /> -->
 </template>
+
+<style>
+  .apexcharts-menu {
+    @apply border-border bg-background text-foreground;
+    .apexcharts-menu-item {
+      @apply hover:!bg-primary hover:!text-primary-foreground;
+    }
+  }
+</style>
