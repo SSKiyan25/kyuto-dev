@@ -1,4 +1,4 @@
-import { addDoc, collection } from "firebase/firestore";
+import { addDoc, collection, doc, writeBatch } from "firebase/firestore";
 import { ref as storageRef } from "firebase/storage";
 import { sha256 } from "js-sha256";
 import type { Product, StocksLogs, Variation } from "~/types/models/Product";
@@ -14,19 +14,16 @@ export const useAddProduct = async (values: any, canPreOrder: boolean) => {
   const timestamp = Date.now();
   const basePath = `organizations/${userData.organizationID}/products/${values.name}`;
 
-  // Generate a unique name for the featured image
-  const uniqueStringFeatured = `${timestamp}-${values.name}-${userData.organization}-${values.category}-1`;
-  const uniqueNameFeatured = sha256(uniqueStringFeatured);
-
-  const featuredRef = storageRef(storage, `${basePath}/${uniqueNameFeatured}`);
-  const { upload: uploadFeatured } = useStorageFile(featuredRef);
-  const { url: featuredUrl, refresh: refreshFeaturedUrl } = useStorageFileUrl(featuredRef);
-
   try {
-    // Upload the featured image
-    await uploadFeatured(values.featured_image);
-    await refreshFeaturedUrl();
-    const featuredPhotoURL = featuredUrl.value ?? undefined;
+    // Upload featured image
+    const featuredUrl = await uploadFile(values.featured_image, `${basePath}/featured`, storage);
+
+    // Upload additional images concurrently
+    const imageUrls = await Promise.all(
+      (values.images || []).map((image: File, index: number) =>
+        uploadFile(image, `${basePath}/image-${index}`, storage)
+      )
+    );
 
     // Create the new product
     const newProduct: Partial<Product> = {
@@ -45,38 +42,17 @@ export const useAddProduct = async (values: any, canPreOrder: boolean) => {
       isDiscounted: false,
       discountType: "",
       discountTarget: "",
-      featuredPhotoURL: featuredPhotoURL,
-      photosURL: [],
+      featuredPhotoURL: featuredUrl,
+      photosURL: imageUrls,
       canPreOrder: canPreOrder,
       isArchived: false,
     };
 
-    const imageUrls: string[] = [];
-    if (values.images && values.images.length > 0) {
-      for (let i = 0; i < values.images.length; i++) {
-        const image = values.images[i];
-        const uniqueStringImage = `${timestamp}-${values.name}-${userData.organization}-${values.category}-${i + 2}`;
-        const uniqueNameImage = sha256(uniqueStringImage);
-
-        const imageRef = storageRef(storage, `${basePath}/${uniqueNameImage}`);
-        const { upload: uploadImage } = useStorageFile(imageRef);
-        const { url: imageUrl, refresh: refreshImageUrl } = useStorageFileUrl(imageRef);
-
-        await uploadImage(image);
-        await refreshImageUrl();
-        const imageUploadedUrl = imageUrl.value ?? undefined;
-        if (imageUploadedUrl) {
-          imageUrls.push(imageUploadedUrl);
-        }
-      }
-    }
-
-    newProduct.photosURL = imageUrls;
-
+    // Add product to Firestore
     const productDocRef = await addDoc(collection(db, "products"), newProduct);
-    console.log("product added: ", productDocRef);
 
-    // Add variations as a subcollection
+    // Add variations using a batch
+    const batch = writeBatch(db);
     for (const variation of values.variations) {
       if (!variation.name || !variation.price) {
         console.error("Variation name or price is undefined");
@@ -100,8 +76,9 @@ export const useAddProduct = async (values: any, canPreOrder: boolean) => {
         isArchived: false,
       };
 
-      const variationDocRef = await addDoc(collection(productDocRef, "variations"), newVariation);
-      console.log("Variation added: ", variationDocRef);
+      const variationRef = collection(productDocRef, "variations");
+      const variationDocRef = doc(variationRef);
+      batch.set(variationDocRef, newVariation);
 
       const newStockLog: Partial<StocksLogs> = {
         variationID: variationDocRef.id,
@@ -110,13 +87,32 @@ export const useAddProduct = async (values: any, canPreOrder: boolean) => {
         remarks: "Initial stock added",
         dateCreated: new Date(),
       };
-      console.log("Stock log added: ", newStockLog);
 
-      await addDoc(collection(variationDocRef, "stocksLogs"), newStockLog);
+      const stockLogRef = collection(variationDocRef, "stocksLogs");
+      batch.set(doc(stockLogRef), newStockLog);
     }
 
+    await batch.commit();
     console.log("Product and subcollections added successfully");
   } catch (error) {
     console.error("Error adding product: ", error);
+    throw error;
+  }
+};
+
+// Helper function to upload files
+const uploadFile = async (file: File, path: string, storage: any): Promise<string> => {
+  try {
+    const uniqueName = sha256(`${Date.now()}-${file.name}`);
+    const fileRef = storageRef(storage, `${path}/${uniqueName}`);
+    const { upload } = useStorageFile(fileRef);
+    const { url, refresh } = useStorageFileUrl(fileRef);
+
+    await upload(file);
+    await refresh();
+    return url.value ?? "";
+  } catch (error) {
+    console.error("Error uploading file:", error);
+    throw new Error("Failed to upload file");
   }
 };

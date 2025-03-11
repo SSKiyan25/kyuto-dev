@@ -63,8 +63,23 @@
 
   const hasIcon = computed(() => Boolean(props.icon) || Boolean(useSlots().icon));
 
-  const { errorMessage, handleChange, handleBlur } = useField(() => props.name, props.rules, {
-    label: props.label,
-    validateOnMount: props.validateOnMount,
+  const { errorMessage, handleChange, handleBlur, resetField } = useField(
+    () => props.name,
+    props.rules,
+    {
+      label: props.label,
+      validateOnMount: props.validateOnMount,
+    }
+  );
+
+  // Expose a method to reset the file input
+  const resetInput = () => {
+    resetField(); // Reset the form field state
+    emits("change", null); // Emit a change event with null to clear the files
+  };
+
+  // Expose the reset method to parent components
+  defineExpose({
+    resetInput,
   });
 </script>

@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+  import { UiVeeFileInput } from "#components";
   import { useAddProduct } from "~/composables/organization/product/useAddProduct";
   import type { Crumbs } from "~/components/Ui/Breadcrumbs.vue";
 
@@ -10,6 +11,7 @@
   const route = useRoute();
 
   const organizationID = route.params.id as string;
+  console.log("Organization ID: ", organizationID);
 
   const crumbs: Crumbs[] = [
     {
@@ -47,6 +49,10 @@
   const canPreOrder = ref(false);
   const currentMessage = ref("");
 
+  // Refs for the UiVeeFileInput components
+  const featuredImageInput = ref<InstanceType<typeof UiVeeFileInput> | null>(null);
+  const otherImagesInput = ref<InstanceType<typeof UiVeeFileInput> | null>(null);
+
   const toast = useToast();
 
   const addVariation = () => {
@@ -83,6 +89,13 @@
     messageIndex = (messageIndex + 1) % messages.length;
   };
 
+  const handleFileChange = (event: Event) => {
+    const input = event.target as HTMLInputElement;
+    if (input.files) {
+      console.log("Files: ", input.files[0]);
+    }
+  };
+
   // Form Functions
   const { handleSubmit, isSubmitting, resetForm } = useForm({
     validationSchema: toTypedSchema(AddProductSchema),
@@ -92,24 +105,33 @@
     console.log("Form successfully submitted with values: ", values);
     loading.value = true;
     const messageInterval = setInterval(updateMessage, 2000);
-    await useAddProduct(values, canPreOrder.value);
-    clearInterval(messageInterval);
-    loading.value = false;
-    resetForm();
-    variations.value = [{ value: "None", price: 1, stocks: 0 }];
-    // Clear file inputs
-    document
-      .querySelectorAll('input[type="file"]')
-      .forEach((input) => ((input as HTMLInputElement).value = ""));
-    // Show success toast
-    toast.toast({
-      title: "Product Added",
-      description: "Your product has been added successfully.",
-      variant: "success",
-      icon: "lucide:badge-check",
-    });
-    // Navigate back to products page
-    router.push(`/organization/products/${organizationID}`);
+
+    try {
+      await useAddProduct(values, canPreOrder.value);
+      toast.toast({
+        title: "Product Added",
+        description: "Your product has been added successfully.",
+        variant: "success",
+        icon: "lucide:badge-check",
+      });
+      router.push(`/organization/products/${organizationID}`);
+    } catch (error) {
+      console.error("Error adding product:", error);
+      toast.toast({
+        title: "Error",
+        description: "Failed to add the product. Please try again.",
+        variant: "warning",
+        icon: "lucide:circle-alert",
+      });
+    } finally {
+      clearInterval(messageInterval);
+      loading.value = false;
+      resetForm();
+      variations.value = [{ value: "None", price: 1, stocks: 0 }];
+      document
+        .querySelectorAll('input[type="file"]')
+        .forEach((input) => ((input as HTMLInputElement).value = ""));
+    }
   });
 </script>
 
@@ -264,12 +286,14 @@
         <div class="flex w-full flex-col gap-4 pl-4 pt-4">
           <fieldset :disabled="isSubmitting" class="space-y-4">
             <UiVeeFileInput
+              ref="featuredImageInput"
               label="Upload Featured Image"
               name="featured_image"
               accept="image/*"
               hint="Max file size: 10MB"
             />
             <UiVeeFileInput
+              ref="otherImagesInput"
               multiple
               label="Upload Other Images"
               name="images"
