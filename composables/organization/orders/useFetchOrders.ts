@@ -67,25 +67,10 @@ export const useFetchOrders = () => {
     return orderItems;
   };
 
-  // Fetch products for the organization based on userID
+  // Fetch products for the organization based on organizationID
   const fetchOrganizationProducts = async (
-    userID: string
+    organizationID: string
   ): Promise<(Product & { id: string })[]> => {
-    const userRef = doc(db, "accounts", userID);
-    const userDoc = await getDoc(userRef);
-
-    if (!userDoc.exists()) {
-      throw new Error("User not found");
-    }
-
-    const userData = userDoc.data() as Account;
-
-    if (!userData.hasOrganization || !userData.organizationID) {
-      throw new Error("User does not belong to any organization");
-    }
-
-    const organizationID = userData.organizationID;
-
     const productsRef = collection(db, "products");
     const q = query(productsRef, where("organizationID", "==", organizationID));
     const querySnapshot = await getDocs(q);
