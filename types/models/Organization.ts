@@ -1,26 +1,33 @@
 export interface Organization {
+  // Core Information
+  id: string; // Firestore document ID
   name: string;
   contactEmail: string;
+  phoneNumber: string;
   address: string;
   addressImagesURL: string[];
+
+  // Representations
+  logoImageURL: string;
+  coverImageURL: string;
   description: string;
-  phoneNumber: string;
-  iconURL: string;
-  accounts: OrganizationAccount[];
   imagesURL: string[];
-  isVerified: boolean;
-  isPremium: boolean;
-  premiumStartDate: Date;
-  premiumEndDate: Date;
-  isAutoRenew: boolean;
+
+  // Accounts (limited to 3 roles as separate fields)
+  adminAccounts: string[];
+  managerAccounts: string[];
+  staffAccounts: string[];
+
+  // Transactions Summary
+  totalTransactionCount: number;
+  paidTransactionCount: number;
+  unpaidTransactionCount: number;
+
   dateCreated: Date;
   lastModified: Date;
+  // Verifications & Statuses
+  isVerified: boolean;
   isArchived: boolean;
-}
-
-export interface OrganizationAccount {
-  accountID: string;
-  role: string;
 }
 
 export interface OrganizationViews {

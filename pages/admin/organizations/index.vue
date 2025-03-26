@@ -1,57 +1,66 @@
 <template>
   <div class="flex w-full flex-col space-y-8 px-8 pb-24 pt-8">
+    <!-- Summary Cards Section -->
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+      <AdminOrganizationStatCard
+        title="Total Organizations"
+        :value="summaryStats.totalOrgs"
+        icon="lucide:building"
+      />
+      <AdminOrganizationStatCard
+        title="Paid Transactions"
+        :value="summaryStats.paidTransactions"
+        icon="lucide:credit-card"
+        trend="up"
+      />
+      <AdminOrganizationStatCard
+        title="Unpaid Balance"
+        :value="`₱${summaryStats.unpaidAmount.toLocaleString()}`"
+        icon="lucide:alert-circle"
+        variant="warning"
+      />
+      <AdminOrganizationStatCard
+        title="Total Revenue"
+        :value="`₱${summaryStats.totalAmount.toLocaleString()}`"
+        icon="lucide:banknote"
+      />
+    </div>
+
+    <!-- Add Organization Card -->
     <div class="flex w-full flex-row items-center space-x-8">
       <div class="flex w-1/2 flex-col items-center justify-center rounded-sm border p-16">
         <Icon name="lucide:worm" class="mb-2 h-8 w-8" />
-        <span class="font-medium">Free Plan</span>
         <h1 class="text-3xl font-semibold">Add New Organization</h1>
-        <p class="text-sm text-gray-500">Limited Features and Permissions</p>
-        <UiButton size="sm" class="mt-4">Add Now</UiButton>
-      </div>
-      <div
-        class="flex w-1/2 flex-col items-center justify-center rounded-sm border bg-primary/90 p-16 text-primary-foreground"
-      >
-        <Icon name="lucide:bird" class="mb-2 h-8 w-8" />
-        <span class="font-medium">Paid Plan</span>
-        <h1 class="text-3xl font-semibold">Add New Organization</h1>
-        <p class="text-sm">Access all Features and Permissions</p>
-        <UiButton size="sm" class="mt-4" variant="secondary">Add Now</UiButton>
+        <p class="text-sm text-gray-500">Startup Account</p>
+        <UiButton size="sm" class="mt-4" @click="userDialog = true">Add Now</UiButton>
+        <AdminOrganizationAdd v-model="userDialog" @success="handleOrganizationAdded" />
       </div>
     </div>
+
+    <!-- Organizations Table -->
     <div class="flex flex-col space-y-2 px-4">
       <div class="flex flex-row items-center justify-between">
         <h1 class="text-2xl font-semibold">Organizations</h1>
+        <div class="flex gap-2">
+          <UiSelect v-model="filters.status" class="w-40">
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="overdue">Overdue</option>
+            <option value="inactive">Inactive</option>
+          </UiSelect>
+        </div>
       </div>
       <UiDatatable :options="options" @ready="tableRef = $event">
-        <template #subscriptionType="{ cellData }">
-          <UiBadge :variant="cellData.subscriptionType == 'Free' ? 'outline' : 'default'">{{
-            cellData.subscriptionType
-          }}</UiBadge>
-        </template>
-        <template #dateOfSubscription="{ cellData }: { cellData: Organization }">
-          <span v-if="cellData.subscriptionType !== 'Free'">
-            {{ cellData.dateOfSubscription }}
-          </span>
-        </template>
-        <template #subscriptionEndDate="{ cellData }: { cellData: Organization }">
-          <span v-if="cellData.subscriptionType === 'Paid'">
-            {{ cellData.subscriptionEndDate }}
-          </span>
-        </template>
         <template #actions="{ cellData }: { cellData: Organization }">
           <UiDropdownMenu>
             <UiDropdownMenuTrigger as-child>
               <UiButton class="h-6 text-[10px] sm:h-7 sm:text-xs"> Actions </UiButton>
             </UiDropdownMenuTrigger>
             <UiDropdownMenuContent class="w-32">
-              <UiDropdownMenuItem
-                v-if="cellData.subscriptionType === 'Free'"
-                @click="openUpdateSubscriptionDialog(cellData)"
-              >
-                Update Subscription
-              </UiDropdownMenuItem>
-              <UiDropdownMenuItem v-else @click="openExtendSubscriptionDialog(cellData)">
-                Extend Subscription
+              <UiDropdownMenuItem @click="viewOrganization(cellData)"> View </UiDropdownMenuItem>
+              <UiDropdownMenuItem>Transactions</UiDropdownMenuItem>
+              <UiDropdownMenuItem @click="resetPassword(cellData)">
+                Reset Password
               </UiDropdownMenuItem>
               <UiDropdownMenuItem @click="archiveOrganization(cellData)">
                 Archive
@@ -60,128 +69,6 @@
           </UiDropdownMenu>
         </template>
       </UiDatatable>
-
-      <!-- Organization Dialog -->
-      <UiDialog v-model:open="userDialog">
-        <UiDialogContent class="max-w-xl overflow-y-auto">
-          <UiDialogHeader>
-            <UiDialogTitle>Create Organization</UiDialogTitle>
-            <UiDialogDescription
-              description="Populate the form below to create a new organization."
-            />
-          </UiDialogHeader>
-          <form @submit.prevent="submit">
-            <fieldset class="grid grid-cols-1 gap-5">
-              <UiVeeInput label="Organization Name" icon="lucide:building" />
-              <UiVeeSelect label="Subscription Type" trailing-icon="lucide:credit-card">
-                <option value="Free">Free</option>
-                <option value="Paid">Paid</option>
-              </UiVeeSelect>
-              <UiVeeInput label="Email" icon="lucide:mail" type="email" />
-              <UiVeeInput label="Password" icon="lucide:lock" type="password" />
-              <UiVeeInput label="Confirm Password" icon="lucide:lock" type="password" />
-              <UiDialogFooter>
-                <UiDialogClose as-child>
-                  <UiButton variant="outline" text="Cancel" />
-                </UiDialogClose>
-                <UiButton type="submit" text="Create" />
-              </UiDialogFooter>
-            </fieldset>
-          </form>
-        </UiDialogContent>
-      </UiDialog>
-
-      <!-- Update Subscription Dialog -->
-      <UiDialog v-model:open="updateDialog">
-        <UiDialogContent class="max-w-lg">
-          <UiDialogHeader>
-            <UiDialogTitle>Update Subscription</UiDialogTitle>
-          </UiDialogHeader>
-          <div class="mb-4">
-            <p class="text-sm text-muted-foreground">
-              Updating subscription from free to paid for:
-            </p>
-            <p class="text-lg font-semibold">{{ selectedOrganization?.name }}</p>
-          </div>
-          <form @submit.prevent="submitUpdate">
-            <fieldset class="grid grid-cols-1 gap-2">
-              <UiVeeInput
-                label="Number of Months"
-                icon="lucide:calendar"
-                type="number"
-                min="1"
-                max="5"
-              />
-              <UiVeeInput
-                label="Total Price"
-                icon="lucide:philippine-peso"
-                type="text"
-                value="100"
-                class=""
-                disabled
-              />
-              <span class="mb-4 text-sm text-muted-foreground">
-                Price per month: <span class="font-semibold">100</span>
-              </span>
-
-              <UiVeeInput label="Admin Password" icon="lucide:lock" type="password" />
-              <span>
-                <p class="mb-8 text-sm text-muted-foreground">
-                  Admin Password is required to update the subscription.
-                </p>
-              </span>
-              <UiDialogFooter>
-                <UiDialogClose as-child>
-                  <UiButton variant="outline" text="Cancel" />
-                </UiDialogClose>
-                <UiButton type="submit" text="Update" />
-              </UiDialogFooter>
-            </fieldset>
-          </form>
-        </UiDialogContent>
-      </UiDialog>
-
-      <!-- Extend Subscription Dialog -->
-      <UiDialog v-model:open="extendDialog">
-        <UiDialogContent class="max-w-lg">
-          <UiDialogHeader>
-            <UiDialogTitle>Extend Subscription</UiDialogTitle>
-          </UiDialogHeader>
-          <div class="mb-4">
-            <p class="text-sm text-muted-foreground">Extending paid subscription for:</p>
-            <p class="text-lg font-semibold">{{ selectedOrganization?.name }}</p>
-          </div>
-          <form @submit.prevent="submitExtend">
-            <fieldset class="grid grid-cols-1 gap-2">
-              <UiVeeInput label="Number of Months" icon="lucide:calendar" type="number" />
-              <UiVeeInput
-                label="Total Price"
-                icon="lucide:philippine-peso"
-                type="text"
-                value="100"
-                min="1"
-                max="5"
-                disabled
-              />
-              <span class="mb-4 text-sm text-muted-foreground">
-                Price per month: <span class="font-semibold">100</span>
-              </span>
-              <UiVeeInput label="Admin Password" icon="lucide:lock" type="password" />
-              <span>
-                <p class="mb-8 text-sm text-muted-foreground">
-                  Admin Password is required to update the subscription.
-                </p>
-              </span>
-              <UiDialogFooter>
-                <UiDialogClose as-child>
-                  <UiButton variant="outline" text="Cancel" />
-                </UiDialogClose>
-                <UiButton type="submit" text="Extend" />
-              </UiDialogFooter>
-            </fieldset>
-          </form>
-        </UiDialogContent>
-      </UiDialog>
     </div>
   </div>
 </template>
@@ -193,52 +80,86 @@
 
   definePageMeta({
     layout: "admin",
-    middleware: ["auth"],
+    middleware: ["auth-admin"],
   });
 
   type Organization = {
     id: number;
     name: string;
-    subscriptionType: string;
     dateCreated: string;
-    dateOfSubscription?: string;
-    subscriptionEndDate?: string;
+    transactions: {
+      total: number;
+      paid: number;
+      unpaid: number;
+      totalAmount: number;
+      paidAmount: number;
+      unpaidAmount: number;
+    };
+    status: "active" | "overdue" | "inactive";
   };
 
   const tableRef = shallowRef<InstanceType<typeof DataTable<Organization[]>> | null>(null);
   const userDialog = ref(false);
-  const updateDialog = ref(false);
-  const extendDialog = ref(false);
   const selectedOrganization = ref<Organization | null>(null);
-  const submit = () => {
-    userDialog.value = false;
+  const filters = reactive({
+    status: "",
+  });
+
+  // Summary statistics
+  const summaryStats = reactive({
+    totalOrgs: 0,
+    paidTransactions: 0,
+    unpaidAmount: 0,
+    totalAmount: 0,
+  });
+
+  const viewOrganization = (organization: Organization) => {
+    console.log("View Organization:", organization);
   };
 
-  const submitUpdate = () => {
-    console.log("Update Subscription for:", selectedOrganization.value);
-    // Add your logic to update the subscription here
-    updateDialog.value = false;
-  };
-
-  const submitExtend = () => {
-    console.log("Extend Subscription for:", selectedOrganization.value);
-    // Add your logic to extend the subscription here
-    extendDialog.value = false;
-  };
-
-  const openUpdateSubscriptionDialog = (organization: Organization) => {
-    selectedOrganization.value = organization;
-    updateDialog.value = true;
-  };
-
-  const openExtendSubscriptionDialog = (organization: Organization) => {
-    selectedOrganization.value = organization;
-    extendDialog.value = true;
+  const resetPassword = (organization: Organization) => {
+    console.log("Reset Password for:", organization);
   };
 
   const archiveOrganization = (organization: Organization) => {
     console.log("Archive Organization:", organization);
-    // Add your logic to archive the organization here
+  };
+
+  const handleOrganizationAdded = (newOrganization: any) => {
+    tableRef.value?.ajax.reload();
+  };
+
+  // Generate more realistic mock data
+  const generateMockData = () => {
+    const data = Array.from({ length: 100 }, (_, index) => {
+      const totalTransactions = faker.number.int({ min: 5, max: 500 });
+      const paidTransactions = faker.number.int({ min: 0, max: totalTransactions });
+      const totalAmount = faker.number.float({ min: 1000, max: 50000, fractionDigits: 2 });
+      const paidPercentage = paidTransactions / totalTransactions;
+
+      return {
+        id: index + 1,
+        name: faker.company.name(),
+        dateCreated: useDateFormat(faker.date.past().toISOString(), "MMMM DD, YYYY").value,
+        transactions: {
+          total: totalTransactions,
+          paid: paidTransactions,
+          unpaid: totalTransactions - paidTransactions,
+          totalAmount: totalAmount,
+          paidAmount: parseFloat((totalAmount * paidPercentage).toFixed(2)),
+          unpaidAmount: parseFloat((totalAmount * (1 - paidPercentage)).toFixed(2)),
+        },
+        status: paidPercentage === 1 ? "active" : paidPercentage < 0.5 ? "overdue" : "inactive",
+      };
+    });
+
+    // Update summary stats
+    summaryStats.totalOrgs = data.length;
+    summaryStats.paidTransactions = data.reduce((sum, org) => sum + org.transactions.paid, 0);
+    summaryStats.unpaidAmount = data.reduce((sum, org) => sum + org.transactions.unpaidAmount, 0);
+    summaryStats.totalAmount = data.reduce((sum, org) => sum + org.transactions.totalAmount, 0);
+
+    return data;
   };
 
   const options: Config = {
@@ -285,30 +206,73 @@
     ],
     columns: [
       { title: "ID", data: "id", visible: false },
-      { title: "Organization Name", data: "name" },
       {
-        title: "Subscription Type",
-        data: null,
-        render: {
-          _: "subscriptionType",
-          display: "#subscriptionType",
-        },
-      },
-      { title: "Date Created", data: "dateCreated" },
-      {
-        title: "Date of Subscription",
-        data: null,
-        render: {
-          _: "dateOfSubscription",
-          display: "#dateOfSubscription",
+        title: "Organization",
+        data: "name",
+        render: (data, type, row) => {
+          return `
+          <div class="flex flex-col">
+            <span class="font-medium">${data}</span>
+            <span class="text-xs text-gray-500">${row.dateCreated}</span>
+          </div>
+        `;
         },
       },
       {
-        title: "Subscription End Date",
-        data: null,
-        render: {
-          _: "subscriptionEndDate",
-          display: "#subscriptionEndDate",
+        title: "Transactions",
+        data: "transactions",
+        render: (data) => {
+          const paidPercentage = Math.round((data.paid / data.total) * 100);
+          return `
+          <div class="flex flex-col gap-1 min-w-[200px]">
+            <div class="flex justify-between text-xs">
+              <span>${data.paid}/${data.total} (${paidPercentage}%)</span>
+              <span class="font-medium">₱${data.paidAmount.toLocaleString()}</span>
+            </div>
+            <div class="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+              <div 
+                class="h-full ${paidPercentage >= 80 ? "bg-green-500" : paidPercentage >= 50 ? "bg-yellow-500" : "bg-red-500"}" 
+                style="width: ${paidPercentage}%"
+              ></div>
+            </div>
+            <div class="flex justify-between text-xs text-gray-500">
+              <span>Unpaid: ${data.unpaid}</span>
+              <span>₱${data.unpaidAmount.toLocaleString()}</span>
+            </div>
+          </div>
+        `;
+        },
+      },
+      {
+        title: "Status",
+        data: "status",
+        render: (data: unknown) => {
+          // Define type-safe status classes
+          const statusClasses: Record<"active" | "overdue" | "inactive", string> = {
+            active: "bg-green-100 text-green-800",
+            overdue: "bg-yellow-100 text-yellow-800",
+            inactive: "bg-gray-100 text-gray-800",
+          };
+
+          // Type guard to ensure data is valid
+          const isValidStatus = (status: unknown): status is keyof typeof statusClasses => {
+            return typeof status === "string" && status in statusClasses;
+          };
+
+          // Default class if status is invalid
+          const defaultClass = "bg-gray-100 text-gray-800";
+
+          // Safely access the class
+          const statusClass = isValidStatus(data) ? statusClasses[data] : defaultClass;
+          const displayText = isValidStatus(data)
+            ? data.charAt(0).toUpperCase() + data.slice(1)
+            : "Unknown";
+
+          return `
+          <span class="px-2 py-1 rounded-full text-xs font-medium ${statusClass}">
+            ${displayText}
+          </span>
+          `;
         },
       },
       {
@@ -322,33 +286,29 @@
     serverSide: true,
     processing: true,
     async ajax(data: any, callback: any) {
-      // sleep for 1 second to simulate network latency
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      // fetch data from API
-      const res = Array.from({ length: 100 }, (item, index) => ({
-        id: index + 1,
-        name: faker.company.name(),
-        subscriptionType: faker.helpers.arrayElement(["Free", "Paid"]),
-        dateCreated: useDateFormat(faker.date.past().toISOString(), "MMMM DD, YYYY").value,
-        dateOfSubscription: faker.helpers.arrayElement([
-          null,
-          useDateFormat(faker.date.past().toISOString(), "MMMM DD, YYYY").value,
-        ]),
-        subscriptionEndDate: faker.helpers.arrayElement([
-          null,
-          useDateFormat(faker.date.future().toISOString(), "MMMM DD, YYYY").value,
-        ]),
-      }));
+      await new Promise((resolve) => setTimeout(resolve, 800));
+      const res = generateMockData();
+
+      // Apply filters
+      let filteredData = res;
+      if (filters.status) {
+        filteredData = res.filter((org) => org.status === filters.status);
+      }
+
       callback({
-        // always pass back draw from data
         draw: Number(data.draw),
-        // the data to be displayed (paginated from sever)
-        data: res.slice(data.start, data.start + data.length),
-        // the total number of records in the dataset, not just the number returned
+        data: filteredData.slice(data.start, data.start + data.length),
         recordsTotal: res.length,
-        // the total number of records after filtering (if any filtering)
-        recordsFiltered: res.length,
+        recordsFiltered: filteredData.length,
       });
     },
   };
+
+  // Watch for filter changes
+  watch(
+    () => filters.status,
+    () => {
+      tableRef.value?.ajax.reload();
+    }
+  );
 </script>

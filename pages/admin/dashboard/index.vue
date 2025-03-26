@@ -57,7 +57,7 @@
 
   definePageMeta({
     layout: "admin",
-    middleware: ["auth"],
+    middleware: ["auth-admin"],
   });
 
   interface Staff {

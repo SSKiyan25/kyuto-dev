@@ -15,7 +15,7 @@
   const submit = handleSubmit(async (values) => {
     console.log("Form successfully submitted with values: ", values);
     const loading = useSonner.loading("Loading...", {
-      description: "Signed in successfully!",
+      description: "Please wait while we log you in.",
     });
     try {
       await signInWithEmailAndPassword(auth!, values.email, values.password);
@@ -112,6 +112,11 @@
             </a>
             .
           </p>
+        </div>
+        <div class="mt-2 flex items-end justify-end p-4 text-sm opacity-50">
+          <NuxtLink to="/admin/verify" class="hover:text-red-600 hover:underline">
+            Login as Admin
+          </NuxtLink>
         </div>
       </div>
     </div>

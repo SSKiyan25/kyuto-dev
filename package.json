@@ -11,7 +11,7 @@
     "ui": "npx --yes ui-thing@latest add"
   },
   "dependencies": {
-    "@faker-js/faker": "^9.3.0",
+    "@faker-js/faker": "^9.6.0",
     "@firebase/app-types": "^0.9.2",
     "@internationalized/date": "^3.5.6",
     "@internationalized/number": "^3.5.4",

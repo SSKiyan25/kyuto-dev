@@ -32,7 +32,8 @@ export default defineNuxtConfig({
 
   vuefire: {
     auth: {
-      enabled: true, //sessionCookie: true
+      enabled: true,
+      //sessionCookie: true,
       persistence: ["indexedDBLocal"],
     },
 
@@ -57,19 +58,33 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      script: [{
-        src: "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.9/pdfmake.min.js",
-        defer: true
-      }, {
-        src: "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.9/vfs_fonts.min.js",
-        defer: true
-      }, {
-        src: "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.12/pdfmake.min.js",
-        defer: true
-      }, {
-        src: "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.12/vfs_fonts.min.js",
-        defer: true
-      }]
-    }
-  }
+      script: [
+        {
+          src: "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.9/pdfmake.min.js",
+          defer: true,
+        },
+        {
+          src: "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.9/vfs_fonts.min.js",
+          defer: true,
+        },
+        {
+          src: "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.12/pdfmake.min.js",
+          defer: true,
+        },
+        {
+          src: "https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.12/vfs_fonts.min.js",
+          defer: true,
+        },
+      ],
+    },
+  },
+  runtimeConfig: {
+    firebasePrivateKey: process.env.FIREBASE_PRIVATE_KEY,
+    apiSecretKey: process.env.API_SECRET_KEY,
+    public: {
+      firebaseProjectId: process.env.FIREBASE_PROJECT_ID,
+      firebaseClientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+      adminEmails: process.env.NUXT_PUBLIC_ADMIN_EMAILS || "",
+    },
+  },
 });

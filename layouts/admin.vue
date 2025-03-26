@@ -145,7 +145,6 @@
 </template>
 
 <script lang="ts" setup>
-  import { fetchOrganization } from "~/composables/organization/useOrganization";
   import { signOut } from "firebase/auth";
   import { doc } from "firebase/firestore";
   import { useRoute, useRouter } from "vue-router";
@@ -171,11 +170,8 @@
     router.push(url);
   };
 
-  const orgData = await fetchOrganization();
   const userDocRef = computed(() => (user.value ? doc(db, "accounts", user.value.uid) : null));
   const userData = useDocument<Partial<Account>>(userDocRef) as Partial<Account> | undefined;
-
-  console.log("OrganizationData: ", orgData);
 
   const logout = async () => {
     await signOut(auth!);
@@ -188,11 +184,6 @@
     { title: "Organizations", icon: "lucide:landmark", link: "/admin/organizations" },
     { title: "Settings", icon: "lucide:settings", link: "/admin/settings" },
   ];
-
-  // const bottomNav = [
-  //   { title: "Support", icon: "lucide:life-buoy", link: "#" },
-  //   { title: "Settings", icon: "lucide:settings-2", link: "#" },
-  // ];
 
   const isActiveItem = (link: string) => {
     return route.path === link;
