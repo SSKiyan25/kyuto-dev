@@ -1,36 +1,20 @@
 <script lang="ts" setup>
   import { useEditProduct } from "~/composables/organization/product/useEditProduct";
-  import { collection, doc, getDoc } from "firebase/firestore";
+  import { collection, doc } from "firebase/firestore";
   import type { Crumbs } from "~/components/Ui/Breadcrumbs.vue";
   import type { Product } from "~/types/models/Product";
-
-  const crumbs: Crumbs[] = [
-    { label: "Dashboard", link: "/organization/dashboard", icon: "lucide:newspaper" },
-    { label: "All Products", link: "/organization/products", icon: "lucide:package" },
-    {
-      label: "Edit Product",
-      icon: "lucide:file-pen-line",
-      disabled: true,
-    },
-  ];
 
   definePageMeta({
     layout: "no-nav",
     middleware: ["auth"],
   });
 
-  const editName = ref(false);
-  const editDescription = ref(false);
-  const changeCategory = ref(false);
-  const changeStatus = ref(false);
-  const changeFeaturedImage = ref(false);
-  const addMoreImages = ref(false);
-  const changePreOrder = ref(false);
+  // UI State
   const loading = ref(false);
   const toast = useToast();
-  const newPhotos = ref<string[]>([]);
   const router = useRouter();
 
+  // Constants
   const categories = [
     "T-shirt",
     "Polo-Shirt",
@@ -43,20 +27,28 @@
     "Mug",
     "Others",
   ];
-  const status = ["Draft", "Publish"];
-  const currentMessage = ref("Saving changes...");
+  const statusOptions = ["Draft", "Publish"];
+  const currentMessage = "Please wait while we save your changes...";
 
-  // Edit Functions
+  // Product Data
   const route = useRoute();
-  const productID = computed(() => route.params.id);
-
-  // Fetch Product
+  const productID = computed(() => route.params.id as string);
   const db = useFirestore();
-  const productRef = computed(() =>
-    productID.value ? doc(collection(db, "products"), productID.value as string) : null
-  );
+  const productRef = computed(() => doc(collection(db, "products"), productID.value));
   const { data: product, pending } = useDocument<Partial<Product>>(productRef);
-  const productData = reactive({
+
+  const orgId = product.value?.organizationID;
+
+  // Constants and Meta
+  const crumbs: Crumbs[] = [
+    { label: "Dashboard", link: `/organization/dashboard/${orgId}`, icon: "lucide:newspaper" },
+    { label: "All Products", link: `/organization/products/${orgId}`, icon: "lucide:package" },
+    { label: "Edit Product", icon: "lucide:file-pen-line", disabled: true },
+  ];
+
+  console.log("Organization ID: ", orgId);
+  // Form data with original values tracking
+  const formData = reactive({
     name: "",
     category: "",
     status: "",
@@ -64,49 +56,61 @@
     featuredPhoto: "",
     canPreOrder: false,
     photos: [] as string[],
+    newPhotos: [] as string[],
   });
 
-  const changedName = ref("");
-  const changedDescription = ref("");
-  const preOrder = ref(false);
+  // Track original values for comparison
+  const originalData = reactive({ ...formData });
 
-  watchEffect(() => {
-    if (product.value) {
-      productData.name = product.value.name || ".";
-      productData.category = product.value.category || "";
-      productData.status = product.value.status || "";
-      productData.description = product.value.description || "";
-      productData.featuredPhoto = product.value.featuredPhotoURL || "";
-      productData.canPreOrder = product.value.canPreOrder || false;
-      productData.photos = product.value.photosURL || [];
-    }
-  });
+  // Update form data when product loads
+  watch(
+    product,
+    (newProduct) => {
+      if (newProduct) {
+        formData.name = newProduct.name || "";
+        formData.category = newProduct.category || "";
+        formData.status = newProduct.status || "";
+        formData.description = newProduct.description || "";
+        formData.featuredPhoto = newProduct.featuredPhotoURL || "";
+        formData.canPreOrder = newProduct.canPreOrder || false;
+        formData.photos = newProduct.photosURL || [];
+        formData.newPhotos = [];
 
-  onMounted(async () => {
-    changedName.value = productData.name;
-    changedDescription.value = productData.description;
-    preOrder.value = productData.canPreOrder;
-  });
+        // Update original data
+        Object.assign(originalData, { ...formData });
+      }
+    },
+    { immediate: true }
+  );
 
-  const selectedCategory = ref(productData.category);
-  const selectedStatus = ref(productData.status);
-
-  // Add/Delete Images
-  const numImages = computed(() => productData.photos.length + newPhotos.value.length);
+  // Computed properties
+  const numImages = computed(() => formData.photos.length + formData.newPhotos.length);
   const canAddMoreImages = computed(() => numImages.value < 6);
-  const combinedPhotos = computed(() => [...productData.photos, ...newPhotos.value]);
+  const combinedPhotos = computed(() => [...formData.photos, ...formData.newPhotos]);
+  const hasChanges = computed(() => {
+    return (
+      formData.name !== originalData.name ||
+      formData.category !== originalData.category ||
+      formData.status !== originalData.status ||
+      formData.description !== originalData.description ||
+      formData.featuredPhoto !== originalData.featuredPhoto ||
+      formData.canPreOrder !== originalData.canPreOrder ||
+      JSON.stringify([...formData.photos, ...formData.newPhotos]) !==
+        JSON.stringify([...originalData.photos])
+    );
+  });
+
   const { removeImage, updateProduct } = useEditProduct();
 
+  // Image handling
   const handleRemoveImage = async (photoUrl: string) => {
     loading.value = true;
-    // console.log("Removing Image: ", photoUrl);
-    if (newPhotos.value.includes(photoUrl)) {
-      // console.log("Removing from new photos...");
-      newPhotos.value = newPhotos.value.filter((photo) => photo !== photoUrl);
+
+    if (formData.newPhotos.includes(photoUrl)) {
+      formData.newPhotos = formData.newPhotos.filter((photo) => photo !== photoUrl);
     } else if (productID.value) {
-      // console.log("Removing from database...");
-      await removeImage(productID.value as string, photoUrl);
-      productData.photos = productData.photos.filter((photo) => photo !== photoUrl);
+      await removeImage(productID.value, photoUrl);
+      formData.photos = formData.photos.filter((photo) => photo !== photoUrl);
     }
 
     loading.value = false;
@@ -118,125 +122,101 @@
     });
   };
 
-  console.log("New Photos", newPhotos.value);
-
   const handleFeaturedFileChange = (event: Event) => {
     const input = event.target as HTMLInputElement;
-    if (!input.files) return;
-
-    const file = input.files[0];
-    const fileUrl = URL.createObjectURL(file);
-
-    productData.featuredPhoto = fileUrl;
+    if (!input.files?.[0]) return;
+    formData.featuredPhoto = URL.createObjectURL(input.files[0]);
   };
 
   const handleGalleryFileChange = (event: Event) => {
     const input = event.target as HTMLInputElement;
-    if (!input.files) return;
+    if (!input.files?.length) return;
 
     const files = Array.from(input.files);
-    const fileUrls = files.map((file) => URL.createObjectURL(file));
-
-    if (productData.photos.length + newPhotos.value.length + fileUrls.length > 5) {
+    if (numImages.value + files.length > 5) {
       toast.toast({
         title: "Cannot Add More Images",
         description: "You can only add up to 5 images total.",
         variant: "warning",
         icon: "lucide:triangle-alert",
       });
+      return;
     }
 
-    newPhotos.value.push(...fileUrls);
+    formData.newPhotos.push(...files.map((file) => URL.createObjectURL(file)));
   };
 
+  // Validation
   const validateFields = () => {
     const invalidChars = /[<@`#"]/;
-    if (editName) {
-      if (changedName.value.length > 72) {
-        toast.toast({
-          title: "Invalid Name",
-          description: "The name cannot exceed 72 characters.",
-          variant: "warning",
-          icon: "lucide:triangle-alert",
-        });
-        return false;
-      }
-      if (changedName.value.length == 0) {
-        toast.toast({
-          title: "Invalid Name",
-          description: "The name cannot be empty.",
-          variant: "warning",
-          icon: "lucide:triangle-alert",
-        });
-        return false;
-      }
-      if (invalidChars.test(changedName.value)) {
-        toast.toast({
-          title: "Invalid Name",
-          description: "The name cannot contain <, @, `, or #.",
-          variant: "warning",
-          icon: "lucide:triangle-alert",
-        });
-        return false;
-      }
+
+    if (!formData.name.trim()) {
+      showError("Name cannot be empty");
+      return false;
     }
-    if (editDescription) {
-      if (changedDescription.value.length > 200) {
-        toast.toast({
-          title: "Invalid Description",
-          description: "The description cannot exceed 200 characters.",
-          variant: "warning",
-          icon: "lucide:triangle-alert",
-        });
-        return false;
-      }
-      if (invalidChars.test(changedDescription.value)) {
-        toast.toast({
-          title: "Invalid Description",
-          description: "The description cannot contain <, @, `, or #.",
-          variant: "warning",
-          icon: "lucide:triangle-alert",
-        });
-        return false;
-      }
+
+    if (formData.name.length > 72) {
+      showError("Name cannot exceed 72 characters");
+      return false;
     }
+
+    if (invalidChars.test(formData.name)) {
+      showError("Name cannot contain <, @, `, or #");
+      return false;
+    }
+
+    if (formData.description && invalidChars.test(formData.description)) {
+      showError("Description cannot contain <, @, `, or #");
+      return false;
+    }
+
     return true;
   };
 
-  // Update Product
+  function showError(message: string) {
+    toast.toast({
+      title: "Invalid Input",
+      description: message,
+      variant: "warning",
+      icon: "lucide:triangle-alert",
+    });
+  }
+
+  // Save changes
   const handleSaveChanges = async () => {
-    if (!validateFields()) {
+    if (!validateFields()) return;
+    if (!hasChanges.value) {
+      toast.toast({
+        title: "No Changes",
+        description: "No changes were made to save.",
+        variant: "default",
+        icon: "lucide:info",
+      });
       return;
     }
 
     loading.value = true;
+
     const updatedData: Partial<Product> = {};
-    if (changeCategory.value) {
-      updatedData.category = selectedCategory.value;
+
+    // Only include changed fields
+    if (formData.name !== originalData.name) updatedData.name = formData.name;
+    if (formData.description !== originalData.description)
+      updatedData.description = formData.description;
+    if (formData.category !== originalData.category) updatedData.category = formData.category;
+    if (formData.status !== originalData.status) updatedData.status = formData.status;
+    if (formData.featuredPhoto !== originalData.featuredPhoto)
+      updatedData.featuredPhotoURL = formData.featuredPhoto;
+    if (JSON.stringify(combinedPhotos.value) !== JSON.stringify(originalData.photos)) {
+      updatedData.photosURL = combinedPhotos.value;
     }
-    if (changeStatus.value) {
-      updatedData.status = selectedStatus.value;
-    }
-    if (changeFeaturedImage.value) {
-      updatedData.featuredPhotoURL = productData.featuredPhoto;
-    }
-    if (addMoreImages.value) {
-      updatedData.photosURL = [...productData.photos, ...newPhotos.value];
-    }
-    if (editName.value) {
-      updatedData.name = changedName.value;
-    }
-    if (editDescription.value) {
-      updatedData.description = changedDescription.value;
-    }
-    if (changePreOrder.value) {
-      updatedData.canPreOrder = preOrder.value;
-    }
-    if (productID.value) {
-      await updateProduct(productID.value as string, updatedData);
+    if (formData.canPreOrder !== originalData.canPreOrder)
+      updatedData.canPreOrder = formData.canPreOrder;
+
+    if (productID.value && Object.keys(updatedData).length > 0) {
+      await updateProduct(productID.value, updatedData);
     }
 
-    newPhotos.value = []; // Clear the new photos array after saving
     loading.value = false;
     toast.toast({
       title: "Changes Saved",
@@ -244,7 +224,7 @@
       variant: "success",
       icon: "lucide:badge-check",
     });
-    router.push("/organization/products");
+    router.push(`/organization/products/${orgId}`);
   };
 </script>
 
@@ -265,40 +245,25 @@
           <div class="flex w-full flex-col gap-4 pl-4 pt-4">
             <div class="flex flex-row gap-2">
               <span class="font-semibold">Product Name: </span>
-              <span class="text-muted-foreground"> {{ productData.name }}</span>
-            </div>
-            <div class="flex flex-row items-center gap-2">
-              <span class="text-[12px] text-muted-foreground"
-                >Do you want to change product name?</span
-              >
-              <input type="checkbox" v-model="editName" id="editName" />
+              <span class="text-muted-foreground"> {{ product?.name }}</span>
             </div>
             <fieldset>
-              <template v-if="editName">
-                <UiLabel for="name">Change Product Name</UiLabel>
-                <UiInput
-                  name="name"
-                  id="name"
-                  type="text"
-                  class="w-11/12"
-                  v-model="changedName"
-                  required
-                />
-              </template>
+              <UiLabel for="name">Change Product Name</UiLabel>
+              <UiInput
+                name="name"
+                id="name"
+                type="text"
+                class="w-11/12"
+                v-model="formData.name"
+                required
+              />
               <div class="flex w-full flex-col gap-2 pt-4">
                 <div class="flex flex-row items-center gap-2">
                   <span class="font-semibold text-muted-foreground">Current Category: </span>
-                  <span class="font-semibold">{{ productData.category }}</span>
+                  <span class="font-semibold">{{ product?.category }}</span>
                 </div>
-                <div class="flex flex-row items-center gap-2">
-                  <span class="text-[12px] text-muted-foreground"
-                    >Do you want to change category?</span
-                  >
-                  <input type="checkbox" v-model="changeCategory" id="changeCategory" />
-                </div>
-
-                <div v-if="changeCategory" class="w-4/12">
-                  <UiSelect label="Category" name="category" v-model="selectedCategory">
+                <div class="w-4/12">
+                  <UiSelect label="Category" name="category" v-model="formData.category">
                     <UiSelectTrigger placeholder="Select Category" />
                     <UiSelectContent>
                       <UiSelectLabel>Categories</UiSelectLabel>
@@ -318,24 +283,17 @@
               <div class="flex w-full flex-col gap-2 pt-4">
                 <div class="flex flex-row items-center gap-2">
                   <span class="font-semibold text-muted-foreground">Status:</span>
-                  <span class="font-semibold">{{ productData.status }}</span>
+                  <span class="font-semibold">{{ product?.status }}</span>
                 </div>
-                <div class="flex flex-row items-center gap-2">
-                  <span class="text-[12px] text-muted-foreground"
-                    >Do you want to change status?</span
-                  >
-                  <input type="checkbox" v-model="changeStatus" id="changeStatus" />
-                </div>
-
-                <div v-if="changeStatus" class="w-4/12">
-                  <UiSelect label="Category" name="category" v-model="selectedStatus">
+                <div class="w-4/12">
+                  <UiSelect label="Category" name="category" v-model="formData.status">
                     <UiSelectTrigger placeholder="Select Category" />
                     <UiSelectContent>
                       <UiSelectLabel>Categories</UiSelectLabel>
                       <UiSelectSeparator />
                       <UiSelectGroup>
                         <UiSelectItem
-                          v-for="stat in status"
+                          v-for="stat in formData.status ? statusOptions : []"
                           :key="stat"
                           :value="stat"
                           :text="stat"
@@ -348,43 +306,33 @@
               <div class="flex flex-col gap-2 pt-4">
                 <span class="font-semibold">Product Description: </span>
                 <p class="px-4 text-justify text-[12px] text-muted-foreground">
-                  {{ productData.description }}
+                  {{ product?.description }}
                 </p>
               </div>
-              <div class="flex flex-row items-center gap-2 pt-2">
-                <span class="text-[12px] text-muted-foreground"
-                  >Do you want to change product description?</span
-                >
-                <input type="checkbox" v-model="editDescription" id="editDescription" />
-              </div>
-              <template v-if="editDescription">
-                <UiLabel for="description" class="pt-4">Change Description</UiLabel>
-                <UiTextarea
-                  id="description"
-                  name="description"
-                  class="w-11/12 pt-4"
-                  v-model="changedDescription"
-                />
-              </template>
+              <UiLabel for="description" class="pt-4">Change Description</UiLabel>
+              <UiTextarea
+                id="description"
+                name="description"
+                class="w-11/12 pt-4"
+                v-model="formData.description"
+              />
               <!-- Pre Order-->
               <div class="flex flex-col gap-2 pt-4">
                 <span class="font-semibold">Pre-Order settings: </span>
                 <p class="px-4 text-justify text-[12px] text-muted-foreground">
-                  {{ productData.canPreOrder ? "Pre-Order is enabled." : "Pre-Order is disabled." }}
+                  {{ formData.canPreOrder ? "Pre-Order is enabled." : "Pre-Order is disabled." }}
                 </p>
               </div>
               <div class="flex flex-row items-center gap-2 pt-2">
                 <span class="text-[12px] text-muted-foreground">Do you want to change it?</span>
-                <input type="checkbox" v-model="changePreOrder" id="changePreOrder" />
               </div>
-              <template v-if="changePreOrder">
-                <div class="flex flex-row items-center space-x-2 pt-4">
-                  <input type="checkbox" v-model="preOrder" id="canPreOrder" />
-                  <UiLabel for="canPreOrder">
-                    {{ preOrder ? "Enabled" : "Disabled" }}
-                  </UiLabel>
-                </div>
-              </template>
+
+              <div class="flex flex-row items-center space-x-2 pt-4">
+                <input type="checkbox" v-model="formData.canPreOrder" id="canPreOrder" />
+                <UiLabel for="canPreOrder">
+                  {{ formData.canPreOrder ? "Enabled" : "Disabled" }}
+                </UiLabel>
+              </div>
             </fieldset>
           </div>
         </div>
@@ -415,7 +363,7 @@
                 <UiDrawer>
                   <UiDrawerTrigger as-child>
                     <img
-                      :src="productData.featuredPhoto"
+                      :src="formData.featuredPhoto"
                       alt="Product Image"
                       class="h-auto w-64 cursor-pointer hover:opacity-50 hover:shadow"
                     />
@@ -428,7 +376,7 @@
                       </UiDrawerDescription>
                       <div class="min-h-[400px] pt-4">
                         <img
-                          :src="productData.featuredPhoto"
+                          :src="formData.featuredPhoto"
                           alt="Product Image"
                           class="h-auto w-full"
                         />
@@ -445,24 +393,16 @@
                   </UiDrawerContent>
                 </UiDrawer>
 
-                <div class="flex flex-row items-center gap-2">
-                  <span class="text-[12px] text-muted-foreground"
-                    >Do you want to change the photo?</span
-                  >
-                  <input type="checkbox" v-model="changeFeaturedImage" id="changeFeaturedImage" />
-                </div>
-                <div v-if="changeFeaturedImage">
-                  <fieldset>
-                    <UiLabel for="featured_image">Change Featured Photo</UiLabel>
-                    <UiInput
-                      type="file"
-                      id="featured_image"
-                      @change="handleFeaturedFileChange"
-                      accept="image/*"
-                      hint="Max file size: 10MB"
-                    />
-                  </fieldset>
-                </div>
+                <fieldset>
+                  <UiLabel for="featured_image">Change Featured Photo</UiLabel>
+                  <UiInput
+                    type="file"
+                    id="featured_image"
+                    @change="handleFeaturedFileChange"
+                    accept="image/*"
+                    hint="Max file size: 10MB"
+                  />
+                </fieldset>
               </div>
               <UiDivider class="py-4" />
               <div class="flex flex-col">
@@ -514,9 +454,8 @@
                   <span class="text-[12px] text-muted-foreground"
                     >Add more images? (Limited to 5 total only)</span
                   >
-                  <input type="checkbox" v-model="addMoreImages" id="addMoreImages" />
                 </div>
-                <div v-if="addMoreImages" class="pb-8">
+                <div class="pb-8">
                   <fieldset>
                     <UiLabel for="photos">Add More Images</UiLabel>
                     <UiInput
