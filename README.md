@@ -40,6 +40,28 @@ Kyuto is a modern, scalable e-commerce platform designed specifically for studen
   - **Numerical Input Fields**: Numerical input fields (e.g., price) do not accept decimal values. Any decimal input is automatically rounded up to the nearest whole number.
   - Simple analytics features are still under development.
   - G-Cash payment option is still not available.
+
+### **KT.010.002 Release Notes**  
+- **Refactored & Fixed**  
+  - **Fixed:**  
+    - Numerical input fields now accept 2 decimal places.  
+    - Edit Product Page loads current values properly.  
+  - **Patched Known Issues:**  
+    - Redundant queries in Organization Pages (performance boost).  
+
+- **Added Features**  
+  - **Commission Rate System:**  
+    - Organizations now pay per-item commission (replaces Subscription Plan).  
+  - **Search Functionality:**  
+    - Added search for store/products pages.  
+  - **Organization Profiles:**  
+    - Logo upload & public profile editing (Address, Images).  
+  - **Backend:** Store page now fully functional.  
+
+- **Known Issues**  
+  - Simple analytics still in development.  
+  - GCash payment option pending.  
+  - Limited admin automation tools (e.g., account tracking).  
  
 Important Links:
  - Design Specs: https://github.com/SSKiyan25/kyuto
