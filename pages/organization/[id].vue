@@ -11,10 +11,25 @@
 
   interface ExtendedOrganization extends Partial<Organization> {
     id: string;
+    address?: string;
+    addressImagesURL?: { url: string; path: string }[];
+    logoImageURL?: string;
+    logoImagePath?: string;
+    coverImageURL?: string;
+    coverImagePath?: string;
+    description?: string;
+    imagesURL?: { url: string; path: string }[];
+    adminAccounts?: string[];
+    managerAccounts?: string[];
+    staffAccounts?: string[];
   }
 
   const organization = ref<ExtendedOrganization | null>(null);
   const editDialog = ref(false);
+  const editAddressDialog = ref(false);
+  const editCoverDialog = ref(false);
+  const editGalleryDialog = ref(false);
+  const editLogoDialog = ref(false);
   const loading = ref(true);
   const loadingEdit = ref(false);
   const db = useFirestore();
@@ -36,7 +51,6 @@
       contactEmail: orgData.contactEmail || "",
       phoneNumber: orgData.phoneNumber || "",
       description: orgData.description || "",
-      address: orgData.address || "",
     });
   };
 
@@ -74,17 +88,53 @@
       editDialog.value = false;
     }
   });
+
+  const removeImage = (index: number) => {
+    console.log("Image removed at index:", index);
+  };
+
+  const refreshOrganization = async () => {
+    try {
+      const orgData = await fetchOrganization();
+      organization.value = orgData;
+      setFormValues(orgData);
+    } catch (error) {
+      console.error("Error refreshing organization data:", error);
+    }
+  };
+
+  onMounted(async () => {
+    await refreshOrganization();
+  });
 </script>
 
 <template>
   <div class="flex w-full flex-col px-12 py-8">
     <div class="flex flex-row items-center justify-between space-x-2 pt-4">
       <div class="flex flex-row items-center space-x-4">
-        <img
-          :src="organization?.iconURL || '/placeholder-img.jpg'"
-          alt="Organization Logo"
-          class="h-32 w-32 rounded-full border-2 border-primary/70 object-cover"
+        <div class="group relative h-32 w-32">
+          <img
+            :src="organization?.logoImageURL || '/placeholder-img.jpg'"
+            alt="Organization Logo"
+            class="h-32 w-32 cursor-pointer rounded-full border border-primary/70 object-cover shadow-sm"
+            @click="editLogoDialog = true"
+          />
+          <div
+            class="absolute inset-0 flex cursor-pointer flex-col items-center justify-center gap-1 rounded-full bg-black/50 opacity-0 transition-opacity group-hover:opacity-100"
+            @click="editLogoDialog = true"
+          >
+            <Icon name="lucide:pencil" class="size-4 text-white" />
+            <span class="text-xs font-medium text-white">Change Logo</span>
+          </div>
+        </div>
+        <OrganizationEditLogo
+          v-model="editLogoDialog"
+          :organization-id="organization?.id || ''"
+          :logo-image="organization?.logoImageURL"
+          :current-logo-path="organization?.logoImagePath"
+          @success="refreshOrganization"
         />
+
         <div class="flex flex-col">
           <span class="text-lg font-bold">{{ organization?.name || "Organization Name" }}</span>
           <span class="text-[12px] text-muted-foreground">{{
@@ -145,11 +195,6 @@
                     name="description"
                     :placeholder="organization?.description || ''"
                   />
-                  <UiVeeInput
-                    label="Address"
-                    name="address"
-                    :placeholder="organization?.address || ''"
-                  />
                 </div>
               </fieldset>
               <UiDialogFooter class="">
@@ -199,17 +244,55 @@
     <UiDivider class="my-2" />
     <div class="flex w-full flex-row py-4">
       <div class="flex w-full flex-col space-y-1">
-        <span class="text-[12px] font-semibold">Organization Address</span>
-        <p class="text-[10px] text-muted-foreground">
-          This will be used for customers to claim their orders.
-        </p>
+        <div class="flex flex-row justify-between">
+          <div class="flex flex-col space-y-1">
+            <span class="text-[12px] font-semibold">Organization Address</span>
+            <p class="text-[10px] text-muted-foreground">
+              This will be used for customers to claim their orders.
+            </p>
+          </div>
+          <div>
+            <UiButton variant="outline" size="sm" @click="editAddressDialog = true">
+              <span class="text-[12px]">Edit</span>
+              <Icon name="lucide:pencil" class="size-3" />
+            </UiButton>
+          </div>
+        </div>
         <UiDivider class="my-2" />
         <div class="flex flex-col space-y-1 px-8 pt-4">
           <span class="text-[12px] font-semibold text-muted-foreground">Organization Address</span>
           <span class="text-sm font-medium">{{
             organization?.address || "No address available"
           }}</span>
+          <span class="pt-4 text-[12px] font-semibold text-muted-foreground">
+            Organization Address Image/s
+          </span>
+          <div class="flex flex-row flex-wrap space-x-4">
+            <img
+              v-for="(addImg, index) in organization?.addressImagesURL || []"
+              :key="index"
+              :src="addImg.url || '/placeholder-img.jpg'"
+              alt="Organization Address Image"
+              class="h-32 w-32 rounded-lg border-2 border-primary/70 object-cover"
+            />
+          </div>
+
+          <!-- Display placeholder if addressImagesURL is empty -->
+          <div v-if="!organization?.addressImagesURL || organization.addressImagesURL.length === 0">
+            <img
+              src="/placeholder-img.jpg"
+              alt="Placeholder Image"
+              class="h-32 w-32 rounded-lg border-2 border-primary/70 object-cover"
+            />
+          </div>
         </div>
+        <OrganizationEditAddress
+          v-model="editAddressDialog"
+          :organization-id="organization?.id || ''"
+          :current-address="organization?.address"
+          :current-images="organization?.addressImagesURL || []"
+          @success="refreshOrganization"
+        />
         <!-- Google Maps, will be added in future-->
         <!-- <div class="flex flex-col px-8 pt-4">
           <span>Organization Address Link</span>
@@ -248,26 +331,113 @@
       <UiDivider class="my-2" />
       <div>
         <UiTable>
-          <UiTableCaption>List of accounts</UiTableCaption>
+          <UiTableCaption>List of Accounts</UiTableCaption>
           <UiTableHeader>
             <UiTableRow>
-              <UiTableHead> Username </UiTableHead>
-              <UiTableHead> Email </UiTableHead>
-              <UiTableHead> Role </UiTableHead>
+              <UiTableHead>Username</UiTableHead>
+              <UiTableHead>Email</UiTableHead>
+              <UiTableHead>Role</UiTableHead>
             </UiTableRow>
           </UiTableHeader>
           <UiTableBody>
-            <UiTableRow
-              v-for="account in (organization?.accounts as OrganizationAccount[]) || []"
-              :key="account.accountID"
-            >
-              <UiTableCell>{{ account.accountDetails?.username || "N/A" }}</UiTableCell>
-              <UiTableCell>{{ account.accountDetails?.email || "N/A" }}</UiTableCell>
-              <UiTableCell>{{ account.role }}</UiTableCell>
+            <!-- Admin Accounts -->
+            <UiTableRow v-for="admin in organization?.adminAccounts || []" :key="admin">
+              <UiTableCell>{{ admin }}</UiTableCell>
+              <UiTableCell>N/A</UiTableCell>
+              <UiTableCell>Admin</UiTableCell>
+            </UiTableRow>
+
+            <!-- Manager Accounts -->
+            <UiTableRow v-for="manager in organization?.managerAccounts || []" :key="manager">
+              <UiTableCell>{{ manager }}</UiTableCell>
+              <UiTableCell>N/A</UiTableCell>
+              <UiTableCell>Manager</UiTableCell>
+            </UiTableRow>
+
+            <!-- Staff Accounts -->
+            <UiTableRow v-for="staff in organization?.staffAccounts || []" :key="staff">
+              <UiTableCell>{{ staff }}</UiTableCell>
+              <UiTableCell>N/A</UiTableCell>
+              <UiTableCell>Staff</UiTableCell>
             </UiTableRow>
           </UiTableBody>
         </UiTable>
       </div>
+    </div>
+    <UiDivider class="my-2" />
+
+    <!-- Organization Photos -->
+    <div class="flex flex-col space-y-2 pt-8">
+      <!-- Cover Photo -->
+      <div class="flex flex-row justify-between">
+        <div class="flex flex-col space-y-2">
+          <span class="text-[12px] font-semibold">Cover Photo</span>
+          <p class="text-[10px] text-muted-foreground">
+            This will be displayed on your store's page.
+          </p>
+        </div>
+        <div>
+          <UiButton variant="outline" size="sm" @click="editCoverDialog = true">
+            <span class="text-[12px]">Edit</span>
+            <Icon name="lucide:pencil" class="size-3" />
+          </UiButton>
+        </div>
+      </div>
+      <UiDivider class="my-2" />
+      <div class="mx-auto flex w-full max-w-4xl items-center justify-center p-12">
+        <img
+          :src="organization?.coverImageURL || '/placeholder-img.jpg'"
+          alt="Organization Cover Image"
+          class="h-auto w-full rounded-lg border-2 border-primary/50 object-cover"
+        />
+      </div>
+      <OrganizationEditCoverPhoto
+        v-if="organization"
+        v-model="editCoverDialog"
+        :organization-id="organization.id || ''"
+        :current-image-url="organization.coverImageURL"
+        :current-image-path="organization.coverImagePath"
+        @success="refreshOrganization"
+      />
+
+      <!-- Images -->
+      <div>
+        <div class="flex flex-row justify-between">
+          <div class="flex flex-col space-y-1">
+            <span class="text-[12px] font-semibold">Gallery</span>
+            <p class="text-[10px] text-muted-foreground">
+              These images will be displayed in your store's gallery.
+            </p>
+          </div>
+          <div>
+            <UiButton variant="outline" size="sm" @click="editGalleryDialog = true">
+              <span class="text-[12px]">Edit</span>
+              <Icon name="lucide:pencil" class="size-3" />
+            </UiButton>
+          </div>
+        </div>
+        <UiDivider class="my-2" />
+        <div class="flex flex-row space-x-2">
+          <div
+            v-for="(image, index) in organization?.imagesURL || []"
+            :key="index"
+            class="group relative"
+          >
+            <img
+              :src="image.url || '/placeholder-img.jpg'"
+              alt="Gallery Image"
+              class="w-54 h-48 rounded-lg border-2 border-primary/70 object-cover"
+            />
+          </div>
+        </div>
+      </div>
+      <OrganizationEditGallery
+        v-model="editGalleryDialog"
+        v-if="organization"
+        :organization-id="organization.id || ''"
+        :current-images="organization.imagesURL || []"
+        @success="refreshOrganization"
+      />
     </div>
   </div>
   <div class="min-h-32"></div>

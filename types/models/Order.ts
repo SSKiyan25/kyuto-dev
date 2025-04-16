@@ -6,6 +6,9 @@ export interface Order {
   uniqRefNumber: string;
   paymentMethod: string;
   paymentStatus: string;
+  commissionStatus: string;
+  commissionAmount: number;
+  commissionRateID: string;
   remarks: string;
   totalPrice: number;
   isDiscounted: boolean;
@@ -28,7 +31,9 @@ export interface OrderItem {
   variationID: string;
   variationName: string;
   quantity: number;
-  price: number;
+  origPrice: number;
   discountedPrice: number;
   totalPrice: number;
+  priceWithCommission: number;
+  commissionRateID: string;
 }

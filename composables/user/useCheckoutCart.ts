@@ -43,13 +43,31 @@ export const useCheckoutCart = () => {
     organizationName: string,
     totalPrice: number,
     paymentMethod: string,
-    selectedItems: (Cart & { id: string })[]
+    selectedItems: (Cart & { id: string })[],
+    comissionRateID: string,
+    comissionRate: number
   ) => {
     loading.value = true;
     let uniqRefNumber = "";
     try {
       // Generate unique reference number
       uniqRefNumber = await generateUniqueRefNumber();
+
+      const comissionAmount = await selectedItems.reduce(async (totalPromise, item) => {
+        const total = await totalPromise;
+
+        const variationDocRef = doc(
+          db,
+          `products/${item.productID}/variations/${item.variationID}`
+        );
+        const variationDoc = await getDoc(variationDocRef);
+        const variationData = variationDoc.data() as Variation;
+
+        const basePrice = variationData.price || 0;
+        const priceWithCommission = parseFloat((basePrice * (1 + comissionRate / 100)).toFixed(2));
+
+        return parseFloat((total + (priceWithCommission - basePrice) * item.quantity).toFixed(2));
+      }, Promise.resolve(0));
 
       // Create order document
       const orderDocRef = await addDoc(collection(db, "orders"), {
@@ -60,8 +78,11 @@ export const useCheckoutCart = () => {
         uniqRefNumber: uniqRefNumber,
         paymentMethod: paymentMethod,
         paymentStatus: "not_paid",
+        commissionStatus: "not_paid",
+        commissionRateID: comissionRateID,
+        commissionAmount: comissionAmount,
         remarks: "",
-        totalPrice: totalPrice,
+        totalPrice: parseFloat(totalPrice.toFixed(2)),
         isDiscounted: false,
         discountValue: 0,
         receivedDate: null,
@@ -83,6 +104,9 @@ export const useCheckoutCart = () => {
         const variationDoc = await getDoc(variationDocRef);
         const variationData = variationDoc.data() as Variation;
 
+        const basePrice = variationData.price || 0;
+        const priceWithCommission = parseFloat((basePrice * (1 + comissionRate / 100)).toFixed(2));
+
         await addDoc(collection(orderDocRef, "orderItems"), {
           orderID: orderDocRef.id,
           productID: item.productID,
@@ -92,9 +116,11 @@ export const useCheckoutCart = () => {
           variationID: item.variationID,
           variationName: variationData.value,
           quantity: item.quantity,
-          price: variationData.price,
-          discountedPrice: variationData.discountPrice || 0,
-          totalPrice: variationData.price * item.quantity,
+          origPrice: parseFloat(basePrice.toFixed(2)),
+          discountedPrice: parseFloat((variationData.discountPrice || 0).toFixed(2)),
+          priceWithCommission: priceWithCommission,
+          comissionRateID: comissionRateID,
+          totalPrice: parseFloat((priceWithCommission * item.quantity).toFixed(2)),
         });
 
         // Update variation data if not pre-order

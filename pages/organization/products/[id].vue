@@ -5,8 +5,9 @@
     fetchProducts,
     fetchVariations,
   } from "~/composables/organization/useProducts";
+  import { useCommissionRate } from "~/composables/useCommissionRate";
+  import { usePriceCalculator } from "~/composables/usePriceCalculator";
   import { useFetchUser } from "~/composables/user/useFetchUser";
-  // For Testing imports
   import {
     collection,
     deleteDoc,
@@ -49,6 +50,9 @@
       disabled: true,
     },
   ];
+
+  const { commissionRate, fetchCommissionRate } = useCommissionRate();
+  const { calculatePriceWithCommission } = usePriceCalculator(commissionRate);
 
   // Filters
   const filterBy = ref("All");
@@ -98,7 +102,7 @@
       accessorKey: "price",
       header: "Price",
       enableHiding: true,
-      cell: ({ row }) => `₱${row.original.price}`,
+      cell: ({ row }) => `₱${calculatePriceWithCommission(Number(row.original.price)).toFixed(2)}`,
     },
     { accessorKey: "stock", header: "Remaining Stocks", enableHiding: true },
     { accessorKey: "date", header: "Date", enableHiding: true },
@@ -242,6 +246,10 @@
     () => table.value?.getState().pagination.pageIndex,
     () => fetchAndSetProducts()
   );
+
+  onMounted(() => {
+    fetchCommissionRate();
+  });
 
   const openAddDiscount = ref(false);
   const discountType = ref("percentage");

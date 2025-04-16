@@ -1,5 +1,7 @@
 import { array, mixed, number, object, string } from "yup";
 
+export const disallowedCharactersRegex = /^[^<@#`'"%;\\\[\]{}|&$*^~:/?!+=,\r\n]*$/;
+
 export const LoginSchema = object({
   email: string().required().label("Email").email(),
   password: string()
@@ -7,7 +9,7 @@ export const LoginSchema = object({
     .label("Password")
     .min(6)
     .max(20)
-    .matches(/^[^<@#`]*$/, "Password cannot contain the characters <, @, `,or #!"),
+    .matches(disallowedCharactersRegex, "Password contains invalid characters"),
 });
 
 export const ForgotPasswordSchema = object({
@@ -27,12 +29,12 @@ export const AddProductSchema = object({
     .required()
     .label("Name")
     .max(72)
-    .matches(/^[^<@#`]*$/, "Product Name cannot contain the characters <, @, `, or #"),
+    .matches(disallowedCharactersRegex, "Password contains invalid characters"),
   category: string().required().label("Category"),
   description: string()
     .label("Description")
     .max(200)
-    .matches(/^[^<@#`]*$/, "Description cannot contain the characters <, @, `, or #"),
+    .matches(disallowedCharactersRegex, "Password contains invalid characters"),
   status: string().required().label("Set Status"),
   featured_image: mixed()
     .required("Featured image is required")
@@ -66,15 +68,15 @@ export const EditProfileSchema = object({
   firstname: string()
     .label("First Name")
     .max(50)
-    .matches(/^[^<@#`]*$/, "First Name cannot contain the characters <, @, `, or #"),
+    .matches(disallowedCharactersRegex, "Password contains invalid characters"),
   lastname: string()
     .label("Last Name")
     .max(50)
-    .matches(/^[^<@#`]*$/, "Last Name cannot contain the characters <, @, `, or #"),
+    .matches(disallowedCharactersRegex, "Password contains invalid characters"),
   username: string()
     .label("Username")
     .max(30)
-    .matches(/^[^<@#`]*$/, "Username cannot contain the characters <, @, `, or #"),
+    .matches(disallowedCharactersRegex, "Password contains invalid characters"),
   // email: string().required().label("Email Address").email(),
   phoneNumber: string()
     .label("Phone Number")
@@ -91,11 +93,11 @@ export const EditStudentInfoSchema = object({
   course: string()
     .label("Course")
     .max(50)
-    .matches(/^[^<@#`]*$/, "Course cannot contain the characters <, @, `, or #"),
+    .matches(disallowedCharactersRegex, "Password contains invalid characters"),
   college: string()
     .label("College")
     .max(50)
-    .matches(/^[^<@#`]*$/, "College cannot contain the characters <, @, `, or #"),
+    .matches(disallowedCharactersRegex, "Password contains invalid characters"),
 });
 
 export const DiscountSchema = object({

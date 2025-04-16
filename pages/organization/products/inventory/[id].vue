@@ -1,5 +1,7 @@
 <script lang="ts" setup>
   import { useEditVariation } from "~/composables/organization/product/useEditVariation";
+  import { useCommissionRate } from "~/composables/useCommissionRate";
+  import { usePriceCalculator } from "~/composables/usePriceCalculator";
   import { collection, deleteDoc, doc, Timestamp } from "firebase/firestore";
   import type { Crumbs } from "~/components/Ui/Breadcrumbs.vue";
   import type { StocksLogs, Variation } from "~/types/models/Product";
@@ -9,15 +11,7 @@
     middleware: ["auth"],
   });
 
-  const crumbs: Crumbs[] = [
-    { label: "Dashboard", link: "/organization/dashboard", icon: "lucide:newspaper" },
-    { label: "All Products", link: "/organization/products", icon: "lucide:package" },
-    {
-      label: "Manage Inventory",
-      icon: "lucide:file-pen-line",
-      disabled: true,
-    },
-  ];
+  const route = useRoute();
 
   const isEditName = ref(false);
   const isAddStocks = ref(false);
@@ -42,8 +36,10 @@
   };
 
   const db = useFirestore();
-  const route = useRoute();
   const productID = route.params.id as string;
+
+  const { commissionRate, fetchCommissionRate } = useCommissionRate();
+  const { calculatePriceWithCommission } = usePriceCalculator(commissionRate);
 
   const variationsRef = computed(() =>
     productID ? collection(doc(db, "products", productID), "variations") : null
@@ -116,7 +112,8 @@
   console.log("Stock Logs:", stocksLogs);
   const loading = ref(false);
 
-  const { updateVariation, addStocks, removeStocks, addVariation } = useEditVariation();
+  const { updateVariation, addStocks, removeStocks, addVariation, getOrgIDFromProduct } =
+    useEditVariation();
   const toast = useToast();
 
   const handleSaveName = async () => {
@@ -320,6 +317,27 @@
     }
     console.log("New variation added");
   };
+
+  const orgID = ref<string | null>(null);
+
+  const crumbs: Crumbs[] = [
+    { label: "Dashboard", link: `/organization/dashboard/${orgID}`, icon: "lucide:newspaper" },
+    { label: "All Products", link: `/organization/products/${orgID}`, icon: "lucide:package" },
+    {
+      label: "Manage Inventory",
+      icon: "lucide:file-pen-line",
+      disabled: true,
+    },
+  ];
+
+  onMounted(async () => {
+    orgID.value = await getOrgIDFromProduct(productID);
+    console.log("Org ID:", orgID.value);
+  });
+
+  onMounted(() => {
+    fetchCommissionRate();
+  });
 </script>
 
 <template>
@@ -359,7 +377,11 @@
                     <UiBadge variant="destructive">No Stocks</UiBadge>
                   </template>
                 </UiTableCell>
-                <UiTableCell>₱{{ variation.price }}</UiTableCell>
+                <UiTableCell
+                  >₱{{
+                    calculatePriceWithCommission(Number(variation.price)).toFixed(2)
+                  }}</UiTableCell
+                >
                 <UiTableCell>{{ variation.totalStocks }}</UiTableCell>
                 <UiTableCell>{{ variation.remainingStocks }}</UiTableCell>
                 <UiTableCell>{{ formatDate(variation.lastModified) }}</UiTableCell>
@@ -402,12 +424,27 @@
                     v-model="newVariationPrice"
                     :min="0"
                     :max="10000"
+                    :decimal-places="2"
                     class="col-span-3"
                   >
                     <UiNumberFieldInput id="price" placeholder="₱0.00" step="0.01" />
                     <UiNumberFieldDecrement class="border-l" />
                     <UiNumberFieldIncrement class="border-l" />
                   </UiNumberField>
+                </div>
+                <div class="grid grid-cols-4 items-center gap-4">
+                  <UiLabel class="text-right"> Price with Commission </UiLabel>
+                  <div class="col-span-3 text-muted-foreground">
+                    <p class="text-sm">
+                      <span
+                        >₱{{
+                          calculatePriceWithCommission(newVariationPrice || 0).toFixed(2)
+                        }}</span
+                      >
+                      <br />
+                      <span class="text-xs">Commission Rate: {{ commissionRate?.rate || 0 }}%</span>
+                    </p>
+                  </div>
                 </div>
                 <div class="grid grid-cols-4 items-center gap-4">
                   <UiLabel for="stocks" class="text-right"> Stocks </UiLabel>
@@ -500,7 +537,9 @@
           <div class="flex flex-row items-center gap-2 text-nowrap">
             <Icon name="lucide:banknote" class="size-4" />
             <span class="font-medium">Current Price:</span>
-            <span class="text-muted-foreground">₱{{ selectedVariation.price }}</span>
+            <span class="text-muted-foreground"
+              >₱{{ calculatePriceWithCommission(Number(selectedVariation.price)).toFixed(2) }}</span
+            >
           </div>
 
           <UiDivider orientation="vertical" />
@@ -719,6 +758,7 @@
                   :disabled="!isChangePrice || loading"
                   :min="0"
                   :max="10000"
+                  :decimal-places="2"
                   v-model="changedVariationPrice"
                 >
                   <UiNumberFieldInput :placeholder="selectedVariation.price" step="0.01" />

@@ -212,6 +212,33 @@
           />
         </div>
       </div>
+      <UiDivider />
+      <div class="pt-4">
+        <span class="text-lg font-semibold">Commission Summary</span>
+      </div>
+      <div class="flex w-full flex-col gap-2 p-4">
+        <!-- Paid and Total Commission -->
+        <div class="flex justify-between text-xs">
+          <span>
+            ₱{{ commissionData.paidCommission.toLocaleString() }} / ₱{{
+              totalCommission.toLocaleString()
+            }}
+            ({{ paidPercentage.toFixed(2) }}%)
+          </span>
+          <span class="font-medium text-green-600">Paid</span>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="h-2 w-full overflow-hidden rounded-full bg-gray-200">
+          <div class="h-full bg-green-500" :style="{ width: `${paidPercentage}%` }"></div>
+        </div>
+
+        <!-- Unpaid Commission -->
+        <div class="flex justify-between text-xs text-gray-500">
+          <span>Unpaid</span>
+          <span>₱{{ commissionData.unpaidCommission.toLocaleString() }}</span>
+        </div>
+      </div>
       <OrganizationOrdersData v-if="orgIDparams" :organizationID="orgIDparams" />
     </div>
 
@@ -259,6 +286,7 @@
 
 <script lang="ts" setup>
   import { useFetchOrders } from "~/composables/organization/orders/useFetchOrders";
+  import { useTrackCommission } from "~/composables/organization/useTrackCommission";
   //For Testing
   import { useFetchUser } from "~/composables/user/useFetchUser";
   import { collection, deleteDoc, doc, getDocs, query, where } from "firebase/firestore";
@@ -292,6 +320,40 @@
 
   const { fetchOrganizationProducts, fetchProductOrders, fetchOrganizationOrders, setOrderStatus } =
     useFetchOrders();
+  const { trackCommission } = useTrackCommission();
+
+  const commissionData = ref({ paidCommission: 0, unpaidCommission: 0 });
+  const totalCommission = computed(() => {
+    return commissionData.value.paidCommission + commissionData.value.unpaidCommission;
+  });
+  const paidPercentage = computed(() =>
+    totalCommission.value > 0
+      ? (commissionData.value.paidCommission / totalCommission.value) * 100
+      : 0
+  );
+  const unpaidPercentage = computed(() =>
+    totalCommission.value > 0
+      ? (commissionData.value.unpaidCommission / totalCommission.value) * 100
+      : 0
+  );
+
+  onMounted(async () => {
+    try {
+      console.log("Calling trackCommission with orgID:", orgIDparams.value);
+
+      if (!orgIDparams.value) {
+        console.error("orgIDparams is undefined or null");
+        return;
+      }
+
+      commissionData.value = await trackCommission(orgIDparams.value);
+
+      console.log("Commission Data:", commissionData.value);
+      console.log("orgIDparams:", orgIDparams.value);
+    } catch (error) {
+      console.error("Error in trackCommission:", error);
+    }
+  });
 
   onMounted(async () => {
     try {
@@ -372,7 +434,7 @@
         if (!summaries[item.variationID]) {
           summaries[item.variationID] = {
             variationName: item.variationDetails?.value || "Unknown",
-            price: item.price,
+            price: Number(item.priceWithCommission).toFixed(2),
             remainingStocks: item.variationDetails?.remainingStocks || 0,
             reservedStocks: item.variationDetails?.reservedStocks || 0,
             preOrderStocks: item.variationDetails?.preOrderStocks || 0,

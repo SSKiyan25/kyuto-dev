@@ -1,29 +1,9 @@
 <template>
   <div class="flex flex-col justify-center space-y-12 p-16">
-    <div>
-      <div class="flex items-center justify-center">
-        <UiVeeInput
-          label="Search for products"
-          class="peer pe-9 p-6"
-          placeholder="Search..."
-          type="search"
-          icon="lucide:search"
-        >
-          <template #trailingIcon>
-            <button
-              type="button"
-              aria-label="Subscribe"
-              class="absolute inset-y-0 end-0 flex h-full w-9 items-center justify-center rounded-e-md border border-transparent text-muted-foreground/80 ring-offset-background transition-shadow hover:text-foreground focus-visible:border-ring focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <Icon name="lucide:arrow-right" class="size-4" />
-            </button>
-          </template>
-        </UiVeeInput>
-      </div>
-    </div>
+    <ProductSearch @select="handleProductSelect" />
     <div class="flex flex-col space-y-4">
       <div class="border-b-2">
-        <span class="font-semibold text-lg">Products</span>
+        <span class="text-lg font-semibold">Products</span>
       </div>
       <!-- Products -->
       <div class="mx-auto mb-24 flex min-h-lvh w-full flex-col">
@@ -156,7 +136,7 @@
                   </div>
                   <div class="flex w-full flex-col items-start pt-1">
                     <span class="text-[12px] text-muted-foreground sm:text-sm"
-                      >₱{{ product.price }}</span
+                      >₱{{ calculatePriceWithCommission(product.price).toFixed(2) }}</span
                     >
                     <p class="w-full truncate pt-2 text-[12px] font-semibold sm:text-sm">
                       {{ product.name }}
@@ -203,126 +183,137 @@
 </template>
 
 <script lang="ts" setup>
- import { useViewProducts } from "~/composables/useViewProducts";
+  import { useCommissionRate } from "~/composables/useCommissionRate";
+  import { usePriceCalculator } from "~/composables/usePriceCalculator";
+  import { useViewProducts } from "~/composables/useViewProducts";
+  import type { ProductSearchResult } from "~/types/models/Product";
 
-const { products, loading, fetchProducts } = useViewProducts();
+  const { products, loading, fetchProducts } = useViewProducts();
+  const { commissionRate, fetchCommissionRate } = useCommissionRate();
+  const { calculatePriceWithCommission } = usePriceCalculator(commissionRate);
 
-const currentPage = ref(1);
-const totalPages = ref(1);
+  const currentPage = ref(1);
+  const totalPages = ref(1);
 
-const prevIcon = "lucide:chevron-left";
-const nextIcon = "lucide:chevron-right";
-const loadingProducts = ref(false);
+  const prevIcon = "lucide:chevron-left";
+  const nextIcon = "lucide:chevron-right";
+  const loadingProducts = ref(false);
 
-const updateProducts = async () => {
-  loadingProducts.value = true;
-  console.log("Current Page in script:", currentPage.value);
-  const activeFilter = showAs.value.find((item) => item.isActive);
-  const sortBy = activeFilter ? activeFilter.name : "all";
-  const selectedCategoryTitles = selectedCategories.value
-    .map((key) => {
-      const category = filterCategories.find((c) => c.key === key);
-      return category ? category.title : "";
-    })
-    .filter((title) => title !== "");
-  const { totalProducts } = await fetchProducts(
-    sortBy,
-    selectedCategoryTitles,
-    sortPrice.value,
-    10,
-    currentPage.value
-  );
-  totalPages.value = Math.ceil(totalProducts / 10);
-  console.log("Total Pages in script:", totalPages.value); // Adjust the divisor based on your limitCount
-  loadingProducts.value = false;
-};
+  const handleProductSelect = (product: ProductSearchResult) => {
+    // Handle navigation or other actions
+    navigateTo(`/products/${product.id}`);
+  };
 
-onMounted(() => {
-  updateProducts();
-});
+  const updateProducts = async () => {
+    loadingProducts.value = true;
+    console.log("Current Page in script:", currentPage.value);
+    const activeFilter = showAs.value.find((item) => item.isActive);
+    const sortBy = activeFilter ? activeFilter.name : "all";
+    const selectedCategoryTitles = selectedCategories.value
+      .map((key) => {
+        const category = filterCategories.find((c) => c.key === key);
+        return category ? category.title : "";
+      })
+      .filter((title) => title !== "");
+    const { totalProducts } = await fetchProducts(
+      sortBy,
+      selectedCategoryTitles,
+      sortPrice.value,
+      10,
+      currentPage.value
+    );
+    totalPages.value = Math.ceil(totalProducts / 10);
+    console.log("Total Pages in script:", totalPages.value); // Adjust the divisor based on your limitCount
+    loadingProducts.value = false;
+  };
 
-const nextPage = () => {
-  if (currentPage.value < totalPages.value) {
-    console.log("Current Page:", currentPage.value);
-    currentPage.value++;
+  onMounted(async () => {
     updateProducts();
-  }
-};
-
-const prevPage = () => {
-  if (currentPage.value > 1) {
-    console.log("Current Page:", currentPage.value);
-    currentPage.value--;
-    updateProducts();
-  }
-};
-
-const { categories } = useCategoryValues();
-const showAs = ref<{ value: string; isActive: boolean; name: string }[]>([
-  { value: "All", isActive: true, name: "all" },
-  { value: "New", isActive: false, name: "new" },
-  { value: "Popular", isActive: false, name: "popular" },
-  { value: "Top-Sales", isActive: false, name: "top-sales" },
-]);
-
-const filterCategories = [
-  { key: "1", title: "T-shirt" },
-  { key: "2", title: "Polo-Shirt" },
-  { key: "3", title: "Hoodie" },
-  { key: "4", title: "Lanyard" },
-  { key: "5", title: "Sticker" },
-  { key: "6", title: "Umbrella" },
-  { key: "7", title: "Totebag" },
-  { key: "8", title: "Fan" },
-  { key: "9", title: "Mug" },
-  { key: "10", title: "Others" },
-];
-
-const selectedCategories = ref<string[]>([]);
-const sortPrice = ref<string>("none");
-
-const toggleActive = (index: number) => {
-  showAs.value.forEach((item, i) => {
-    item.isActive = i === index;
+    await fetchCommissionRate();
   });
-  applyFilters();
-};
 
-const showFilterCommands = ref(false);
+  const nextPage = () => {
+    if (currentPage.value < totalPages.value) {
+      console.log("Current Page:", currentPage.value);
+      currentPage.value++;
+      updateProducts();
+    }
+  };
 
-const toggleFilterCommands = () => {
-  showFilterCommands.value = !showFilterCommands.value;
-};
+  const prevPage = () => {
+    if (currentPage.value > 1) {
+      console.log("Current Page:", currentPage.value);
+      currentPage.value--;
+      updateProducts();
+    }
+  };
 
-const priceRangeMin = ref(0);
-const priceRangeMax = ref(0);
+  const { categories } = useCategoryValues();
+  const showAs = ref<{ value: string; isActive: boolean; name: string }[]>([
+    { value: "All", isActive: true, name: "all" },
+    { value: "New", isActive: false, name: "new" },
+    { value: "Popular", isActive: false, name: "popular" },
+    { value: "Top-Sales", isActive: false, name: "top-sales" },
+  ]);
 
-// const applyFilters = () => {
-//   const activeFilter = showAs.value.find((item) => item.isActive);
-//   const sortBy = activeFilter ? activeFilter.name : "all";
-//   const selectedCategoryTitles = selectedCategories.value
-//     .map((key) => {
-//       const category = filterCategories.find((c) => c.key === key);
-//       return category ? category.title : "";
-//     })
-//     .filter((title) => title !== "");
-//   fetchProducts(sortBy, selectedCategoryTitles, sortPrice.value);
-// };
+  const filterCategories = [
+    { key: "1", title: "T-shirt" },
+    { key: "2", title: "Polo-Shirt" },
+    { key: "3", title: "Hoodie" },
+    { key: "4", title: "Lanyard" },
+    { key: "5", title: "Sticker" },
+    { key: "6", title: "Umbrella" },
+    { key: "7", title: "Totebag" },
+    { key: "8", title: "Fan" },
+    { key: "9", title: "Mug" },
+    { key: "10", title: "Others" },
+  ];
 
-const applyFilters = () => {
-  currentPage.value = 1;
-  updateProducts();
-};
+  const selectedCategories = ref<string[]>([]);
+  const sortPrice = ref<string>("none");
 
-const clearFilters = () => {
-  selectedCategories.value = [];
-  sortPrice.value = "none";
-  priceRangeMin.value = 0;
-  priceRangeMax.value = 0;
-  updateProducts();
-};
+  const toggleActive = (index: number) => {
+    showAs.value.forEach((item, i) => {
+      item.isActive = i === index;
+    });
+    applyFilters();
+  };
 
-watch([selectedCategories, sortPrice, showAs], applyFilters);
+  const showFilterCommands = ref(false);
+
+  const toggleFilterCommands = () => {
+    showFilterCommands.value = !showFilterCommands.value;
+  };
+
+  const priceRangeMin = ref(0);
+  const priceRangeMax = ref(0);
+
+  // const applyFilters = () => {
+  //   const activeFilter = showAs.value.find((item) => item.isActive);
+  //   const sortBy = activeFilter ? activeFilter.name : "all";
+  //   const selectedCategoryTitles = selectedCategories.value
+  //     .map((key) => {
+  //       const category = filterCategories.find((c) => c.key === key);
+  //       return category ? category.title : "";
+  //     })
+  //     .filter((title) => title !== "");
+  //   fetchProducts(sortBy, selectedCategoryTitles, sortPrice.value);
+  // };
+
+  const applyFilters = () => {
+    currentPage.value = 1;
+    updateProducts();
+  };
+
+  const clearFilters = () => {
+    selectedCategories.value = [];
+    sortPrice.value = "none";
+    priceRangeMin.value = 0;
+    priceRangeMax.value = 0;
+    updateProducts();
+  };
+
+  watch([selectedCategories, sortPrice, showAs], applyFilters);
 </script>
 
 <style scoped>

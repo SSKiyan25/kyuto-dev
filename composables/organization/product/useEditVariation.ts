@@ -4,6 +4,20 @@ import type { StocksLogs, Variation } from "~/types/models/Product";
 export function useEditVariation() {
   const db = useFirestore();
 
+  // Function to extract orgID from a product
+  const getOrgIDFromProduct = async (productID: string): Promise<string | null> => {
+    const productRef = doc(db, "products", productID);
+    const productSnap = await getDoc(productRef);
+
+    if (!productSnap.exists()) {
+      console.error("Product not found");
+      return null;
+    }
+
+    const productData = productSnap.data();
+    return productData.organizationID || null;
+  };
+
   const updateVariation = async (
     productID: string,
     variationID: string,
@@ -112,5 +126,5 @@ export function useEditVariation() {
     await addDoc(collection(variationDocRef, "stocksLogs"), newStockLog);
   };
 
-  return { updateVariation, addStocks, removeStocks, addVariation };
+  return { updateVariation, addStocks, removeStocks, addVariation, getOrgIDFromProduct };
 }

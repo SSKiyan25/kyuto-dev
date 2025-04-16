@@ -60,7 +60,12 @@
                           >Quantity: {{ cartItem.quantity }}</span
                         >
                         <span class="text-[10px] text-muted-foreground sm:text-[12px]"
-                          >Price per quantity: {{ variations[cartItem.variationID]?.price }}</span
+                          >Price per quantity:
+                          {{
+                            calculatePriceWithCommission(
+                              Number(variations[cartItem.variationID]?.price)
+                            ).toFixed(2)
+                          }}</span
                         >
                       </div>
                     </div>
@@ -75,7 +80,13 @@
                           >Subtotal:</span
                         >
                         <span class="sm:text-md text-sm font-semibold">
-                          ₱{{ (variations[cartItem.variationID]?.price || 0) * cartItem.quantity }}
+                          ₱{{
+                            (
+                              calculatePriceWithCommission(
+                                Number(variations[cartItem.variationID]?.price) || 0
+                              ) * cartItem.quantity
+                            ).toFixed(2)
+                          }}
                         </span>
                       </div>
                       <div v-if="isSelected(cartItem)">
@@ -131,7 +142,7 @@
             </p>
             <UiDivider class="my-2" />
             <span class="sm:text-md text-sm font-extrabold text-muted-foreground">Total:</span>
-            <span class="text-lg font-bold sm:text-2xl">₱ {{ totalPrice }}</span>
+            <span class="text-lg font-bold sm:text-2xl">₱ {{ totalPrice.toFixed(2) }}</span>
           </div>
           <!-- <div class="flex flex-row items-center gap-2 pt-2">
             <span class="text-md text-muted-foreground line-through">₱ 150.00</span>
@@ -190,7 +201,11 @@
                             >
                             <span class="text-[12px] text-muted-foreground"
                               >Price per quantity:
-                              {{ variations[cartItem.variationID]?.price }}</span
+                              {{
+                                calculatePriceWithCommission(
+                                  Number(variations[cartItem.variationID]?.price)
+                                ).toFixed(2)
+                              }}</span
                             >
                           </div>
                         </div>
@@ -198,7 +213,11 @@
                           <span class="text-[12px] text-muted-foreground">Subtotal:</span>
                           <span class="text-md font-semibold"
                             >₱{{
-                              (variations[cartItem.variationID]?.price || 0) * cartItem.quantity
+                              (
+                                calculatePriceWithCommission(
+                                  Number(variations[cartItem.variationID]?.price || 0)
+                                ) * cartItem.quantity
+                              ).toFixed(2)
                             }}</span
                           >
                         </div>
@@ -278,6 +297,8 @@
 </template>
 
 <script lang="ts" setup>
+  import { useCommissionRate } from "~/composables/useCommissionRate";
+  import { usePriceCalculator } from "~/composables/usePriceCalculator";
   import { useCheckoutCart } from "~/composables/user/useCheckoutCart";
   import { useFetchUserCart } from "~/composables/user/useFetchUserCart";
   import { collection, doc, getDoc } from "firebase/firestore";
@@ -302,6 +323,14 @@
   const removeModal = ref(false);
   const orderLoading = ref(false);
   const router = useRouter();
+
+  const { commissionRate, fetchCommissionRate } = useCommissionRate();
+  const { calculatePriceWithCommission } = usePriceCalculator(commissionRate);
+
+  onMounted(() => {
+    fetchCommissionRate();
+    console.log("Commission rate fetched:", commissionRate.value);
+  });
 
   const {
     removeCartItem,
@@ -438,9 +467,12 @@
   };
 
   const totalPrice = computed(() => {
+    if (selectedItems.value.length === 0) return 0;
+
     return selectedItems.value.reduce((total, cartItem) => {
-      const price = variations.value[cartItem.variationID]?.price || 0;
-      return total + price * cartItem.quantity;
+      const basePrice = variations.value[cartItem.variationID]?.price || 0;
+      const priceWithCommission = calculatePriceWithCommission(basePrice);
+      return total + priceWithCommission * cartItem.quantity;
     }, 0);
   });
 
@@ -467,13 +499,24 @@
       console.log("Organization ID:", organizationID);
       console.log("Organization Name:", organizationName);
 
+      if (!commissionRate.value) {
+        throw new Error("Commission rate not found");
+      }
+      const commissionRateID = commissionRate.value.id;
+      const commissionRateValue = commissionRate.value.rate;
+
+      console.log("Commission Rate ID:", commissionRateID);
+      console.log("Commission Rate Value:", commissionRateValue);
+
       await createOrder(
         userID.value as string,
         organizationID as string,
         organizationName as string,
         totalPrice.value,
         selectedPaymentMethod.value as string,
-        selectedItems.value
+        selectedItems.value,
+        commissionRateID,
+        commissionRateValue
       );
       await testUniqueRefNumber();
 

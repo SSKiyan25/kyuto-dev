@@ -1,6 +1,8 @@
 <script lang="ts" setup>
   import { UiVeeFileInput } from "#components";
   import { useAddProduct } from "~/composables/organization/product/useAddProduct";
+  import { useCommissionRate } from "~/composables/useCommissionRate";
+  import { usePriceCalculator } from "~/composables/usePriceCalculator";
   import type { Crumbs } from "~/components/Ui/Breadcrumbs.vue";
 
   definePageMeta({
@@ -48,6 +50,9 @@
   const loading = ref(false);
   const canPreOrder = ref(false);
   const currentMessage = ref("");
+
+  const { commissionRate, fetchCommissionRate } = useCommissionRate();
+  const { calculatePriceWithCommission } = usePriceCalculator(commissionRate);
 
   // Refs for the UiVeeFileInput components
   const featuredImageInput = ref<InstanceType<typeof UiVeeFileInput> | null>(null);
@@ -133,6 +138,10 @@
         .forEach((input) => ((input as HTMLInputElement).value = ""));
     }
   });
+
+  onMounted(() => {
+    fetchCommissionRate();
+  });
 </script>
 
 <template>
@@ -216,7 +225,7 @@
               :key="index"
               class="mb-4 flex flex-row flex-wrap gap-4 sm:grid sm:grid-cols-12"
             >
-              <div class="flex sm:col-span-5">
+              <div class="flex sm:col-span-4">
                 <UiVeeInput
                   :name="'variations[' + index + '].name'"
                   label="Variation Name"
@@ -232,11 +241,23 @@
                   :max="10000"
                   label="Price"
                   :name="'variations[' + index + '].price'"
+                  :decimal-places="2"
                   v-model="variation.price"
                   required
                 >
                   <UiNumberFieldInput placeholder="x.xx" step="0.01" />
                 </UiVeeNumberField>
+              </div>
+              <!--Commission With Price-->
+              <div class="flex w-11/12 items-center sm:col-span-2">
+                <p class="text-sm text-muted-foreground">
+                  <span>Price with Commission:</span>
+                  <span class="font-semibold">
+                    ₱{{ calculatePriceWithCommission(variation.price || 0).toFixed(2) }}
+                  </span>
+                  <br />
+                  <span class="text-[12px]">Commission Rate: {{ commissionRate?.rate || 0 }}%</span>
+                </p>
               </div>
               <div class="flex w-11/12 sm:col-span-2">
                 <UiVeeNumberField

@@ -9,35 +9,13 @@
         </div>
       </div>
       <div class="flex w-2/3 flex-col">
-        <div class="flex h-[512px] w-full">
-          <img
-            src="/images/category/polo-shirt.jpg"
-            alt="Store Image"
-            class="rounded-lg object-cover"
-          />
+        <div class="flex h-[512px] w-full justify-center">
+          <img :src="store?.coverImageURL" alt="Store Image" class="rounded-lg object-cover" />
         </div>
       </div>
     </div>
     <UiDivider class="my-6" />
-    <div class="flex flex-col space-y-2">
-      <div class="flex flex-col items-center justify-center space-y-2">
-        <img :src="store?.iconURL" alt="Store Image" class="h-28 w-28 rounded-lg object-cover" />
-        <p class="text-lg font-medium uppercase opacity-70">Photos from this store</p>
-      </div>
-      <div class="my-4 flex justify-center px-8">
-        <div class="h-auto rounded-sm bg-muted px-2 py-8">
-          <Carousel v-bind="config">
-            <Slide v-for="(photo, index) in allPhotos" :key="index">
-              <img :src="photo" alt="Product Photo" class="h-auto w-96 rounded-sm object-cover" />
-            </Slide>
-            <template #addons>
-              <Navigation />
-            </template>
-          </Carousel>
-        </div>
-      </div>
-    </div>
-    <UiDivider class="my-6" />
+
     <div class="flex flex-col space-y-2">
       <div class="flex flex-row items-center space-x-1 opacity-80">
         <Icon name="lucide:box" class="size-6" />
@@ -46,11 +24,11 @@
       <div class="mt-4 flex flex-row flex-wrap gap-1 sm:mt-6 sm:gap-6 sm:px-9">
         <div
           v-for="product in products"
-          :key="product.name"
+          :key="product.id"
           class="flex flex-col items-center space-x-4"
           v-if="products.length > 0"
         >
-          <NuxtLink :to="`/product/${product.name}`">
+          <NuxtLink :to="`/product/${product.id}`">
             <div
               class="flex max-h-[32rem] max-w-[16rem] flex-col rounded-sm border p-2 hover:shadow-lg sm:max-h-[40rem] sm:max-w-[24rem]"
             >
@@ -65,11 +43,7 @@
               </div>
               <div class="flex w-full flex-col items-start pt-1">
                 <span class="text-[12px] text-muted-foreground sm:text-sm">
-                  ₱{{
-                    product.variations && product.variations.length > 0
-                      ? product.variations[0].price
-                      : "N/A"
-                  }}
+                  ₱{{ calculatePriceWithCommission(Number(product.price)).toFixed(2) }}
                 </span>
                 <p class="w-full truncate pt-2 text-[12px] font-semibold sm:text-sm">
                   {{ product.name }}
@@ -91,85 +65,138 @@
         </template>
       </div>
     </div>
+    <UiDivider class="my-6" />
+    <div class="flex flex-col space-y-2">
+      <div class="flex flex-col items-center justify-center space-y-2">
+        <img
+          :src="store?.logoImageURL"
+          alt="Store Image"
+          class="h-28 w-28 rounded-lg object-cover"
+        />
+        <p class="text-lg font-medium uppercase opacity-70">Photos from this store</p>
+      </div>
+      <div class="my-4 flex justify-center px-8">
+        <div class="h-auto rounded-sm bg-muted px-2 py-8">
+          <Carousel v-bind="config">
+            <Slide v-for="(photo, index) in store?.imagesURL" :key="index">
+              <img
+                :src="photo.url"
+                alt="Product Photo"
+                class="h-auto w-96 rounded-sm object-cover"
+              />
+            </Slide>
+            <template #addons>
+              <Navigation />
+            </template>
+          </Carousel>
+        </div>
+      </div>
+    </div>
+    <UiDivider class="my-6" />
+    <div class="flex flex-col space-y-2">
+      <div class="flex flex-col items-center justify-center space-y-2">
+        <img
+          :src="store?.logoImageURL"
+          alt="Store Image"
+          class="h-28 w-28 rounded-lg object-cover"
+        />
+        <p class="text-lg font-medium uppercase opacity-70">
+          Address Images Reference from this store
+        </p>
+      </div>
+      <div class="my-4 flex justify-center px-8">
+        <div class="h-auto rounded-sm bg-muted px-2 py-8">
+          <Carousel v-bind="config">
+            <Slide v-for="(photo, index) in store?.addressImagesURL" :key="index">
+              <img
+                :src="photo.url"
+                alt="Product Photo"
+                class="h-auto w-96 rounded-sm object-cover"
+              />
+            </Slide>
+            <template #addons>
+              <Navigation />
+            </template>
+          </Carousel>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-  import { Carousel, Slide } from "vue3-carousel";
+  import { Carousel, Navigation, Slide } from "vue3-carousel";
   import type { Organization } from "~/types/models/Organization";
-  import type { Product, Variation } from "~/types/models/Product";
+  import type { ProductWithId, Variation } from "~/types/models/Product";
 
   import "vue3-carousel/dist/carousel.css";
 
+  const { getOrganizationById } = useOrganization();
+  const { getProductsByOrganization } = useProduct();
+  const { commissionRate, fetchCommissionRate } = useCommissionRate();
+  const { calculatePriceWithCommission } = usePriceCalculator(commissionRate);
+
   const route = useRoute();
-  const storeId = route.params.id;
+  const storeId = route.params.id as string;
   const store = ref<Partial<Organization> | null>(null);
-  const products = ref<Partial<Product & { variations: Partial<Variation>[] }>[]>([]);
+  const products = ref<Partial<ProductWithId & { variations: Partial<Variation>[] }>[]>([]);
 
   const currentSlide = ref(0);
-  const allPhotos = ref<string[]>([]);
 
-  const slideTo = (val: number) => {
-    currentSlide.value = val;
-  };
-
-  onMounted(() => {
-    // Mock data for demonstration purposes
-    const mockStores: Partial<Organization>[] = [
-      {
-        name: "Tech Haven",
-        description: "Your one-stop shop for the latest in tech gadgets and accessories.",
-        address: "123 Tech Street, Silicon Valley, CA",
-        iconURL: "/logo-verch.webp",
-        imagesURL: ["/images/category/polo-shirt.jpg", "/images/category/hoodie.png"],
-      },
-      {
-        name: "Fashion Fiesta",
-        description: "Trendy and affordable fashion for all seasons.",
-        address: "456 Fashion Ave, New York, NY",
-        iconURL: "/logo-verch-2.png",
-        imagesURL: ["/images/category/polo-shirt.jpg", "/images/category/hoodie.png"],
-      },
-    ];
-
-    const mockProducts: Partial<Product & { variations: Partial<Variation>[] }>[] = [
-      {
-        name: "Smartphone",
-        totalSales: 150,
-        featuredPhotoURL: "/images/category/hoodie.png",
-        variations: [{ price: 999 }],
-      },
-      {
-        name: "Laptop",
-        totalSales: 75,
-        featuredPhotoURL: "/images/category/polo-shirt.jpg",
-        variations: [{ price: 1999 }],
-      },
-      {
-        name: "Headphones",
-        totalSales: 300,
-        featuredPhotoURL: "/images/category/hoodie.png",
-        variations: [{ price: 199 }],
-      },
-      {
-        name: "Smartwatch",
-        totalSales: 200,
-        featuredPhotoURL: "/images/category/polo-shirt.jpg",
-        variations: [{ price: 299 }],
-      },
-    ];
-
-    store.value = mockStores.find((s) => s.name === storeId) || null;
-    products.value = mockProducts;
-    allPhotos.value = store.value?.imagesURL || [];
+  // Fetch organization data
+  const { data: organizationData } = useAsyncData(`organization-${storeId}`, async () => {
+    try {
+      const org = await getOrganizationById(storeId);
+      return org;
+    } catch (error) {
+      console.error("Error fetching organization:", error);
+      return null;
+    }
   });
 
-  const config = {
-    height: 200,
-    itemsToShow: 2,
-    gap: 5,
-    autoplay: 4000,
+  const { data: productData } = useAsyncData(`products-${storeId}`, async () => {
+    try {
+      return await getProductsByOrganization(storeId);
+    } catch (error) {
+      console.error("Product fetch error:", error);
+      return [];
+    }
+  });
+
+  watch([organizationData, productData], () => {
+    if (organizationData.value) {
+      store.value = organizationData.value;
+      console.log("Fetched images:", store.value.imagesURL);
+    }
+
+    if (productData.value) {
+      products.value = productData.value;
+    }
+  });
+
+  onMounted(() => {
+    fetchCommissionRate();
+  });
+
+  const itemsToShow = computed(() => {
+    if (window.innerWidth < 640) return 1;
+    if (window.innerWidth < 1024) return 2;
+    return 3;
+  });
+
+  const config = computed(() => ({
+    height: 300,
+    itemsToShow: itemsToShow.value,
+    gap: 15,
+    autoplay: 3000,
     wrapAround: true,
     pauseAutoplayOnHover: true,
-  };
+  }));
 </script>
+
+<style scoped>
+  .carousel {
+    --vc-nav-background: rgba(255, 255, 255, 0.7);
+    --vc-nav-border-radius: 100%;
+  }
+</style>

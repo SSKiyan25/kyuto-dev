@@ -1,5 +1,5 @@
 import { collection, getDocs, limit, orderBy, query, startAfter, where } from "firebase/firestore";
-import type { Product, Variation } from "~/types/models/Product";
+import type { Product, ProductWithId, Variation } from "~/types/models/Product";
 
 interface EnhancedProduct extends Product {
   id: string;

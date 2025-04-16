@@ -26,14 +26,26 @@
       />
     </div>
 
-    <!-- Add Organization Card -->
     <div class="flex w-full flex-row items-center space-x-8">
+      <!-- Add Organization Card -->
       <div class="flex w-1/2 flex-col items-center justify-center rounded-sm border p-16">
         <Icon name="lucide:worm" class="mb-2 h-8 w-8" />
         <h1 class="text-3xl font-semibold">Add New Organization</h1>
         <p class="text-sm text-gray-500">Startup Account</p>
         <UiButton size="sm" class="mt-4" @click="userDialog = true">Add Now</UiButton>
         <AdminOrganizationAdd v-model="userDialog" @success="handleOrganizationAdded" />
+      </div>
+      <!-- Change Commission Rate Card -->
+      <div class="flex w-1/2 flex-col items-center justify-center rounded-sm border p-16">
+        <Icon name="lucide:philippine-peso" class="mb-2 h-8 w-8" />
+        <h1 class="text-3xl font-semibold">Change Commission Rate</h1>
+        <p class="text-sm text-gray-500">Current Commission Rate: {{ currentRate?.rate || 0 }}%</p>
+        <UiButton size="sm" class="mt-4" @click="commissionDialog = true">Click Here</UiButton>
+        <AdminOrganizationCommission
+          v-model="commissionDialog"
+          @success="handleRateUpdated"
+          :current-rate="currentRate?.rate || 0"
+        />
       </div>
     </div>
 
@@ -76,12 +88,17 @@
 <script lang="ts" setup>
   import { faker } from "@faker-js/faker";
   import DataTable from "datatables.net";
+  import { collection, getDocs, query, where } from "firebase/firestore";
+  import type { CommissionRate } from "~/types/models/CommissionRate";
   import type { Config } from "datatables.net";
 
   definePageMeta({
     layout: "admin",
     middleware: ["auth-admin"],
   });
+
+  const db = useFirestore();
+  const toast = useToast();
 
   type Organization = {
     id: number;
@@ -100,7 +117,9 @@
 
   const tableRef = shallowRef<InstanceType<typeof DataTable<Organization[]>> | null>(null);
   const userDialog = ref(false);
+  const commissionDialog = ref(false);
   const selectedOrganization = ref<Organization | null>(null);
+
   const filters = reactive({
     status: "",
   });
@@ -128,6 +147,36 @@
   const handleOrganizationAdded = (newOrganization: any) => {
     tableRef.value?.ajax.reload();
   };
+
+  const rateRef = collection(db, "commissionRate");
+
+  const currentRate = ref<Partial<CommissionRate> | null>(null);
+  const fetchComissionRate = async () => {
+    try {
+      const q = query(rateRef, where("status", "==", "active"));
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        const rateDoc = querySnapshot.docs[0];
+        currentRate.value = rateDoc.data() as Partial<CommissionRate>;
+        console.log("Current Rate:", currentRate.value);
+      }
+    } catch (error) {
+      console.error("Error fetching commission rate:", error);
+    }
+  };
+
+  const handleRateUpdated = () => {
+    fetchComissionRate();
+    toast.toast({
+      title: "Success",
+      description: `Commission rate updated to ${currentRate.value?.rate}%`,
+      variant: "success",
+    });
+  };
+
+  onMounted(() => {
+    fetchComissionRate();
+  });
 
   // Generate more realistic mock data
   const generateMockData = () => {

@@ -5,13 +5,16 @@ export interface Organization {
   contactEmail: string;
   phoneNumber: string;
   address: string;
-  addressImagesURL: string[];
+  addressImagesURL: { url: string; path: string }[];
+  searchKeywords: string[];
 
   // Representations
   logoImageURL: string;
+  logoImagePath: string;
   coverImageURL: string;
+  coverImagePath: string;
   description: string;
-  imagesURL: string[];
+  imagesURL: { url: string; path: string }[];
 
   // Accounts (limited to 3 roles as separate fields)
   adminAccounts: string[];

@@ -254,7 +254,10 @@
                   Quantity: <span class="text-secondary-foreground">{{ item.quantity }}</span>
                 </p>
                 <p class="font-semibold text-muted-foreground">
-                  Price: <span class="text-secondary-foreground">₱{{ item.price.toFixed(2) }}</span>
+                  Price:
+                  <span class="text-secondary-foreground"
+                    >₱{{ item.priceWithCommission.toFixed(2) }}</span
+                  >
                 </p>
               </div>
             </div>

@@ -25,6 +25,19 @@ export const useAddProduct = async (values: any, canPreOrder: boolean) => {
       )
     );
 
+    const generateSearchKeywords = (name: string): string[] => {
+      const keywords = new Set<string>();
+      const words = name.toLowerCase().split(" ");
+
+      // Add each word as a keyword
+      words.forEach((word) => keywords.add(word));
+
+      // Add the full name as a keyword
+      keywords.add(name.toLowerCase());
+
+      return Array.from(keywords);
+    };
+
     // Create the new product
     const newProduct: Partial<Product> = {
       accountID: user.value?.uid ?? "",
@@ -46,6 +59,7 @@ export const useAddProduct = async (values: any, canPreOrder: boolean) => {
       photosURL: imageUrls,
       canPreOrder: canPreOrder,
       isArchived: false,
+      searchKeywords: generateSearchKeywords(values.name),
     };
 
     // Add product to Firestore
@@ -62,7 +76,7 @@ export const useAddProduct = async (values: any, canPreOrder: boolean) => {
       const newVariation: Partial<Variation> = {
         productID: productDocRef.id,
         value: variation.name,
-        price: variation.price,
+        price: Number(variation.price),
         discountPrice: variation.discountPrice ?? 0,
         reservedStocks: 0,
         preOrderStocks: 0,

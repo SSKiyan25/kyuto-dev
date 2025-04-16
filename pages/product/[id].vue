@@ -56,7 +56,7 @@
                   class="cursor-default rounded-sm border p-2 text-[12px] opacity-90 sm:text-sm"
                   v-wave
                 >
-                  {{ vari.value }} | ₱{{ vari.price }}
+                  {{ vari.value }} | ₱{{ calculatePriceWithCommission(vari.price).toFixed(2) }}
                 </div>
               </div>
             </div>
@@ -273,7 +273,7 @@
               </div>
               <div class="flex w-full flex-col items-start pt-1">
                 <span class="text-[12px] text-muted-foreground sm:text-sm"
-                  >P{{ orgProduct.price }}</span
+                  >₱{{ calculatePriceWithCommission(orgProduct.price).toFixed(2) }}</span
                 >
                 <p class="w-full truncate pt-2 text-[12px] sm:text-sm">
                   {{ orgProduct.name }}
@@ -306,8 +306,9 @@
 
 <script lang="ts" setup>
   import { useAddToCart } from "~/composables/useAddToCart";
+  import { useCommissionRate } from "~/composables/useCommissionRate";
   import { useOrganizationProducts } from "~/composables/useOrganizationProducts";
-  import { debounce } from "~/utils/debounce";
+  import { usePriceCalculator } from "~/composables/usePriceCalculator";
   import { collection, doc } from "firebase/firestore";
   import { Carousel, Slide } from "vue3-carousel";
   import type { Crumbs } from "~/components/Ui/Breadcrumbs.vue";
@@ -334,6 +335,9 @@
     { label: "All Products", link: "/", icon: "lucide:box" },
     { label: "Product", link: "/", disabled: true, icon: "lucide:shirt" },
   ];
+
+  const { commissionRate, fetchCommissionRate } = useCommissionRate();
+  const { calculatePriceWithCommission } = usePriceCalculator(commissionRate);
 
   const updateMessage = () => {
     const dots = ".".repeat((messageIndex % 3) + 1);
@@ -376,10 +380,14 @@
   // watch(productID, fetchVariations, { immediate: true });
   const priceRange = computed(() => {
     if (variations.value.length === 0) return "";
-    const prices = variations.value.map((v) => v.price);
-    const minPrice = Math.min(...prices);
-    const maxPrice = Math.max(...prices);
-    return minPrice === maxPrice ? `₱${minPrice}` : `₱${minPrice} - ₱${maxPrice}`;
+
+    // Map the prices with the commission applied
+    const pricesWithCommission = variations.value.map((v) => calculatePriceWithCommission(v.price));
+    const minPrice = Math.min(...pricesWithCommission);
+    const maxPrice = Math.max(...pricesWithCommission);
+    return minPrice === maxPrice
+      ? `₱${minPrice.toFixed(2)}`
+      : `₱${minPrice.toFixed(2)} - ₱${maxPrice.toFixed(2)}`;
   });
   // console.log("Variations: ", variations.value);
   // console.log("Price range: ", priceRange.value);
@@ -540,5 +548,9 @@
         }
       });
     }
+  });
+
+  onMounted(() => {
+    fetchCommissionRate();
   });
 </script>

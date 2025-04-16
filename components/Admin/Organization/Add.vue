@@ -42,7 +42,6 @@
   } from "firebase/auth";
   import { addDoc, collection, doc, serverTimestamp, setDoc } from "firebase/firestore";
   import { object, string, ref as yupRef } from "yup";
-  import type { Transaction } from "~/types/models/Transaction";
   import type { User } from "firebase/auth";
 
   // Firebase composables
@@ -106,6 +105,19 @@
         },
       });
 
+      const generateSearchKeywords = (name: string): string[] => {
+        const keywords = new Set<string>();
+        const words = name.toLowerCase().split(" ");
+
+        // Add each word as a keyword
+        words.forEach((word) => keywords.add(word));
+
+        // Add the full name as a keyword
+        keywords.add(name.toLowerCase());
+
+        return Array.from(keywords);
+      };
+
       await signInWithCustomToken(auth, token);
 
       // Create Organization Document
@@ -129,6 +141,7 @@
         lastModified: serverTimestamp(),
         isVerified: false,
         isArchived: false,
+        searchKeywords: generateSearchKeywords(values.name),
       });
 
       // User Profile Document
@@ -148,24 +161,6 @@
         url: `${window.location.origin}/verify/success`,
         handleCodeInApp: true,
       });
-
-      // Create Initial Admin Transaction Record
-      const initialTransaction: Partial<Transaction> = {
-        id: `init-${userCredential.user.uid}`,
-        organizationId: userCredential.user.uid,
-        adminId: userCredential.user.uid,
-        referenceNumber: `INIT-${new Date().getTime()}`,
-        status: "paid",
-        subtotalAmount: 0,
-        totalAmount: 0,
-        amountPaid: 0,
-        balanceDue: 0,
-        paymentMethod: "N/A",
-        createdDate: new Date(),
-        modifiedDate: new Date(),
-      };
-
-      await setDoc(doc(db, "transactions", initialTransaction.id as string), initialTransaction);
 
       // Success Handling
       toast.toast({

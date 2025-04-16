@@ -194,7 +194,7 @@
                 </div>
                 <div class="flex w-full flex-col items-start pt-1">
                   <span class="text-[12px] text-muted-foreground sm:text-sm"
-                    >₱{{ product.price }}</span
+                    >₱{{ calculatePriceWithCommission(product.price).toFixed(2) }}</span
                   >
                   <p class="w-full truncate pt-2 text-[12px] font-semibold sm:text-sm">
                     {{ product.name }}
@@ -240,9 +240,13 @@
 </template>
 
 <script lang="ts" setup>
+  import { useCommissionRate } from "~/composables/useCommissionRate";
+  import { usePriceCalculator } from "~/composables/usePriceCalculator";
   import { useViewProducts } from "~/composables/useViewProducts";
 
-  const { products, loading, fetchProducts } = useViewProducts();
+  const { products, fetchProducts } = useViewProducts();
+  const { commissionRate, fetchCommissionRate } = useCommissionRate();
+  const { calculatePriceWithCommission } = usePriceCalculator(commissionRate);
 
   const currentPage = ref(1);
   const totalPages = ref(1);
@@ -270,12 +274,13 @@
       currentPage.value
     );
     totalPages.value = Math.ceil(totalProducts / 10);
-    console.log("Total Pages in script:", totalPages.value); // Adjust the divisor based on your limitCount
+    console.log("Total Pages in script:", totalPages.value);
     loadingProducts.value = false;
   };
 
-  onMounted(() => {
+  onMounted(async () => {
     updateProducts();
+    await fetchCommissionRate();
   });
 
   const nextPage = () => {

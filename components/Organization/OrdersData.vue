@@ -81,12 +81,12 @@
                   <span v-if="item.isPreOrder">: Pre-Order</span>
                   x {{ item.quantity }}
                 </span>
-                <span class="text-sm">₱{{ item.price }}</span>
+                <span class="text-sm">₱{{ item.priceWithCommission }}</span>
               </div>
               <div class="flex flex-row items-center justify-end gap-2">
                 <span class="text-sm text-muted-foreground">Subtotal: </span>
                 <span class="text-sm font-medium"
-                  >₱{{ computeSubtotal(selectedOrder?.orderItems) }}</span
+                  >₱{{ Number(computeSubtotal(selectedOrder?.orderItems)).toFixed(2) }}</span
                 >
               </div>
             </div>
@@ -97,7 +97,9 @@
             </div>
             <div class="flex flex-row items-center justify-between gap-2 px-8">
               <span class="text-sm text-muted-foreground">Total Payment: </span>
-              <span class="text-sm font-bold">₱{{ selectedOrder?.totalPrice }}</span>
+              <span class="text-sm font-bold"
+                >₱{{ Number(selectedOrder?.totalPrice).toFixed(2) }}</span
+              >
             </div>
           </div>
           <hr />
@@ -393,7 +395,10 @@
 
   const computeSubtotal = (orderItems: ExtendedOrderItem[] | undefined): number => {
     if (!orderItems) return 0;
-    return orderItems.reduce((subtotal, item) => subtotal + item.price * item.quantity, 0);
+    return orderItems.reduce(
+      (subtotal, item) => subtotal + item.priceWithCommission * item.quantity,
+      0
+    );
   };
 
   const formatDate = (timestamp: any): string => {

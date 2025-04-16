@@ -6,6 +6,7 @@ export interface Product {
   category: string;
   status: string;
   description: string;
+  searchKeywords: string[];
   isApproved: boolean;
   totalSales: number;
   totalOrders: number;
@@ -49,4 +50,16 @@ export interface ProductViews {
   productID: string;
   accountID: string;
   generatedAt: Date;
+}
+
+export type ProductWithId = Partial<Product> & {
+  id: string; // Document ID from Firestore
+  price: number; // Price of the product
+};
+
+export interface ProductSearchResult {
+  id: string;
+  name: string;
+  category?: string;
+  featuredPhotoURL?: string;
 }
