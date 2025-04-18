@@ -183,7 +183,7 @@
         </div>
       </template>
       <template #footer>
-        <UiButton @click="closeDialog">Close</UiButton>
+        <UiButton @click="closeDialog" :disabled="isCheckboxMarked">Close</UiButton>
       </template>
     </UiDialogContent>
   </UiDialog>
@@ -222,6 +222,7 @@
   import type { Config, ConfigColumns } from "datatables.net";
 
   const props = defineProps<{ organizationID: string }>();
+  const emit = defineEmits(["updateCommission"]);
 
   const orders = ref<ExtendedOrder[]>([]);
   const loading = ref(false);
@@ -232,6 +233,7 @@
   const cancelRemarks = ref("");
   const statusLoading = ref(false);
   const hideClose = computed(() => statusLoading.value);
+  const isCheckboxMarked = ref(false);
 
   const {
     fetchFilteredOrders,
@@ -260,6 +262,7 @@
   const handleMarkAsReady = async () => {
     if (selectedOrder.value && selectedOrder.value.id) {
       statusLoading.value = true;
+      isCheckboxMarked.value = true;
       await markAsReady(selectedOrder.value.id, selectedOrder.value.orderStatus);
       const updatedOrder = await fetchOrderDetails(selectedOrder.value.id);
       if (updatedOrder) {
@@ -267,12 +270,14 @@
         updateOrderInList(updatedOrder);
       }
       statusLoading.value = false;
+      isCheckboxMarked.value = false;
     }
   };
 
   const handleMarkAsPaid = async () => {
     if (selectedOrder.value && selectedOrder.value.id) {
       statusLoading.value = true;
+      isCheckboxMarked.value = true;
       await markAsPaid(selectedOrder.value.id, selectedOrder.value.paymentStatus);
       const updatedOrder = await fetchOrderDetails(selectedOrder.value.id);
       if (updatedOrder) {
@@ -280,12 +285,16 @@
         updateOrderInList(updatedOrder);
       }
       statusLoading.value = false;
+      isCheckboxMarked.value = false;
+
+      emit("updateCommission");
     }
   };
 
   const handleMarkAsClaimed = async () => {
     if (selectedOrder.value && selectedOrder.value.id && selectedOrder.value.orderItems) {
       statusLoading.value = true;
+      isCheckboxMarked.value = true;
       await markAsClaimed(
         selectedOrder.value.id,
         selectedOrder.value.orderStatus,
@@ -297,6 +306,7 @@
         updateOrderInList(updatedOrder);
       }
       statusLoading.value = false;
+      isCheckboxMarked.value = false;
     }
   };
 
@@ -451,6 +461,26 @@
             <span class="px-2 py-1 rounded ${colorClass} capitalize">${data}</span>
           </div>
         </div>`;
+      },
+    },
+    {
+      title: "Payment Status",
+      data: "paymentStatus",
+      render: (data: string) => {
+        let colorClass = "bg-gray-200 text-gray-800";
+        if (data === "paid") {
+          colorClass = "bg-green-200 text-green-800";
+        } else if (data === "not_paid") {
+          colorClass = "bg-red-200 text-red-800";
+        } else if (data === "partial") {
+          colorClass = "bg-yellow-200 text-yellow-800";
+        }
+        return `
+      <div class="flex items-center gap-3">
+        <div class="flex cursor-pointer items-center gap-2">
+          <span class="px-2 py-1 rounded ${colorClass} capitalize">${data}</span>
+        </div>
+      </div>`;
       },
     },
     {

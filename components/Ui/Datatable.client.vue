@@ -157,7 +157,7 @@
   table.dataTable thead > tr > th.dt-orderable-desc:before,
   table.dataTable thead > tr > td.dt-orderable-asc:before,
   table.dataTable thead > tr > td.dt-orderable-desc:before {
-    @apply bottom-[43%] h-4 w-4 bg-[url('https://api.iconify.design/lucide:chevron-up.svg')] bg-contain bg-center bg-no-repeat content-[''] dark:bg-[url('https://api.iconify.design/lucide:chevron-up.svg?color=white')];
+    @apply bottom-[43%] size-[14px] shrink-0 bg-[url('https://api.iconify.design/lucide:chevron-up.svg')] bg-contain bg-center bg-no-repeat content-[''] dark:bg-[url('https://api.iconify.design/lucide:chevron-up.svg?color=white')];
   }
   table.dataTable thead > tr > th.sorting:after,
   table.dataTable thead > tr > th.sorting_asc:after,
@@ -174,7 +174,7 @@
   table.dataTable thead > tr > th.dt-orderable-desc:after,
   table.dataTable thead > tr > td.dt-orderable-asc:after,
   table.dataTable thead > tr > td.dt-orderable-desc:after {
-    @apply top-[43%] h-4 w-4 bg-[url('https://api.iconify.design/lucide:chevron-down.svg')] bg-contain bg-center bg-no-repeat content-[''] dark:bg-[url('https://api.iconify.design/lucide:chevron-down.svg?color=white')];
+    @apply top-[43%] size-[14px] shrink-0 bg-[url('https://api.iconify.design/lucide:chevron-down.svg')] bg-contain bg-center bg-no-repeat content-[''] dark:bg-[url('https://api.iconify.design/lucide:chevron-down.svg?color=white')];
   }
   table.dataTable thead > tr > th.sorting_asc:before,
   table.dataTable thead > tr > th.sorting_desc:after,
@@ -203,34 +203,39 @@
     @apply hidden;
   }
 
-  div.dataTables_processing {
-    @apply absolute left-[50%] top-[50%] ml-[-100px] mt-[-26px] w-[200px] p-0.5 text-center;
-  }
-  div.dataTables_processing > div:last-child {
-    @apply relative mx-auto my-4 h-4 w-20;
-  }
-  div.dataTables_processing > div:last-child > div {
-    @apply absolute top-0 h-3.5 w-3.5 rounded-full;
-    background: hsl(var(--dt-row-selected));
-    animation-timing-function: cubic-bezier(0, 1, 1, 0);
-  }
-  div.dataTables_processing > div:last-child > div:nth-child(1) {
-    left: 8px;
-    animation: datatables-loader-1 0.6s infinite;
-  }
-  div.dataTables_processing > div:last-child > div:nth-child(2) {
-    left: 8px;
-    animation: datatables-loader-2 0.6s infinite;
-  }
-  div.dataTables_processing > div:last-child > div:nth-child(3) {
-    left: 32px;
-    animation: datatables-loader-2 0.6s infinite;
-  }
-  div.dataTables_processing > div:last-child > div:nth-child(4) {
-    left: 56px;
-    animation: datatables-loader-3 0.6s infinite;
-  }
+  div.dataTables_processing,
+  div.dt-processing {
+    @apply absolute inset-0 z-[999] flex size-full items-center justify-center bg-background/50 backdrop-blur-sm transition;
 
+    > div:last-child {
+      @apply relative mx-auto my-4 h-4 w-20;
+
+      > div {
+        @apply absolute top-0 h-3.5 w-3.5 rounded-full bg-primary;
+        animation-timing-function: cubic-bezier(0, 1, 1, 0);
+      }
+
+      > div:nth-child(1) {
+        left: 8px;
+        animation: datatables-loader-1 0.6s infinite;
+      }
+
+      > div:nth-child(2) {
+        left: 8px;
+        animation: datatables-loader-2 0.6s infinite;
+      }
+
+      > div:nth-child(3) {
+        left: 32px;
+        animation: datatables-loader-2 0.6s infinite;
+      }
+
+      > div:nth-child(4) {
+        left: 56px;
+        animation: datatables-loader-3 0.6s infinite;
+      }
+    }
+  }
   @keyframes datatables-loader-1 {
     0% {
       transform: scale(0);
@@ -254,6 +259,9 @@
     100% {
       transform: translate(24px, 0);
     }
+  }
+  .dtfh-floatingparent.dtfh-floatingparent-head {
+    @apply z-10 bg-background/90 backdrop-blur;
   }
   table.dataTable.nowrap th,
   table.dataTable.nowrap td {
@@ -340,7 +348,7 @@
   /* Table Styles */
 
   table.dataTable {
-    @apply w-[300px] table-auto border-collapse overflow-x-auto sm:w-full;
+    @apply w-full table-auto border-collapse;
   }
 
   /* Table header styles */
@@ -538,7 +546,7 @@
   .dataTables_wrapper .dt-buttons {
     @apply inline-flex flex-wrap items-center gap-2;
     button {
-      @apply inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-md border bg-background px-3 text-[12px] text-muted-foreground hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:text-sm;
+      @apply inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-md border bg-background px-3 text-sm text-muted-foreground hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
     }
   }
   /* V2 of datatables button styles. 
@@ -546,7 +554,7 @@
   .dt-buttons {
     @apply inline-flex flex-wrap items-center gap-2;
     button {
-      @apply inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-md border bg-background px-3 text-[12px] text-muted-foreground hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:text-sm;
+      @apply inline-flex h-9 items-center gap-2 whitespace-nowrap rounded-md border bg-background px-3 text-sm text-muted-foreground hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
     }
   }
 
@@ -558,9 +566,9 @@
   /* Select box at bottom showing number of records being displayed - v1 of datatables */
   .dataTables_wrapper .dataTables_length {
     label {
-      @apply inline-flex items-center gap-2 text-[12px] font-normal text-muted-foreground sm:text-sm;
+      @apply inline-flex items-center gap-2 text-sm font-normal text-muted-foreground;
       select {
-        @apply h-9 w-[70px] cursor-pointer rounded-md border border-border bg-background px-2 py-1 text-[12px] transition focus:border-primary focus:outline-none focus-visible:border-input focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:text-sm;
+        @apply h-9 w-[70px] cursor-pointer rounded-md border border-border bg-background px-2 py-1 transition focus:border-primary focus:outline-none focus-visible:border-input focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:text-sm;
       }
     }
   }
@@ -568,19 +576,19 @@
   .dt-length {
     @apply inline-flex items-center gap-2;
     label {
-      @apply text-[12px] font-normal text-muted-foreground sm:text-sm;
+      @apply text-sm font-normal text-muted-foreground;
     }
     select {
-      @apply h-9 w-[70px] cursor-pointer rounded-md border border-border bg-background px-2 py-1 text-[12px] transition focus:border-primary focus:outline-none focus-visible:border-input focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:text-sm;
+      @apply h-9 w-[70px] cursor-pointer rounded-md border border-border bg-background px-2 py-1 transition focus:border-primary focus:outline-none focus-visible:border-input focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:text-sm;
     }
   }
 
   /* Search box at the top styles - v1 of datatables */
   .dataTables_wrapper .dataTables_filter {
     label {
-      @apply inline-flex w-full cursor-pointer items-center gap-2 text-[12px] font-normal text-muted-foreground sm:text-sm;
+      @apply inline-flex w-full cursor-pointer items-center gap-2 text-sm font-normal text-muted-foreground;
       input {
-        @apply h-9 w-full rounded-md border border-border bg-background px-2 py-1 text-[12px] transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background focus-visible:border-input sm:text-sm;
+        @apply h-9 w-full rounded-md border border-border bg-background px-2 py-1 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background focus-visible:border-input sm:text-sm;
       }
     }
   }
@@ -589,28 +597,28 @@
   .dt-search {
     @apply flex items-center gap-3;
     label {
-      @apply inline-flex cursor-pointer items-center gap-2 text-[12px] font-normal text-muted-foreground sm:text-sm;
+      @apply inline-flex cursor-pointer items-center gap-2 text-sm font-normal text-muted-foreground;
     }
     input {
-      @apply h-9 w-full rounded-md border border-border bg-background px-2 py-1 text-[12px] transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background focus-visible:border-input sm:text-sm md:w-[50%] lg:w-[250px];
+      @apply h-9 w-full rounded-md border border-border bg-background px-2 py-1 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background focus-visible:border-input sm:text-sm md:w-[50%] lg:w-[250px];
     }
   }
 
   /* Info text that shows `Showing X to XX of XXXX entries - v1  */
   .dataTables_wrapper .dataTables_info,
   .dt-info {
-    @apply flex items-center gap-3 text-[12px] !text-muted-foreground sm:text-sm;
+    @apply flex items-center gap-3 text-sm !text-muted-foreground;
   }
 
   /* Pagination button styles - v1 datatables */
   .dataTables_wrapper .dataTables_paginate {
     .paginate_button {
-      @apply ml-1 box-border inline-flex h-9 min-w-[36px] cursor-pointer items-center justify-center rounded bg-transparent px-3 py-2 text-center text-[12px] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:text-sm;
+      @apply ml-1 box-border inline-flex h-9 min-w-[36px] cursor-pointer items-center justify-center rounded bg-transparent px-3 py-2 text-center text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
     }
   }
   /* Pagination button - v2 */
   .dt-paging-button {
-    @apply ml-1 box-border inline-flex h-9 min-w-[36px] cursor-pointer items-center justify-center rounded bg-transparent px-3 py-2 text-center text-[12px] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:text-sm;
+    @apply ml-1 box-border inline-flex h-9 min-w-[36px] cursor-pointer items-center justify-center rounded bg-transparent px-3 py-2 text-center text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
     &.current,
     &:hover {
       @apply bg-muted;
@@ -724,7 +732,7 @@
 
   table.dataTable.dtr-inline.collapsed > tbody > tr > td.dtr-control:before,
   table.dataTable.dtr-inline.collapsed > tbody > tr > th.dtr-control:before {
-    @apply mr-2 inline-flex h-4 w-4 bg-[url('https://api.iconify.design/lucide:chevron-right.svg')] bg-contain bg-center bg-no-repeat pb-[3px] content-[''] dark:bg-[url('https://api.iconify.design/lucide:chevron-right.svg?color=white')];
+    @apply mr-2 inline-flex size-[14px] shrink-0 bg-[url('https://api.iconify.design/lucide:chevron-right.svg')] bg-contain bg-center bg-no-repeat pb-[3px] content-[''] dark:bg-[url('https://api.iconify.design/lucide:chevron-right.svg?color=white')];
   }
   table.dataTable.dtr-inline.collapsed > tbody > tr > td.dtr-control.arrow-right::before,
   table.dataTable.dtr-inline.collapsed > tbody > tr > th.dtr-control.arrow-right::before {
@@ -734,7 +742,7 @@
   table.dataTable.dtr-inline.collapsed > tbody > tr.parent > th.dtr-control:before,
   table.dataTable.dtr-inline.collapsed > tbody > tr.dtr-expanded > td.dtr-control:before,
   table.dataTable.dtr-inline.collapsed > tbody > tr.dtr-expanded > th.dtr-control:before {
-    @apply mr-2 inline-block h-4 w-4 bg-[url('https://api.iconify.design/lucide:chevron-down.svg')] bg-contain bg-center bg-no-repeat content-[''] dark:bg-[url('https://api.iconify.design/lucide:chevron-down.svg?color=white')];
+    @apply mr-2 inline-block size-[14px] shrink-0 bg-[url('https://api.iconify.design/lucide:chevron-down.svg')] bg-contain bg-center bg-no-repeat content-[''] dark:bg-[url('https://api.iconify.design/lucide:chevron-down.svg?color=white')];
   }
   table.dataTable.dtr-inline.collapsed.compact > tbody > tr > td.dtr-control,
   table.dataTable.dtr-inline.collapsed.compact > tbody > tr > th.dtr-control {
@@ -750,7 +758,7 @@
   table.dataTable.dtr-column > tbody > tr > th.dtr-control:before,
   table.dataTable.dtr-column > tbody > tr > td.control:before,
   table.dataTable.dtr-column > tbody > tr > th.control:before {
-    @apply mr-2 inline-flex h-4 w-4 bg-[url('https://api.iconify.design/lucide:chevron-right.svg')] bg-contain bg-center bg-no-repeat pb-[3px] content-[''] dark:bg-[url('https://api.iconify.design/lucide:chevron-right.svg?color=white')];
+    @apply mr-2 inline-flex size-[14px] shrink-0 bg-[url('https://api.iconify.design/lucide:chevron-right.svg')] bg-contain bg-center bg-no-repeat pb-[3px] content-[''] dark:bg-[url('https://api.iconify.design/lucide:chevron-right.svg?color=white')];
   }
   table.dataTable.dtr-column > tbody > tr > td.dtr-control.arrow-right::before,
   table.dataTable.dtr-column > tbody > tr > th.dtr-control.arrow-right::before,
@@ -766,7 +774,7 @@
   table.dataTable.dtr-column > tbody > tr.dtr-expanded th.dtr-control:before,
   table.dataTable.dtr-column > tbody > tr.dtr-expanded td.control:before,
   table.dataTable.dtr-column > tbody > tr.dtr-expanded th.control:before {
-    @apply mr-2 inline-block h-4 w-4 bg-[url('https://api.iconify.design/lucide:chevron-down.svg')] bg-contain bg-center bg-no-repeat content-[''] dark:bg-[url('https://api.iconify.design/lucide:chevron-down.svg?color=white')];
+    @apply mr-2 inline-block size-[14px] shrink-0 bg-[url('https://api.iconify.design/lucide:chevron-down.svg')] bg-contain bg-center bg-no-repeat content-[''] dark:bg-[url('https://api.iconify.design/lucide:chevron-down.svg?color=white')];
   }
 
   table.dataTable > tbody td.child {
@@ -780,7 +788,7 @@
     @apply m-0 block w-full list-none p-0;
   }
   table.dataTable > tbody > tr.child ul.dtr-details > li {
-    @apply border-b p-3 px-7 hover:bg-muted;
+    @apply flex items-center gap-6 border-b p-3 px-7 hover:bg-muted;
   }
 
   table.dataTable > tbody > tr.child ul.dtr-details > li:last-child {
@@ -794,7 +802,7 @@
     @apply fixed left-0 top-0 z-[1000] box-border size-full;
   }
   div.dtr-modal div.dtr-modal-display {
-    @apply absolute left-1/2 top-1/2 z-[102] max-h-[80%] w-full max-w-screen-sm -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-md border bg-background p-4 pb-0 md:px-7 md:py-4 md:pb-0 lg:max-h-[90%];
+    @apply absolute left-1/2 top-1/2 z-[102] max-h-[80%] w-full max-w-screen-sm -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-md border bg-background p-4 md:px-7 md:py-4 lg:max-h-[90%];
   }
   div.dtr-modal div.dtr-modal-content {
     @apply relative flex flex-col p-0 text-[15px];

@@ -8,3 +8,7 @@ export interface CommissionRate {
   lastModified: Date | FieldValue; // The date when the commission rate was last modified
   isArchived: boolean | FieldValue; // Indicates if the commission rate is archived
 }
+
+export interface CommissionRateWithId extends CommissionRate {
+  id: string; // Firestore document ID
+}

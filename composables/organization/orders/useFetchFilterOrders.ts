@@ -134,11 +134,56 @@ export const useFetchFilterOrders = () => {
     await updateDoc(orderRef, { orderStatus: newStatus, lastModified: new Date() });
   };
 
-  // Function to mark order as paid or unpaid
   const markAsPaid = async (orderID: string, currentStatus: string): Promise<void> => {
     const orderRef = doc(db, "orders", orderID);
     const newStatus = currentStatus === "paid" ? "not_paid" : "paid";
-    await updateDoc(orderRef, { paymentStatus: newStatus, lastModified: new Date() });
+
+    try {
+      // Update the order's payment status
+      await updateDoc(orderRef, { paymentStatus: newStatus, lastModified: new Date() });
+
+      // Fetch the order document
+      const orderDoc = await getDoc(orderRef);
+      if (!orderDoc.exists()) {
+        console.error("Order document not found");
+        return;
+      }
+
+      const orderData = orderDoc.data();
+      const organizationID = orderData.organizationID;
+      const commissionAmount = orderData.commissionAmount || 0;
+
+      // Fetch the organization document
+      const orgRef = doc(db, "organizations", organizationID);
+      const orgDoc = await getDoc(orgRef);
+
+      if (!orgDoc.exists()) {
+        console.error("Organization document not found");
+        return;
+      }
+
+      const orgData = orgDoc.data();
+      let newTotalDue = orgData.totalDue || 0;
+
+      // Adjust the organization's totalDue based on the new payment status
+      if (newStatus === "paid") {
+        // Add the commission amount to totalDue
+        newTotalDue += commissionAmount;
+      } else {
+        // Deduct the commission amount from totalDue
+        newTotalDue -= commissionAmount;
+      }
+
+      newTotalDue = parseFloat(newTotalDue.toFixed(2));
+
+      // Update the organization's financials
+      await updateDoc(orgRef, {
+        totalDue: newTotalDue,
+        lastModified: new Date(),
+      });
+    } catch (error) {
+      console.error("Error updating payment status or organization financials:", error);
+    }
   };
 
   // Function to mark order as claimed or pending
@@ -205,12 +250,36 @@ export const useFetchFilterOrders = () => {
       throw new Error("Order not found");
     }
 
+    const orderData = orderDoc.data();
+    const organizationID = orderData.organizationID;
+    const commissionAmount = orderData.commissionAmount || 0;
+
+    // Update the order status to "cancelled"
     await updateDoc(orderRef, {
       orderStatus: "cancelled",
       remarks,
       lastModified: new Date(),
     });
 
+    // If the order payment status is "paid", deduct the commission amount from totalDue
+    if (orderData.paymentStatus === "paid") {
+      const orgRef = doc(db, "organizations", organizationID);
+      const orgDoc = await getDoc(orgRef);
+
+      if (orgDoc.exists()) {
+        const orgData = orgDoc.data();
+        const newTotalDue = (orgData.totalDue || 0) - commissionAmount;
+
+        await updateDoc(orgRef, {
+          totalDue: newTotalDue,
+          lastModified: new Date(),
+        });
+      } else {
+        console.error("Organization document not found");
+      }
+    }
+
+    // Update stock and logs for each order item
     for (const item of orderItems) {
       const variationRef = doc(db, `products/${item.productID}/variations`, item.variationID);
       const variationDoc = await getDoc(variationRef);

@@ -1,10 +1,28 @@
-// composables/useOrganization.ts
-import { collection, doc, getDoc, getDocs, limit, orderBy, query, where } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getAggregateFromServer,
+  getDoc,
+  getDocs,
+  limit,
+  orderBy,
+  query,
+  sum,
+  where,
+} from "firebase/firestore";
 import { useFirestore } from "vuefire";
+import type { CommissionRateWithId } from "~/types/models/CommissionRate";
 import type { Organization } from "~/types/models/Organization";
 
 // Add this type if not already in your types file
-export type OrganizationWithId = Partial<Organization> & { id: string };
+export type OrganizationWithId = Partial<Organization> & {
+  id: string;
+  commissionData?: {
+    totalPaid: number;
+    totalDue: number;
+  };
+  paymentStatus?: "paid" | "partial" | "unpaid" | "no-commissions";
+};
 
 export const useOrganization = () => {
   const db = useFirestore();
@@ -54,6 +72,52 @@ export const useOrganization = () => {
     })) as OrganizationWithId[];
   };
 
+  const getOrganizationFinancials = async (organizationId: string) => {
+    try {
+      // Fetch organization document
+      const orgRef = doc(db, "organizations", organizationId);
+      const orgDoc = await getDoc(orgRef);
+
+      if (!orgDoc.exists()) {
+        throw new Error("Organization not found");
+      }
+
+      const orgData = orgDoc.data();
+
+      // Return financial data directly from the organization document
+      return {
+        totalPaid: orgData.totalPaid || 0,
+        totalDue: orgData.totalDue || 0,
+      };
+    } catch (error) {
+      console.error("Error fetching financial data:", error);
+      return { totalPaid: 0, totalDue: 0 };
+    }
+  };
+
+  const getOrganizationCommissions = async (organizationId: string) => {
+    try {
+      // Fetch organization document
+      const orgRef = doc(db, "organizations", organizationId);
+      const orgDoc = await getDoc(orgRef);
+
+      if (!orgDoc.exists()) {
+        throw new Error("Organization not found");
+      }
+
+      const orgData = orgDoc.data();
+
+      // Return commission data directly from the organization document
+      return {
+        totalPaid: orgData.totalPaid || 0,
+        totalDue: orgData.totalDue || 0,
+      };
+    } catch (error) {
+      console.error("Error fetching commission data:", error);
+      return { totalPaid: 0, totalDue: 0 };
+    }
+  };
+
   const transformOrganizationData = (data: any) => ({
     ...data,
     dateCreated: data.dateCreated?.toDate(),
@@ -66,9 +130,18 @@ export const useOrganization = () => {
     searchKeywords: data.searchKeywords || [],
   });
 
+  const transformOrderData = (data: any) => ({
+    ...data,
+    dateOrdered: data.dateOrdered?.toDate(),
+    lastModified: data.lastModified?.toDate(),
+    receivedDate: data.receivedDate?.toDate(),
+  });
+
   return {
     getAllOrganizations,
     getOrganizationById,
     searchOrganizations,
+    getOrganizationFinancials,
+    getOrganizationCommissions,
   };
 };

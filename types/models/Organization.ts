@@ -21,10 +21,10 @@ export interface Organization {
   managerAccounts: string[];
   staffAccounts: string[];
 
-  // Transactions Summary
-  totalTransactionCount: number;
-  paidTransactionCount: number;
-  unpaidTransactionCount: number;
+  // Financials
+  totalPaid: number;
+  totalDue: number;
+  lastPaymentDate: Date;
 
   dateCreated: Date;
   lastModified: Date;

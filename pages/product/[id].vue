@@ -188,7 +188,7 @@
                           :class="{
                             'bg-primary text-[12px] text-primary text-white':
                               selectedVariationAddToCart?.id === vari.id,
-                            'border-primary bg-white text-[12px] text-primary':
+                            'border-2 bg-white text-[12px] text-primary':
                               selectedVariationAddToCart?.id !== vari.id,
                           }"
                         >

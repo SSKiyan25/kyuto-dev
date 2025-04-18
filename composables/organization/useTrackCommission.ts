@@ -1,5 +1,4 @@
-import { collection, getDocs, query, where } from "firebase/firestore";
-import type { Order } from "~/types/models/Order";
+import { doc, getDoc } from "firebase/firestore";
 
 export const useTrackCommission = () => {
   const db = useFirestore();
@@ -7,33 +6,24 @@ export const useTrackCommission = () => {
   const trackCommission = async (organizationID: string) => {
     console.log("Tracking commission for organization ID:", organizationID);
     try {
-      // Query orders for the given organization ID
-      const ordersRef = collection(db, "orders");
-      const q = query(
-        ordersRef,
-        where("organizationID", "==", organizationID),
-        where("paymentStatus", "==", "paid")
-      );
+      // Fetch organization document
+      const orgRef = doc(db, "organizations", organizationID);
+      const orgDoc = await getDoc(orgRef);
 
-      const querySnapshot = await getDocs(q);
-      console.log("Query snapshot:", querySnapshot);
+      if (!orgDoc.exists()) {
+        console.error("Organization not found");
+        return {
+          paidCommission: 0,
+          unpaidCommission: 0,
+        };
+      }
 
-      // Initialize totals
-      let paidCommission = 0;
-      let unpaidCommission = 0;
+      const orgData = orgDoc.data();
+      console.log("Organization data:", orgData);
 
-      // Process each order
-      querySnapshot.forEach((doc) => {
-        const order = doc.data() as Order;
-        console.log("Processing order:", order);
-        if (order.commissionStatus === "paid") {
-          paidCommission += order.commissionAmount;
-          console.log("Paid commission:", paidCommission);
-        } else if (order.commissionStatus === "not_paid") {
-          unpaidCommission += order.commissionAmount;
-          console.log("Unpaid commission:", unpaidCommission);
-        }
-      });
+      // Extract totalPaid and totalDue
+      const paidCommission = orgData.totalPaid || 0;
+      const unpaidCommission = orgData.totalDue || 0;
 
       return {
         paidCommission: parseFloat(paidCommission.toFixed(2)),

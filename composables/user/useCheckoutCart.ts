@@ -78,7 +78,6 @@ export const useCheckoutCart = () => {
         uniqRefNumber: uniqRefNumber,
         paymentMethod: paymentMethod,
         paymentStatus: "not_paid",
-        commissionStatus: "not_paid",
         commissionRateID: comissionRateID,
         commissionAmount: comissionAmount,
         remarks: "",

@@ -30,17 +30,17 @@ export async function fetchOrganization() {
   const orgData = orgSnap.data() as Partial<Organization>;
 
   // Fetch account details for each account
-  if (orgData.accounts) {
-    const accounts: OrganizationAccount[] = orgData.accounts as OrganizationAccount[];
-    for (const account of accounts) {
-      const accountRef = doc(db, "accounts", account.accountID);
-      const accountSnap = await getDoc(accountRef);
-      if (accountSnap.exists()) {
-        account.accountDetails = accountSnap.data() as Account;
-      }
-    }
-    orgData.accounts = accounts;
-  }
+  // if (orgData.adminAccounts) {
+  //   const accounts: OrganizationAccount[] = orgData.adminAccounts as OrganizationAccount[];
+  //   for (const account of accounts) {
+  //     const accountRef = doc(db, "accounts", account.accountID);
+  //     const accountSnap = await getDoc(accountRef);
+  //     if (accountSnap.exists()) {
+  //       account.accountDetails = accountSnap.data() as Account;
+  //     }
+  //   }
+  //   orgData.adminAccounts = accounts;
+  // }
 
   return { ...orgData, id: orgSnap.id };
 }

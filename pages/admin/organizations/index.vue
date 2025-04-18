@@ -54,7 +54,7 @@
       <div class="flex flex-row items-center justify-between">
         <h1 class="text-2xl font-semibold">Organizations</h1>
         <div class="flex gap-2">
-          <UiSelect v-model="filters.status" class="w-40">
+          <UiSelect v-model="filters.paymentStatus" class="w-40">
             <option value="">All Status</option>
             <option value="active">Active</option>
             <option value="overdue">Overdue</option>
@@ -63,14 +63,16 @@
         </div>
       </div>
       <UiDatatable :options="options" @ready="tableRef = $event">
-        <template #actions="{ cellData }: { cellData: Organization }">
+        <template #actions="{ cellData }: { cellData: OrganizationWithId }">
           <UiDropdownMenu>
             <UiDropdownMenuTrigger as-child>
               <UiButton class="h-6 text-[10px] sm:h-7 sm:text-xs"> Actions </UiButton>
             </UiDropdownMenuTrigger>
             <UiDropdownMenuContent class="w-32">
-              <UiDropdownMenuItem @click="viewOrganization(cellData)"> View </UiDropdownMenuItem>
-              <UiDropdownMenuItem>Transactions</UiDropdownMenuItem>
+              <UiDropdownMenuItem @click="viewOrganization(cellData)">
+                View Details
+              </UiDropdownMenuItem>
+              <UiDropdownMenuItem @click="manageFees(cellData)">Manage Fees</UiDropdownMenuItem>
               <UiDropdownMenuItem @click="resetPassword(cellData)">
                 Reset Password
               </UiDropdownMenuItem>
@@ -86,9 +88,9 @@
 </template>
 
 <script lang="ts" setup>
-  import { faker } from "@faker-js/faker";
   import DataTable from "datatables.net";
   import { collection, getDocs, query, where } from "firebase/firestore";
+  import type { OrganizationWithId } from "~/composables/useOrganizationValues";
   import type { CommissionRate } from "~/types/models/CommissionRate";
   import type { Config } from "datatables.net";
 
@@ -100,28 +102,13 @@
   const db = useFirestore();
   const toast = useToast();
 
-  type Organization = {
-    id: number;
-    name: string;
-    dateCreated: string;
-    transactions: {
-      total: number;
-      paid: number;
-      unpaid: number;
-      totalAmount: number;
-      paidAmount: number;
-      unpaidAmount: number;
-    };
-    status: "active" | "overdue" | "inactive";
-  };
-
-  const tableRef = shallowRef<InstanceType<typeof DataTable<Organization[]>> | null>(null);
+  const tableRef = shallowRef<InstanceType<typeof DataTable<OrganizationWithId[]>> | null>(null);
+  const { getAllOrganizations, getOrganizationFinancials } = useOrganization();
   const userDialog = ref(false);
   const commissionDialog = ref(false);
-  const selectedOrganization = ref<Organization | null>(null);
 
   const filters = reactive({
-    status: "",
+    paymentStatus: "", // 'paid' | 'partial' | 'unpaid' | 'no-commissions'
   });
 
   // Summary statistics
@@ -132,15 +119,46 @@
     totalAmount: 0,
   });
 
-  const viewOrganization = (organization: Organization) => {
+  const computeSummaryStats = async () => {
+    try {
+      const allOrgs = await getAllOrganizations();
+
+      // Initialize summary stats
+      summaryStats.totalOrgs = allOrgs.length;
+      summaryStats.paidTransactions = 0;
+      summaryStats.unpaidAmount = 0;
+      summaryStats.totalAmount = 0;
+
+      for (const org of allOrgs) {
+        const financials = await getOrganizationFinancials(org.id);
+
+        // Update stats
+        summaryStats.paidTransactions += financials.totalPaid;
+        summaryStats.unpaidAmount += financials.totalDue;
+        summaryStats.totalAmount += financials.totalPaid + financials.totalDue;
+      }
+
+      console.log("Summary Stats:", summaryStats);
+    } catch (error) {
+      console.error("Error computing summary stats:", error);
+    }
+  };
+
+  const viewOrganization = (organization: OrganizationWithId) => {
     console.log("View Organization:", organization);
   };
 
-  const resetPassword = (organization: Organization) => {
+  const manageFees = (organization: OrganizationWithId) => {
+    console.log("Manage Fees for:", organization);
+    console.log("Organization ID:", organization.id);
+    navigateTo(`/admin/organizations/commission/${organization.id}`);
+  };
+
+  const resetPassword = (organization: OrganizationWithId) => {
     console.log("Reset Password for:", organization);
   };
 
-  const archiveOrganization = (organization: Organization) => {
+  const archiveOrganization = (organization: OrganizationWithId) => {
     console.log("Archive Organization:", organization);
   };
 
@@ -176,39 +194,16 @@
 
   onMounted(() => {
     fetchComissionRate();
+    computeSummaryStats();
   });
 
-  // Generate more realistic mock data
-  const generateMockData = () => {
-    const data = Array.from({ length: 100 }, (_, index) => {
-      const totalTransactions = faker.number.int({ min: 5, max: 500 });
-      const paidTransactions = faker.number.int({ min: 0, max: totalTransactions });
-      const totalAmount = faker.number.float({ min: 1000, max: 50000, fractionDigits: 2 });
-      const paidPercentage = paidTransactions / totalTransactions;
+  const calculatePaymentStatus = (commissionData: { totalPaid: number; totalDue: number }) => {
+    const total = commissionData.totalPaid + commissionData.totalDue;
+    if (total === 0) return "no-commissions";
 
-      return {
-        id: index + 1,
-        name: faker.company.name(),
-        dateCreated: useDateFormat(faker.date.past().toISOString(), "MMMM DD, YYYY").value,
-        transactions: {
-          total: totalTransactions,
-          paid: paidTransactions,
-          unpaid: totalTransactions - paidTransactions,
-          totalAmount: totalAmount,
-          paidAmount: parseFloat((totalAmount * paidPercentage).toFixed(2)),
-          unpaidAmount: parseFloat((totalAmount * (1 - paidPercentage)).toFixed(2)),
-        },
-        status: paidPercentage === 1 ? "active" : paidPercentage < 0.5 ? "overdue" : "inactive",
-      };
-    });
+    const paidPercentage = (commissionData.totalPaid / total) * 100;
 
-    // Update summary stats
-    summaryStats.totalOrgs = data.length;
-    summaryStats.paidTransactions = data.reduce((sum, org) => sum + org.transactions.paid, 0);
-    summaryStats.unpaidAmount = data.reduce((sum, org) => sum + org.transactions.unpaidAmount, 0);
-    summaryStats.totalAmount = data.reduce((sum, org) => sum + org.transactions.totalAmount, 0);
-
-    return data;
+    return paidPercentage >= 100 ? "paid" : "partial";
   };
 
   const options: Config = {
@@ -259,34 +254,50 @@
         title: "Organization",
         data: "name",
         render: (data, type, row) => {
+          const dateCreated = useDateFormat(row.dateCreated, "MMM DD, YYYY").value;
           return `
           <div class="flex flex-col">
             <span class="font-medium">${data}</span>
-            <span class="text-xs text-gray-500">${row.dateCreated}</span>
+            <span class="text-xs text-gray-500">${dateCreated}</span>
           </div>
         `;
         },
       },
       {
-        title: "Transactions",
-        data: "transactions",
+        title: "Commission Fees",
+        data: "commissionData",
         render: (data) => {
-          const paidPercentage = Math.round((data.paid / data.total) * 100);
+          const totalCommission = data.totalDue + data.totalPaid;
+          const paidPercentage =
+            totalCommission > 0 ? Math.round((data.totalPaid / totalCommission) * 100) : 0;
+
+          // Determine status color based on payment percentage
+          const statusClass =
+            paidPercentage >= 80
+              ? "bg-green-500"
+              : paidPercentage >= 50
+                ? "bg-yellow-500"
+                : "bg-red-500";
+
+          // Determine overall status for filtering
+          const paymentStatus =
+            paidPercentage >= 80 ? "paid" : paidPercentage >= 50 ? "partial" : "not_paid";
+
           return `
-          <div class="flex flex-col gap-1 min-w-[200px]">
+          <div class="flex flex-col gap-1 min-w-[200px]" data-payment-status="${paymentStatus}">
             <div class="flex justify-between text-xs">
-              <span>${data.paid}/${data.total} (${paidPercentage}%)</span>
-              <span class="font-medium">₱${data.paidAmount.toLocaleString()}</span>
+              <span>${data.totalPaid.toLocaleString()}/${totalCommission.toLocaleString()} (${paidPercentage}%)</span>
+              <span class="font-medium">₱${data.totalPaid.toLocaleString()}</span>
             </div>
             <div class="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
               <div 
-                class="h-full ${paidPercentage >= 80 ? "bg-green-500" : paidPercentage >= 50 ? "bg-yellow-500" : "bg-red-500"}" 
+                class="h-full ${statusClass}" 
                 style="width: ${paidPercentage}%"
               ></div>
             </div>
             <div class="flex justify-between text-xs text-gray-500">
-              <span>Unpaid: ${data.unpaid}</span>
-              <span>₱${data.unpaidAmount.toLocaleString()}</span>
+              <span>Unpaid:</span>
+              <span>₱${data.totalDue.toLocaleString()}</span>
             </div>
           </div>
         `;
@@ -335,27 +346,60 @@
     serverSide: true,
     processing: true,
     async ajax(data: any, callback: any) {
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      const res = generateMockData();
+      try {
+        const allOrgs = await getAllOrganizations();
 
-      // Apply filters
-      let filteredData = res;
-      if (filters.status) {
-        filteredData = res.filter((org) => org.status === filters.status);
+        const orgsWithFinancials = await Promise.all(
+          allOrgs.map(async (org) => {
+            const commissionData = await getOrganizationFinancials(org.id);
+
+            // Calculate payment status
+            const paymentStatus = calculatePaymentStatus(commissionData);
+
+            // Calculate status based on payment status or other criteria
+            const status = paymentStatus === "paid" ? "active" : "overdue";
+
+            return {
+              ...org,
+              commissionData,
+              paymentStatus,
+              status,
+            };
+          })
+        );
+
+        // Apply filters
+        let filteredData = orgsWithFinancials;
+        if (filters.paymentStatus) {
+          filteredData = filteredData.filter((org) => org.paymentStatus === filters.paymentStatus);
+        }
+
+        // Apply search
+        if (data.search.value) {
+          const searchTerm = data.search.value.toLowerCase();
+          filteredData = filteredData.filter(
+            (org) =>
+              org.name?.toLowerCase().includes(searchTerm) ||
+              org.contactEmail?.toLowerCase().includes(searchTerm)
+          );
+        }
+
+        callback({
+          draw: Number(data.draw),
+          data: filteredData.slice(data.start, data.start + data.length),
+          recordsTotal: allOrgs.length,
+          recordsFiltered: filteredData.length,
+        });
+      } catch (error) {
+        console.error("Error loading data:", error);
+        callback({ error: "Failed to load organization data" });
       }
-
-      callback({
-        draw: Number(data.draw),
-        data: filteredData.slice(data.start, data.start + data.length),
-        recordsTotal: res.length,
-        recordsFiltered: filteredData.length,
-      });
     },
   };
 
   // Watch for filter changes
   watch(
-    () => filters.status,
+    () => filters.paymentStatus,
     () => {
       tableRef.value?.ajax.reload();
     }

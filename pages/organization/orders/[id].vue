@@ -239,7 +239,11 @@
           <span>₱{{ commissionData.unpaidCommission.toLocaleString() }}</span>
         </div>
       </div>
-      <OrganizationOrdersData v-if="orgIDparams" :organizationID="orgIDparams" />
+      <OrganizationOrdersData
+        v-if="orgIDparams"
+        :organizationID="orgIDparams"
+        @update-commission="fetchCommissionData"
+      />
     </div>
 
     <div
@@ -331,14 +335,20 @@
       ? (commissionData.value.paidCommission / totalCommission.value) * 100
       : 0
   );
-  const unpaidPercentage = computed(() =>
-    totalCommission.value > 0
-      ? (commissionData.value.unpaidCommission / totalCommission.value) * 100
-      : 0
-  );
+
+  const fetchCommissionData = async () => {
+    const { trackCommission } = useTrackCommission();
+    commissionData.value = await trackCommission(orgIDparams.value);
+  };
+
+  onMounted(() => {
+    fetchCommissionData;
+  });
 
   onMounted(async () => {
     try {
+      fetchCommissionData;
+
       console.log("Calling trackCommission with orgID:", orgIDparams.value);
 
       if (!orgIDparams.value) {
@@ -357,6 +367,7 @@
 
   onMounted(async () => {
     try {
+      fetchCommissionData;
       // Fetch products for the organization using the organization ID from params
       const fetchedProducts = await fetchOrganizationProducts(orgIDparams.value);
       products.value = fetchedProducts;
