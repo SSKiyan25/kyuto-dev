@@ -18,4 +18,5 @@ export interface Account {
   dateCreated: Date;
   lastModified: Date;
   isArchived: boolean;
+  disabled: boolean;
 }
