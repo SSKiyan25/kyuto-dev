@@ -179,7 +179,7 @@
         </template>
         <template v-else>
           <div v-for="(product, i) in products" :key="i">
-            <NuxtLink :to="`/product/${product.id}`">
+            <NuxtLink :to="`/product/${product.id}`" @click="handleProductClick(product.id)">
               <div
                 class="flex max-h-[32rem] max-w-[16rem] flex-col rounded-sm border p-2 hover:shadow-lg sm:max-h-[40rem] sm:max-w-[24rem]"
               >
@@ -202,7 +202,7 @@
                   <div
                     class="flex w-full flex-row justify-between pt-4 text-[10px] opacity-50 sm:text-[12px]"
                   >
-                    <span>0 views</span>
+                    <span>{{ productViewCounts[product.id] || 0 }} views</span>
                     <span>{{ product.totalSales }} sales</span>
                   </div>
                 </div>
@@ -240,6 +240,7 @@
 </template>
 
 <script lang="ts" setup>
+  import { useAddProductViews } from "~/composables/useAddProductViews";
   import { useCommissionRate } from "~/composables/useCommissionRate";
   import { usePriceCalculator } from "~/composables/usePriceCalculator";
   import { useViewProducts } from "~/composables/useViewProducts";
@@ -247,6 +248,7 @@
   const { products, fetchProducts } = useViewProducts();
   const { commissionRate, fetchCommissionRate } = useCommissionRate();
   const { calculatePriceWithCommission } = usePriceCalculator(commissionRate);
+  const { addView, countViews } = useAddProductViews();
 
   const currentPage = ref(1);
   const totalPages = ref(1);
@@ -254,6 +256,27 @@
   const prevIcon = "lucide:chevron-left";
   const nextIcon = "lucide:chevron-right";
   const loadingProducts = ref(false);
+  const productViewCounts = reactive<Record<string, number>>({});
+
+  const handleProductClick = (productID: string) => {
+    // console.log("Product clicked:", productID);
+    addView(productID);
+  };
+
+  const fetchProductViewCounts = async () => {
+    // console.log("Fetching product view counts...");
+
+    if (!products.value || products.value.length === 0) {
+      console.log("No products found to fetch view counts.");
+      return;
+    }
+
+    for (const product of products.value) {
+      const viewCount = await countViews(product.id);
+      productViewCounts[product.id] = viewCount;
+      // console.log(`Product ID: ${product.id}, View Count: ${viewCount}`);
+    }
+  };
 
   const updateProducts = async () => {
     loadingProducts.value = true;
@@ -279,7 +302,8 @@
   };
 
   onMounted(async () => {
-    updateProducts();
+    await updateProducts();
+    await fetchProductViewCounts();
     await fetchCommissionRate();
   });
 

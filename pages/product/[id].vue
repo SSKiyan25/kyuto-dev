@@ -37,7 +37,7 @@
             <Icon name="lucide:credit-card" class="" />
             <span class="pr-4"> Sales: {{ product.totalSales }}</span>
             <Icon name="lucide:eye" />
-            <span>Views: 0</span>
+            <span>Views: {{ productViewCounts[product.id] || 0 }}</span>
           </div>
           <p
             v-if="product.description"
@@ -258,7 +258,7 @@
       <span class="text-md font-medium sm:text-lg">More Products from this Organization</span>
       <div class="mt-6 flex flex-row flex-wrap gap-2 sm:gap-6 sm:px-9">
         <div v-for="(orgProduct, i) in orgProducts" :key="i">
-          <NuxtLink :to="`/product/${orgProduct.id}`">
+          <NuxtLink :to="`/product/${orgProduct.id}`" @click="handleProductClick(orgProduct.id)">
             <div
               class="flex max-h-[40rem] max-w-[24rem] flex-col rounded-sm border p-2 hover:shadow-lg"
             >
@@ -281,7 +281,7 @@
                 <div
                   class="flex w-full flex-row justify-between pt-4 text-[10px] opacity-50 sm:text-[12px]"
                 >
-                  <span>0 views</span>
+                  <span>{{ productViewCounts[orgProduct.id] || 0 }} views</span>
                   <span>{{ orgProduct.totalSales }} sales</span>
                 </div>
               </div>
@@ -305,6 +305,7 @@
 </template>
 
 <script lang="ts" setup>
+  import { useAddProductViews } from "~/composables/useAddProductViews";
   import { useAddToCart } from "~/composables/useAddToCart";
   import { useCommissionRate } from "~/composables/useCommissionRate";
   import { useOrganizationProducts } from "~/composables/useOrganizationProducts";
@@ -338,11 +339,17 @@
 
   const { commissionRate, fetchCommissionRate } = useCommissionRate();
   const { calculatePriceWithCommission } = usePriceCalculator(commissionRate);
+  const { addView, countViews } = useAddProductViews();
 
   const updateMessage = () => {
     const dots = ".".repeat((messageIndex % 3) + 1);
     currentMessage.value = `Adding to your cart${dots}`;
     messageIndex = (messageIndex + 1) % 3;
+  };
+
+  const handleProductClick = (productID: string) => {
+    // console.log("Product clicked:", productID);
+    addView(productID);
   };
 
   const route = useRoute();
@@ -515,6 +522,36 @@
 
   // Organization Products
   const orgProducts = ref<EnhancedProduct[]>([]);
+  const productViewCounts = reactive<Record<string, number>>({});
+  const fetchProductViewCounts = async () => {
+    // console.log("Fetching product view counts...");
+
+    // Fetch view count for the current product
+    if (product.value?.id) {
+      try {
+        console.log(`Fetching view count for Current Product ID: ${product.value.id}`);
+        const viewCount = await countViews(product.value.id);
+        productViewCounts[product.value.id] = viewCount;
+        console.log(`Current Product ID: ${product.value.id}, View Count: ${viewCount}`);
+      } catch (error) {
+        console.error(
+          `Error fetching view count for Current Product ID: ${product.value.id}`,
+          error
+        );
+      }
+    }
+
+    if (!orgProducts.value || orgProducts.value.length === 0) {
+      console.log("No products found to fetch view counts.");
+      return;
+    }
+
+    for (const product of orgProducts.value) {
+      const viewCount = await countViews(product.id);
+      productViewCounts[product.id] = viewCount;
+      // console.log(`Product ID: ${product.id}, View Count: ${viewCount}`);
+    }
+  };
   watch(
     product,
     async () => {
@@ -530,6 +567,7 @@
             id: p.id,
             price: p.price,
           }));
+          await fetchProductViewCounts();
         } catch (error) {
           console.error("Error fetching organization products:", error);
         }
@@ -550,7 +588,7 @@
     }
   });
 
-  onMounted(() => {
-    fetchCommissionRate();
+  onMounted(async () => {
+    await fetchCommissionRate();
   });
 </script>

@@ -28,7 +28,10 @@
           class="flex flex-col items-center space-x-4"
           v-if="products.length > 0"
         >
-          <NuxtLink :to="`/product/${product.id}`">
+          <NuxtLink
+            :to="`/product/${product.id}`"
+            @click="handleProductClick(product.id as string)"
+          >
             <div
               class="flex max-h-[32rem] max-w-[16rem] flex-col rounded-sm border p-2 hover:shadow-lg sm:max-h-[40rem] sm:max-w-[24rem]"
             >
@@ -51,7 +54,7 @@
                 <div
                   class="flex w-full flex-row justify-between pt-4 text-[10px] opacity-50 sm:text-[12px]"
                 >
-                  <span>0 views</span>
+                  <span>{{ productViewCounts[product.id as string] || 0 }} views</span>
                   <span>{{ product.totalSales }} sales</span>
                 </div>
               </div>
@@ -125,6 +128,7 @@
 </template>
 
 <script lang="ts" setup>
+  import { useAddProductViews } from "~/composables/useAddProductViews";
   import { Carousel, Navigation, Slide } from "vue3-carousel";
   import type { Organization } from "~/types/models/Organization";
   import type { ProductWithId, Variation } from "~/types/models/Product";
@@ -135,13 +139,20 @@
   const { getProductsByOrganization } = useProduct();
   const { commissionRate, fetchCommissionRate } = useCommissionRate();
   const { calculatePriceWithCommission } = usePriceCalculator(commissionRate);
+  const { addView, countViews } = useAddProductViews();
 
   const route = useRoute();
   const storeId = route.params.id as string;
   const store = ref<Partial<Organization> | null>(null);
   const products = ref<Partial<ProductWithId & { variations: Partial<Variation>[] }>[]>([]);
+  const productViewCounts = reactive<Record<string, number>>({});
 
   const currentSlide = ref(0);
+
+  const handleProductClick = (productID: string) => {
+    // console.log("Product clicked:", productID);
+    addView(productID);
+  };
 
   // Fetch organization data
   const { data: organizationData } = useAsyncData(`organization-${storeId}`, async () => {
@@ -163,6 +174,21 @@
     }
   });
 
+  const fetchProductViewCounts = async () => {
+    // console.log("Fetching product view counts...");
+
+    if (!products.value || products.value.length === 0) {
+      console.log("No products found to fetch view counts.");
+      return;
+    }
+
+    for (const product of products.value) {
+      const viewCount = await countViews(product.id as string);
+      productViewCounts[product.id as string] = viewCount;
+      // console.log(`Product ID: ${product.id}, View Count: ${viewCount}`);
+    }
+  };
+
   watch([organizationData, productData], () => {
     if (organizationData.value) {
       store.value = organizationData.value;
@@ -174,8 +200,9 @@
     }
   });
 
-  onMounted(() => {
-    fetchCommissionRate();
+  onMounted(async () => {
+    await fetchCommissionRate();
+    await fetchProductViewCounts();
   });
 
   const itemsToShow = computed(() => {
