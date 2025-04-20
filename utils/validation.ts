@@ -7,7 +7,6 @@ export const LoginSchema = object({
   password: string()
     .required()
     .label("Password")
-    .min(6)
     .max(20)
     .matches(disallowedCharactersRegex, "Password contains invalid characters"),
 });

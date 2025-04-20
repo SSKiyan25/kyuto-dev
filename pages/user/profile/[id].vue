@@ -156,7 +156,7 @@
             >College</span
           >
           <span class="text-[12px] font-semibold sm:text-sm">{{
-            userData?.college || "None"
+            userData?.faculty || "None"
           }}</span>
         </div>
       </div>

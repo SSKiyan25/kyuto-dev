@@ -1,6 +1,7 @@
 <script setup lang="ts">
   import { signInWithGoogle } from "~/composables/auth/useGoogle";
-  import { signInWithEmailAndPassword } from "firebase/auth";
+  import { signInWithEmailAndPassword, signOut } from "firebase/auth";
+  import { doc, getDoc, updateDoc } from "firebase/firestore";
 
   definePageMeta({
     layout: "no-nav",
@@ -12,6 +13,32 @@
     validationSchema: toTypedSchema(LoginSchema),
   });
 
+  const isConsentModalOpen = ref(false);
+  const db = useFirestore();
+
+  const checkConsentStatus = async () => {
+    if (auth?.currentUser) {
+      const userDocRef = doc(db, "accounts", auth.currentUser.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        if (userData.consentedToPrivacyAndTerms === undefined) {
+          // If the field does not exist, create it with a default value of false
+          await updateDoc(userDocRef, { consentedToPrivacyAndTerms: false });
+          isConsentModalOpen.value = true; // Open modal since consent is not given
+        } else if (userData.consentedToPrivacyAndTerms === true) {
+          // If consent is already given, navigate to the homepage
+          return navigateTo("/", { replace: true });
+        } else {
+          isConsentModalOpen.value = true; // Open modal if consent is not given
+        }
+      } else {
+        console.error("User document does not exist in Firestore.");
+      }
+    }
+  };
+
   const submit = handleSubmit(async (values) => {
     console.log("Form successfully submitted with values: ", values);
     const loading = useSonner.loading("Loading...", {
@@ -21,18 +48,57 @@
       await signInWithEmailAndPassword(auth!, values.email, values.password);
       useSonner.success("Welcome back!", { id: loading });
 
-      console.log("User: ", auth!.currentUser);
+      // console.log("User: ", auth!.currentUser);
+      await checkConsentStatus();
       //await updateProfile(user, { displayEmail: values.email });
-      return navigateTo("/", { replace: true });
     } catch (error: any) {
       console.error(error.message);
       useSonner.error(error.message, { id: loading });
     }
   });
+
+  onMounted(() => {
+    checkConsentStatus();
+  });
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await signInWithGoogle(auth);
+
+      // Check consent status after successful Google login
+      await checkConsentStatus();
+
+      // If consent is already given, navigate to the home page
+      if (!isConsentModalOpen.value) {
+        return navigateTo("/", { replace: true });
+      }
+    } catch (error: any) {
+      console.error("Google Sign-In Error:", error.message);
+      useSonner.error("Failed to sign in with Google.");
+    }
+  };
+
+  const handleConsent = async () => {
+    if (auth?.currentUser) {
+      const userDocRef = doc(db, "accounts", auth.currentUser.uid);
+      await updateDoc(userDocRef, { consentedToPrivacyAndTerms: true });
+      isConsentModalOpen.value = false; // Close modal
+      return navigateTo("/", { replace: true });
+    }
+  };
+
+  const handleCancel = async () => {
+    if (auth?.currentUser) {
+      await signOut(auth); // Sign out the user
+      isConsentModalOpen.value = false; // Close modal
+    }
+  };
 </script>
 
 <template>
   <div class="h-screen w-full">
+    <!-- <LegalContent /> -->
+    <LegalConsentModal v-if="isConsentModalOpen" @accept="handleConsent" @cancel="handleCancel" />
     <div
       class="container relative h-[800px] flex-col items-center justify-center sm:grid lg:max-w-none lg:grid-cols-2 lg:px-0"
     >
@@ -90,7 +156,7 @@
               <div class="pt-4">
                 <UiDivider label="or continue with" class="pb-4" />
                 <UiButton
-                  @click="signInWithGoogle(auth)"
+                  @click="handleGoogleSignIn"
                   type="button"
                   class="w-full"
                   variant="outline"
@@ -103,14 +169,13 @@
           <!---->
           <p class="px-8 text-center text-sm text-muted-foreground">
             By clicking continue, you agree to our
-            <a href="/terms" class="underline underline-offset-4 hover:text-primary">
+            <NuxtLink to="/terms" class="underline underline-offset-4 hover:text-primary">
               Terms of Service
-            </a>
+            </NuxtLink>
             and
-            <a href="/privacy" class="underline underline-offset-4 hover:text-primary">
+            <NuxtLink to="/privacy" class="underline underline-offset-4 hover:text-primary">
               Privacy Policy
-            </a>
-            .
+            </NuxtLink>
           </p>
         </div>
         <div class="mt-2 flex items-end justify-end p-4 text-sm opacity-50">

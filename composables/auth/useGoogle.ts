@@ -45,8 +45,8 @@ export const signInWithGoogle = async (auth: any) => {
     });
 
     // Redirect to the dashboard
-    const router = useRouter();
-    return await router.replace({ path: "/" });
+    // const router = useRouter();
+    // return await router.replace({ path: "/" });
   } catch (error: any) {
     // Show error
     console.log(error.message);

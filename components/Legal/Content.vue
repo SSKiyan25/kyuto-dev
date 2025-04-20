@@ -1,0 +1,5 @@
+<template>
+  <div class="prose dark:prose-invert mx-auto max-w-4xl">
+    <slot />
+  </div>
+</template>

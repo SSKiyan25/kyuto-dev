@@ -9,7 +9,7 @@ export interface Account {
   studentID: string;
   avatarURL: string;
   phoneNumber: string;
-  college: string;
+  faculty: string;
   course: string;
   hasOrganization: boolean;
   organization?: string;
@@ -18,5 +18,7 @@ export interface Account {
   dateCreated: Date;
   lastModified: Date;
   isArchived: boolean;
+  isVerified: boolean;
+  consentedToPrivacyAndTerms: boolean;
   disabled: boolean;
 }
