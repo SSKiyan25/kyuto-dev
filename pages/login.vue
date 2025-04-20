@@ -150,7 +150,7 @@
                   label="Password"
                   placeholder="********"
                 />
-                <span class="-pt-8 text-[12px] underline opacity-50">Forgot password?</span>
+                <ForgotPassword :auth="auth!" />
                 <UiButton type="submit" class="w-full"> Sign In </UiButton>
               </fieldset>
               <div class="pt-4">
