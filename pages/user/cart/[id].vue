@@ -263,7 +263,7 @@
                     <UiDivider class="my-2" />
                     <!-- Submit Order Button -->
                     <div class="flex flex-row items-center justify-between">
-                      <span class="text-lg font-semibold">Total: ₱{{ totalPrice }}</span>
+                      <span class="text-lg font-semibold">Total: ₱{{ totalPrice.toFixed(2) }}</span>
                       <UiButton :disabled="!canSubmitOrder" @click="handleCheckout()"
                         >Submit Order</UiButton
                       >
@@ -300,6 +300,7 @@
   import { useCommissionRate } from "~/composables/useCommissionRate";
   import { usePriceCalculator } from "~/composables/usePriceCalculator";
   import { useCheckoutCart } from "~/composables/user/useCheckoutCart";
+  import { useEmailOrder } from "~/composables/user/useEmailOrder";
   import { useFetchUserCart } from "~/composables/user/useFetchUserCart";
   import { collection, doc, getDoc } from "firebase/firestore";
   import type { Cart } from "~/types/models/Cart";
@@ -338,6 +339,7 @@
     loading: removeLoading,
     generateUniqueRefNumber,
   } = useCheckoutCart();
+  const { sendOrderEmail } = useEmailOrder();
 
   const openRemoveDialog = (cartItem: Cart & { id: string }) => {
     cartItemToRemove.value = cartItem;
@@ -487,17 +489,17 @@
   const handleCheckout = async () => {
     orderLoading.value = true;
     try {
-      console.log("Proceeding to checkout...");
-      console.log("User ID:", userID.value);
-      console.log("Total price:", totalPrice.value);
-      console.log("Selected payment method:", selectedPaymentMethod.value);
-      console.log("Selected items:", selectedItems.value);
+      // console.log("Proceeding to checkout...");
+      // console.log("User ID:", userID.value);
+      // console.log("Total price:", totalPrice.value);
+      // console.log("Selected payment method:", selectedPaymentMethod.value);
+      // console.log("Selected items:", selectedItems.value);
 
       const organizationID = products.value[selectedItems.value[0].productID]?.organizationID;
       const organizationName = products.value[selectedItems.value[0].productID]?.organization;
 
-      console.log("Organization ID:", organizationID);
-      console.log("Organization Name:", organizationName);
+      // console.log("Organization ID:", organizationID);
+      // console.log("Organization Name:", organizationName);
 
       if (!commissionRate.value) {
         throw new Error("Commission rate not found");
@@ -505,10 +507,10 @@
       const commissionRateID = commissionRate.value.id;
       const commissionRateValue = commissionRate.value.rate;
 
-      console.log("Commission Rate ID:", commissionRateID);
-      console.log("Commission Rate Value:", commissionRateValue);
+      // console.log("Commission Rate ID:", commissionRateID);
+      // console.log("Commission Rate Value:", commissionRateValue);
 
-      await createOrder(
+      const uniqRefNumber = await createOrder(
         userID.value as string,
         organizationID as string,
         organizationName as string,
@@ -518,7 +520,44 @@
         commissionRateID,
         commissionRateValue
       );
-      await testUniqueRefNumber();
+
+      const orderDetails = {
+        totalPrice: totalPrice.value,
+        items: await Promise.all(
+          selectedItems.value.map(async (item) => {
+            // Fetch product or variation data to get the name
+            const productDocRef = doc(db, `products/${item.productID}`);
+            const productDoc = await getDoc(productDocRef);
+            const productData = productDoc.data() as Product;
+
+            const variationDocRef = doc(
+              db,
+              `products/${item.productID}/variations/${item.variationID}`
+            );
+            const variationDoc = await getDoc(variationDocRef);
+            const variationData = variationDoc.data() as Variation;
+            console.log("Fetching order details");
+
+            const basePrice = variationData.price || 0; // Get the price from the variation data
+            const priceWithCommission = calculatePriceWithCommission(basePrice);
+
+            return {
+              name: variationData.value || productData.name || "Unknown Item",
+              quantity: item.quantity,
+              priceWithCommission: priceWithCommission,
+            };
+          })
+        ),
+      };
+
+      await sendOrderEmail(
+        uniqRefNumber,
+        userID.value as string,
+        organizationID as string,
+        orderDetails
+      );
+
+      // await testUniqueRefNumber();
 
       toast.toast({
         title: "Order submitted",

@@ -16,6 +16,7 @@ export default defineNuxtConfig({
     "pinia-plugin-persistedstate/nuxt",
     "vue3-carousel-nuxt",
     "v-wave/nuxt",
+    "nuxt-nodemailer",
   ],
 
   tailwindcss: { exposeConfig: true },
@@ -50,6 +51,15 @@ export default defineNuxtConfig({
 
   pinia: {
     storesDirs: ["./stores/**", "./custom-folder/stores/**"],
+  },
+
+  nodemailer: {
+    service: "gmail",
+    from: "VSU E-Commerce <verchcsofficial@gmail.com>",
+    auth: {
+      user: process.env.NUXT_SMTP_USER, // verchcsofficial@gmail.com
+      pass: process.env.NUXT_SMTP_PASS, // Your app password
+    },
   },
 
   build: {
