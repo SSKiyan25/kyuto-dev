@@ -1,7 +1,7 @@
 export interface Order {
   buyerID: string;
   organizationID: string;
-  organizationName: string;
+  // organizationName: string;
   orderStatus: string;
   uniqRefNumber: string;
   paymentMethod: string;
@@ -37,3 +37,8 @@ export interface OrderItem {
   priceWithCommission: number;
   commissionRateID: string;
 }
+
+export type OrderWithOrgName = Partial<Order> & {
+  id: string;
+  organizationName: string;
+};

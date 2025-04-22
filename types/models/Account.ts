@@ -13,7 +13,7 @@ export interface Account {
   course: string;
   hasOrganization: boolean;
   organization?: string;
-  organizationID: string;
+  organizationId: string;
   organizationRole: string;
   dateCreated: Date;
   lastModified: Date;

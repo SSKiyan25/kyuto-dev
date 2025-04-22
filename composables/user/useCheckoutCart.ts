@@ -40,7 +40,6 @@ export const useCheckoutCart = () => {
   const createOrder = async (
     userID: string,
     organizationID: string,
-    organizationName: string,
     totalPrice: number,
     paymentMethod: string,
     selectedItems: (Cart & { id: string })[],
@@ -73,7 +72,6 @@ export const useCheckoutCart = () => {
       const orderDocRef = await addDoc(collection(db, "orders"), {
         buyerID: userID,
         organizationID: organizationID,
-        organizationName: organizationName,
         orderStatus: "pending",
         uniqRefNumber: uniqRefNumber,
         paymentMethod: paymentMethod,

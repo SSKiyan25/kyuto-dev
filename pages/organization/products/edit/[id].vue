@@ -1,7 +1,9 @@
 <script lang="ts" setup>
   import { useEditProduct } from "~/composables/organization/product/useEditProduct";
+  import { useOrganization } from "~/composables/useOrganizationValues";
   import { collection, doc } from "firebase/firestore";
   import type { Crumbs } from "~/components/Ui/Breadcrumbs.vue";
+  import type { OrganizationWithId } from "~/composables/useOrganizationValues";
   import type { Product } from "~/types/models/Product";
 
   definePageMeta({
@@ -38,6 +40,8 @@
   const { data: product, pending } = useDocument<Partial<Product>>(productRef);
 
   const orgId = product.value?.organizationID;
+  const { getOrganizationById } = useOrganization();
+  const organization = ref<OrganizationWithId | null>(null);
 
   // Constants and Meta
   const crumbs: Crumbs[] = [
@@ -214,7 +218,7 @@
       updatedData.canPreOrder = formData.canPreOrder;
 
     if (productID.value && Object.keys(updatedData).length > 0) {
-      await updateProduct(productID.value, updatedData);
+      await updateProduct(productID.value, updatedData, orgId as string);
     }
 
     loading.value = false;
@@ -226,6 +230,18 @@
     });
     router.push(`/organization/products/${orgId}`);
   };
+
+  onMounted(() => {
+    if (orgId) {
+      getOrganizationById(orgId)
+        .then((org) => {
+          organization.value = org;
+        })
+        .catch((error) => {
+          console.error("Error fetching organization data:", error);
+        });
+    }
+  });
 </script>
 
 <template>
@@ -297,11 +313,17 @@
                           :key="stat"
                           :value="stat"
                           :text="stat"
+                          :disabled="stat === 'Publish' && !organization?.isPublic"
                         />
                       </UiSelectGroup>
                     </UiSelectContent>
                   </UiSelect>
                 </div>
+                <!-- Reason for disabling Publish -->
+                <p v-if="!organization?.isPublic" class="mt-2 text-sm text-muted-foreground">
+                  The "Publish" option is disabled because the organization is currently hidden.
+                  Make the organization public to enable publishing.
+                </p>
               </div>
               <div class="flex flex-col gap-2 pt-4">
                 <span class="font-semibold">Product Description: </span>
@@ -371,14 +393,12 @@
                   <UiDrawerContent>
                     <div class="mx-auto w-full max-w-screen-md rounded-t-lg p-4 pb-10">
                       <UiDrawerTitle class="mb-1.5"> Current Featured Photo</UiDrawerTitle>
-                      <UiDrawerDescription>
-                        You can change the featured photo after you click the checkbox.
-                      </UiDrawerDescription>
+                      <UiDrawerDescription> </UiDrawerDescription>
                       <div class="min-h-[400px] pt-4">
                         <img
                           :src="formData.featuredPhoto"
                           alt="Product Image"
-                          class="h-auto w-full"
+                          class="h-1/2 w-2/3"
                         />
                       </div>
                       <UiDrawerClose class="absolute right-4 top-3 h-7 w-7" asChild>

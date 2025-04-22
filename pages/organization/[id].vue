@@ -1,15 +1,14 @@
 <script lang="ts" setup>
-  import { fetchOrganization } from "~/composables/organization/useOrganization";
+  import { useOrganization } from "~/composables/useOrganizationValues";
   import { doc, updateDoc } from "firebase/firestore";
-  import type { OrganizationAccount } from "~/composables/organization/useOrganization";
-  import type { Organization } from "~/types/models/Organization";
+  import type { OrganizationWithId } from "~/composables/useOrganizationValues";
 
   definePageMeta({
     layout: "organization",
     middleware: ["auth"],
   });
 
-  interface ExtendedOrganization extends Partial<Organization> {
+  interface ExtendedOrganization extends Partial<OrganizationWithId> {
     id: string;
     address?: string;
     addressImagesURL?: { url: string; path: string }[];
@@ -22,6 +21,8 @@
     adminAccounts?: string[];
     managerAccounts?: string[];
     staffAccounts?: string[];
+    isPublic?: boolean;
+    isSetupComplete?: boolean;
   }
 
   const organization = ref<ExtendedOrganization | null>(null);
@@ -30,35 +31,18 @@
   const editCoverDialog = ref(false);
   const editGalleryDialog = ref(false);
   const editLogoDialog = ref(false);
+  const editInfo = ref(false);
   const loading = ref(true);
   const loadingEdit = ref(false);
   const db = useFirestore();
-
-  const { handleSubmit, isSubmitting, setValues } = useForm({
-    validationSchema: toTypedSchema(OrganizationProfileSchema),
-    initialValues: {
-      name: organization.value?.name || "",
-      contactEmail: organization.value?.contactEmail || "",
-      phoneNumber: organization.value?.phoneNumber || "",
-      description: organization.value?.description || "",
-      address: organization.value?.address || "",
-    },
-  });
-
-  const setFormValues = (orgData: Partial<Organization>) => {
-    setValues({
-      name: orgData.name || "",
-      contactEmail: orgData.contactEmail || "",
-      phoneNumber: orgData.phoneNumber || "",
-      description: orgData.description || "",
-    });
-  };
+  const route = useRoute();
+  const orgIDparams = route.params.id as string;
+  const { getOrganizationById } = useOrganization();
 
   onMounted(async () => {
     try {
-      const orgData = await fetchOrganization();
+      const orgData = await getOrganizationById(orgIDparams);
       organization.value = orgData;
-      setFormValues(orgData);
     } catch (error) {
       console.error("Error fetching organization data:", error);
     } finally {
@@ -66,38 +50,10 @@
     }
   });
 
-  const onSubmit = handleSubmit(async (values) => {
-    loadingEdit.value = true;
-    try {
-      if (organization.value?.id) {
-        const orgRef = doc(db, "organizations", organization.value.id);
-        await updateDoc(orgRef, {
-          ...values,
-          lastModified: new Date(),
-        });
-        console.log("Organization updated successfully");
-        // Update the organization state with the new values
-        organization.value = { ...organization.value, ...values, lastModified: new Date() };
-      } else {
-        console.error("Organization ID is missing");
-      }
-    } catch (error) {
-      console.error("Error updating organization:", error);
-    } finally {
-      loadingEdit.value = false;
-      editDialog.value = false;
-    }
-  });
-
-  const removeImage = (index: number) => {
-    console.log("Image removed at index:", index);
-  };
-
   const refreshOrganization = async () => {
     try {
-      const orgData = await fetchOrganization();
+      const orgData = await getOrganizationById(orgIDparams);
       organization.value = orgData;
-      setFormValues(orgData);
     } catch (error) {
       console.error("Error refreshing organization data:", error);
     }
@@ -106,10 +62,27 @@
   onMounted(async () => {
     await refreshOrganization();
   });
+
+  const toggleVisibility = async () => {
+    if (!organization.value || !organization.value.id) return;
+
+    try {
+      const orgRef = doc(db, "organizations", organization.value.id);
+      const newVisibility = !organization.value.isPublic;
+
+      await updateDoc(orgRef, { isPublic: newVisibility });
+      organization.value.isPublic = newVisibility;
+
+      console.log(`Organization visibility updated to: ${newVisibility ? "Public" : "Hidden"}`);
+    } catch (error) {
+      console.error("Error updating organization visibility:", error);
+    }
+  };
 </script>
 
 <template>
   <div class="flex w-full flex-col px-12 py-8">
+    <!-- Organization Logo and Visibility-->
     <div class="flex flex-row items-center justify-between space-x-2 pt-4">
       <div class="flex flex-row items-center space-x-4">
         <div class="group relative h-32 w-32">
@@ -146,6 +119,40 @@
         </div>
       </div>
     </div>
+    <!-- Visibility Section -->
+    <div class="flex flex-row items-center justify-between pt-8">
+      <div class="flex flex-col space-y-1">
+        <p class="font-semibold">
+          Visibility
+          <span class="font-bold">({{ organization?.isPublic ? "Public" : "Hidden" }})</span>
+        </p>
+        <p class="text-[12px] text-muted-foreground">
+          {{
+            organization?.isPublic
+              ? "This organization is public and visible on the Stores Page."
+              : "This organization is hidden and not visible on the Stores Page."
+          }}
+        </p>
+        <p v-if="organization?.isPublic" class="text-[12px] text-primary">
+          <NuxtLink to="/stores" class="underline">View on Stores Page</NuxtLink>
+        </p>
+      </div>
+      <UiButton
+        variant="outline"
+        size="sm"
+        :class="organization?.isPublic ? 'bg-destructive text-white' : 'bg-primary text-white'"
+        @click="toggleVisibility"
+      >
+        <Icon
+          :name="organization?.isPublic ? 'lucide:eye-off' : 'lucide:eye'"
+          class="mr-2 size-4"
+        />
+        <span class="text-[12px]">
+          {{ organization?.isPublic ? "Hide Organization" : "Change To Public" }}
+        </span>
+      </UiButton>
+    </div>
+    <!-- Organization Information -->
     <div class="flex flex-row items-center justify-between pt-8">
       <div class="flex flex-col space-y-1">
         <span class="font-semibold">Organization Profile</span>
@@ -153,61 +160,12 @@
           Update your organization photo, details, and add accounts to manage your store.
         </p>
       </div>
-      <div>
-        <UiDialog v-model:open="editDialog">
-          <UiDialogTrigger as-child>
-            <UiButton variant="outline">
-              <span class="text-[12px]">Edit</span>
-              <Icon name="lucide:pencil" class="size-3" />
-            </UiButton>
-          </UiDialogTrigger>
-          <UiDialogContent class="sm:h-w-[700px] overflow-y-auto sm:max-w-[725px]">
-            <div v-if="loadingEdit">
-              <div
-                class="absolute z-50 flex h-full w-full flex-col items-center justify-center bg-secondary-foreground/10"
-              >
-                <Icon name="lucide:loader-circle" class="h-24 w-24 animate-spin text-primary" />
-                <p>Updating Changes...</p>
-              </div>
-            </div>
-            <UiDialogTitle>Edit Organization Profile</UiDialogTitle>
-            <UiDialogDescription>
-              Make changes to your organization profile here. Click save when you're done.
-            </UiDialogDescription>
-
-            <form @submit="onSubmit">
-              <fieldset :disabled="isSubmitting">
-                <div class="flex flex-col space-y-4">
-                  <UiVeeInput label="Name" name="name" :placeholder="organization?.name" disabled />
-                  <UiVeeInput
-                    label="Contact Email"
-                    type="email"
-                    name="contactEmail"
-                    :placeholder="organization?.contactEmail || ''"
-                  />
-                  <UiVeeInput
-                    label="Phone Number"
-                    name="phoneNumber"
-                    :placeholder="organization?.phoneNumber || ''"
-                  />
-                  <UiVeeTextarea
-                    label="Description"
-                    name="description"
-                    :placeholder="organization?.description || ''"
-                  />
-                </div>
-              </fieldset>
-              <UiDialogFooter class="">
-                <div class="mt-4 space-x-2">
-                  <UiButton variant="outline" @click="editDialog = false">Cancel</UiButton>
-                  <UiButton type="submit" :disabled="isSubmitting">Save</UiButton>
-                </div>
-              </UiDialogFooter>
-            </form>
-          </UiDialogContent>
-        </UiDialog>
-      </div>
+      <UiButton variant="outline" size="sm" @click="editInfo = true">
+        <span class="text-[12px]">Edit</span>
+        <Icon name="lucide:pencil" class="size-3" />
+      </UiButton>
     </div>
+
     <UiDivider class="my-2" />
     <div class="flex w-full flex-row py-4">
       <div class="flex w-full flex-col space-y-1">
@@ -241,7 +199,19 @@
         </div>
       </div>
     </div>
+    <OrganizationEditInfo
+      v-model="editInfo"
+      :organization-id="organization?.id || ''"
+      :current-values="{
+        name: organization?.name || '',
+        contactEmail: organization?.contactEmail || '',
+        phoneNumber: organization?.phoneNumber || '',
+        description: organization?.description || '',
+      }"
+      @success="refreshOrganization"
+    />
     <UiDivider class="my-2" />
+    <!-- Organization Address -->
     <div class="flex w-full flex-row py-4">
       <div class="flex w-full flex-col space-y-1">
         <div class="flex flex-row justify-between">
@@ -294,42 +264,23 @@
           @success="refreshOrganization"
         />
         <!-- Google Maps, will be added in future-->
-        <!-- <div class="flex flex-col px-8 pt-4">
-          <span>Organization Address Link</span>
-          <span>
-            <a href="https://www.google.com/maps" target="_blank" class="text-blue-500 underline">
-              View on Google Maps
-            </a>
-          </span>
-        </div>
-        <div class="flex flex-col px-8 pt-4">
-          <iframe
-            width="600"
-            height="450"
-            style="border: 0"
-            loading="lazy"
-            allowfullscreen
-            referrerpolicy="no-referrer-when-downgrade"
-            src="https://www.google.com/maps/embed/v1/place?key=YOUR_API_KEY&q=Organization+Address"
-          >
-          </iframe>
-        </div> -->
         <div></div>
       </div>
     </div>
     <UiDivider class="my-2" />
 
     <!-- Organization Accounts -->
-    <div class="flex flex-col pt-8">
+    <div class="flex flex-col pt-8 opacity-50">
       <div class="flex flex-row items-center justify-between">
         <span class="font-semibold">Organization Accounts</span>
-        <UiButton>
+        <UiButton disabled class="hover:cursor-not-allowed">
           <Icon name="lucide:plus" class="size-4" />
           <span class="text-[12px]">Add Account</span>
         </UiButton>
       </div>
       <UiDivider class="my-2" />
-      <div>
+      <p class="text-sm">Will be added in future.</p>
+      <!-- <div>
         <UiTable>
           <UiTableCaption>List of Accounts</UiTableCaption>
           <UiTableHeader>
@@ -340,21 +291,19 @@
             </UiTableRow>
           </UiTableHeader>
           <UiTableBody>
-            <!-- Admin Accounts -->
+            
             <UiTableRow v-for="admin in organization?.adminAccounts || []" :key="admin">
               <UiTableCell>{{ admin }}</UiTableCell>
               <UiTableCell>N/A</UiTableCell>
               <UiTableCell>Admin</UiTableCell>
             </UiTableRow>
 
-            <!-- Manager Accounts -->
             <UiTableRow v-for="manager in organization?.managerAccounts || []" :key="manager">
               <UiTableCell>{{ manager }}</UiTableCell>
               <UiTableCell>N/A</UiTableCell>
               <UiTableCell>Manager</UiTableCell>
             </UiTableRow>
 
-            <!-- Staff Accounts -->
             <UiTableRow v-for="staff in organization?.staffAccounts || []" :key="staff">
               <UiTableCell>{{ staff }}</UiTableCell>
               <UiTableCell>N/A</UiTableCell>
@@ -362,7 +311,7 @@
             </UiTableRow>
           </UiTableBody>
         </UiTable>
-      </div>
+      </div> -->
     </div>
     <UiDivider class="my-2" />
 

@@ -1,7 +1,7 @@
 export interface Product {
   accountID: string;
   organizationID: string;
-  organization: string;
+  // organization: string;
   name: string;
   category: string;
   status: string;
@@ -53,8 +53,9 @@ export interface ProductViews {
 }
 
 export type ProductWithId = Partial<Product> & {
-  id: string; // Document ID from Firestore
-  price: number; // Price of the product
+  id: string;
+  price: number;
+  organization: string;
 };
 
 export interface ProductSearchResult {

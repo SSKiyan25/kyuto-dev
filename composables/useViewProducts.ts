@@ -1,14 +1,9 @@
 import { collection, getDocs, limit, orderBy, query, startAfter, where } from "firebase/firestore";
-import type { Product, ProductWithId, Variation } from "~/types/models/Product";
-
-interface EnhancedProduct extends Product {
-  id: string;
-  price: number;
-}
+import type { ProductWithId, Variation } from "~/types/models/Product";
 
 export const useViewProducts = () => {
   const db = useFirestore();
-  const products = ref<EnhancedProduct[]>([]);
+  const products = ref<ProductWithId[]>([]);
   const loading = ref(false);
 
   const loadImage = (url: string): Promise<void> => {
@@ -26,7 +21,7 @@ export const useViewProducts = () => {
     sortPrice: string = "none",
     limitCount: number = 10,
     page: number = 1
-  ): Promise<{ products: EnhancedProduct[]; totalProducts: number }> => {
+  ): Promise<{ products: ProductWithId[]; totalProducts: number }> => {
     loading.value = true;
     try {
       let productsQuery = query(
@@ -65,7 +60,7 @@ export const useViewProducts = () => {
 
       const productsSnapshot = await getDocs(productsQuery);
       let fetchedProducts = productsSnapshot.docs.map((doc) => {
-        const product = doc.data() as Product;
+        const product = doc.data() as ProductWithId;
         return { ...product, id: doc.id };
       });
 
@@ -78,12 +73,12 @@ export const useViewProducts = () => {
 
           const minPrice = Math.min(...variations.map((v) => v.price));
 
-          await loadImage(product.featuredPhotoURL);
+          await loadImage(product.featuredPhotoURL ?? "");
 
           return {
             ...product,
             price: minPrice,
-          } as EnhancedProduct;
+          } as ProductWithId;
         })
       );
 

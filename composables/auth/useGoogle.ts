@@ -42,6 +42,7 @@ export const signInWithGoogle = async (auth: any) => {
 
     useSonner.success("Signed in successfully!", {
       id: loading,
+      description: "You are now signed in.",
     });
 
     // Redirect to the dashboard
@@ -52,6 +53,7 @@ export const signInWithGoogle = async (auth: any) => {
     console.log(error.message);
     useSonner.error(error.message, {
       id: loading,
+      description: "Please try again.",
     });
   }
 };

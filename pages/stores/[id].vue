@@ -80,21 +80,29 @@
       </div>
       <div class="my-4 flex justify-center px-8">
         <div class="h-auto rounded-sm bg-muted px-2 py-8">
-          <Carousel v-bind="config">
-            <Slide v-for="(photo, index) in store?.imagesURL" :key="index">
-              <img
-                :src="photo.url"
-                alt="Product Photo"
-                class="h-auto w-96 rounded-sm object-cover"
-              />
-            </Slide>
-            <template #addons>
-              <Navigation />
-            </template>
-          </Carousel>
+          <template v-if="store?.imagesURL && store.imagesURL.length > 0">
+            <Carousel v-bind="config">
+              <Slide v-for="(photo, index) in store?.imagesURL" :key="index">
+                <img
+                  :src="photo.url"
+                  alt="Product Photo"
+                  class="h-auto w-96 rounded-sm object-cover"
+                />
+              </Slide>
+              <template #addons>
+                <Navigation />
+              </template>
+            </Carousel>
+          </template>
+          <template v-else>
+            <div class="flex flex-col items-center justify-center">
+              <p class="text-sm text-muted-foreground">No images available yet for this store.</p>
+            </div>
+          </template>
         </div>
       </div>
     </div>
+
     <UiDivider class="my-6" />
     <div class="flex flex-col space-y-2">
       <div class="flex flex-col items-center justify-center space-y-2">
@@ -109,18 +117,27 @@
       </div>
       <div class="my-4 flex justify-center px-8">
         <div class="h-auto rounded-sm bg-muted px-2 py-8">
-          <Carousel v-bind="config">
-            <Slide v-for="(photo, index) in store?.addressImagesURL" :key="index">
-              <img
-                :src="photo.url"
-                alt="Product Photo"
-                class="h-auto w-96 rounded-sm object-cover"
-              />
-            </Slide>
-            <template #addons>
-              <Navigation />
-            </template>
-          </Carousel>
+          <template v-if="store?.addressImagesURL && store.addressImagesURL.length > 0">
+            <Carousel v-bind="config">
+              <Slide v-for="(photo, index) in store?.addressImagesURL" :key="index">
+                <img
+                  :src="photo.url"
+                  alt="Address Photo"
+                  class="h-auto w-96 rounded-sm object-cover"
+                />
+              </Slide>
+              <template #addons>
+                <Navigation />
+              </template>
+            </Carousel>
+          </template>
+          <template v-else>
+            <div class="flex flex-col items-center justify-center">
+              <p class="text-sm text-muted-foreground">
+                No address images yet available for this store.
+              </p>
+            </div>
+          </template>
         </div>
       </div>
     </div>

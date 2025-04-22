@@ -7,19 +7,7 @@
   } from "~/composables/organization/useProducts";
   import { useCommissionRate } from "~/composables/useCommissionRate";
   import { usePriceCalculator } from "~/composables/usePriceCalculator";
-  import { useFetchUser } from "~/composables/user/useFetchUser";
-  import {
-    collection,
-    deleteDoc,
-    doc,
-    getDocs,
-    query,
-    QueryDocumentSnapshot,
-    Timestamp,
-    where,
-  } from "firebase/firestore";
-  import { deleteObject, listAll, ref as storageRef } from "firebase/storage";
-  // ...
+  import { QueryDocumentSnapshot, Timestamp } from "firebase/firestore";
   import { RouterLink } from "vue-router";
   import type { ColumnDef, Table } from "@tanstack/vue-table";
   import type { Crumbs } from "~/components/Ui/Breadcrumbs.vue";
@@ -127,12 +115,6 @@
             ),
           ]),
           h(resolveComponent("UiDropdownMenuContent"), () => [
-            h(resolveComponent("UiDropdownMenuItem"), { title: "View" }, () => [
-              h(RouterLink, { to: `/organization/products/product/${productId}` }, () => [
-                h(resolveComponent("Icon"), { name: "lucide:view", class: "mr-2 h-4 w-4" }),
-                "View",
-              ]),
-            ]),
             h(
               resolveComponent("UiDropdownMenuItem"),
               {
@@ -170,13 +152,9 @@
       },
     },
   ];
-
-  const { userData } = await useFetchUser();
-
-  console.log("User Data: ", userData);
   // Get copy of the products
   const fetchAndSetProducts = async (reset = false) => {
-    if (userData.organizationID) {
+    if (orgIDLink) {
       const pageSize = table.value?.getState().pagination.pageSize || 10;
       const result = await fetchProducts(
         pageSize,
@@ -328,78 +306,6 @@
   };
 
   onMounted(fetchAndSetProducts);
-
-  // For Testing
-  const organizationID = userData.organizationID;
-  const storage = useFirebaseStorage();
-  const db = useFirestore();
-  const deleteLoading = ref(false);
-
-  const deleteAllProducts = async () => {
-    deleteLoading.value = true;
-    try {
-      // Fetch all products for the organization
-      const productsQuery = query(
-        collection(db, "products"),
-        where("organizationID", "==", organizationID)
-      );
-      const querySnapshot = await getDocs(productsQuery);
-
-      // Delete each product document and its sub-collections from Firestore
-      const deletePromises = querySnapshot.docs.map(async (productDoc) => {
-        const productID = productDoc.id;
-
-        // Fetch and delete all variations sub-collection documents
-        const variationsQuery = collection(db, "products", productID, "variations");
-        const variationsSnapshot = await getDocs(variationsQuery);
-        const deleteVariationsPromises = variationsSnapshot.docs.map(async (variationDoc) => {
-          const variationID = variationDoc.id;
-
-          // Fetch and delete all stocksLogs sub-collection documents
-          const stocksLogsQuery = collection(
-            db,
-            "products",
-            productID,
-            "variations",
-            variationID,
-            "stocksLogs"
-          );
-          const stocksLogsSnapshot = await getDocs(stocksLogsQuery);
-          const deleteStocksLogsPromises = stocksLogsSnapshot.docs.map(async (stocksLogDoc) => {
-            await deleteDoc(stocksLogDoc.ref);
-          });
-
-          // Wait for all stocksLogs delete operations to complete
-          await Promise.all(deleteStocksLogsPromises);
-
-          // Delete the variation document
-          await deleteDoc(variationDoc.ref);
-        });
-
-        // Wait for all variations delete operations to complete
-        await Promise.all(deleteVariationsPromises);
-
-        // Delete the product document
-        await deleteDoc(doc(db, "products", productID));
-      });
-
-      // Wait for all Firestore delete operations to complete
-      await Promise.all(deletePromises);
-
-      // Delete the entire products folder from Firebase Storage
-      const storagePath = `organizations/${organizationID}/products`;
-      const folderRef = storageRef(storage, storagePath);
-      const listResult = await listAll(folderRef);
-      const deleteFilePromises = listResult.items.map((fileRef) => deleteObject(fileRef));
-      await Promise.all(deleteFilePromises);
-
-      console.log("All products and associated files deleted successfully.");
-    } catch (error) {
-      console.error("Error deleting products:", error);
-    } finally {
-      deleteLoading.value = false;
-    }
-  };
 </script>
 
 <template>
@@ -596,18 +502,4 @@
       </form>
     </UiDialogContent>
   </UiDialog>
-  <!-- Delete Products-->
-  <!-- <div class="flex h-96 w-1/2 flex-col space-y-2 px-12">
-    <span>For testing purposes only</span>
-    <UiButton @click="deleteAllProducts" variant="destructive">Delete All Products</UiButton>
-  </div>
-  <div
-    v-if="deleteLoading"
-    class="fixed inset-0 z-50 flex min-h-screen w-full items-center justify-center bg-secondary/40 backdrop-blur"
-  >
-    <div class="flex flex-col items-center justify-center gap-4">
-      <Icon name="lucide:loader-circle" class="size-16 animate-spin text-primary" />
-      <span class="text-sm font-semibold text-secondary-foreground"> Deleting Products </span>
-    </div>
-  </div> -->
 </template>

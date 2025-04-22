@@ -172,6 +172,15 @@
     `,
     },
     {
+      title: "Has Organization",
+      data: "hasOrganization",
+      render: (data: boolean) => `
+      <span class="px-2 py-1 rounded ${data ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"} text-xs font-medium">
+        ${data ? "Yes" : "No"}
+      </span>
+    `,
+    },
+    {
       title: "Status",
       data: "isArchived",
       render: "#status",

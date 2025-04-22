@@ -1,19 +1,22 @@
+import { useOrganization } from "~/composables/useOrganizationValues";
 import { collection, getDocs, query, where } from "firebase/firestore";
-import type { Product, Variation } from "~/types/models/Product";
-
-export interface EnhancedProduct extends Product {
-  id: string;
-  price: number;
-}
+import type { Product, ProductWithId, Variation } from "~/types/models/Product";
 
 export const useOrganizationProducts = (organizationID: string, productID: string) => {
   const db = useFirestore();
-  const products = ref<EnhancedProduct[]>([]);
+  const products = ref<ProductWithId[]>([]);
+  const organizationName = ref<string | null>(null); // Add a ref for the organization name
   const loading = ref(false);
+  const { getOrganizationById } = useOrganization();
 
   const fetchOrganizationProducts = async () => {
     loading.value = true;
     try {
+      // Fetch organization details
+      const organization = await getOrganizationById(organizationID);
+      organizationName.value = organization?.name || "Unknown Organization";
+
+      // Fetch products for the organization
       const productsQuery = query(
         collection(db, "products"),
         where("organizationID", "==", organizationID),
@@ -45,7 +48,7 @@ export const useOrganizationProducts = (organizationID: string, productID: strin
             ...product,
             id: product.id,
             price: minPrice,
-          } as EnhancedProduct;
+          } as ProductWithId;
         })
       );
 
@@ -59,6 +62,7 @@ export const useOrganizationProducts = (organizationID: string, productID: strin
 
   return {
     products,
+    organizationName, // Return the organization name
     loading,
     fetchOrganizationProducts,
   };

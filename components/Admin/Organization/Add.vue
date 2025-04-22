@@ -139,6 +139,8 @@
         unpaidTransactionCount: 0,
         dateCreated: serverTimestamp(),
         lastModified: serverTimestamp(),
+        isPublic: false,
+        isSetupComplete: false,
         isVerified: false,
         isArchived: false,
         searchKeywords: generateSearchKeywords(values.name),
@@ -158,7 +160,7 @@
 
       // Send Email Verification
       await sendEmailVerification(userCredential.user, {
-        url: `${window.location.origin}/verify/success`,
+        url: `${window.location.origin}/login`,
         handleCodeInApp: true,
       });
 

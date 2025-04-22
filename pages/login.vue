@@ -2,6 +2,7 @@
   import { signInWithGoogle } from "~/composables/auth/useGoogle";
   import { signInWithEmailAndPassword, signOut } from "firebase/auth";
   import { doc, getDoc, updateDoc } from "firebase/firestore";
+  import type { Account } from "~/types/models/Account";
 
   definePageMeta({
     layout: "no-nav",
@@ -15,6 +16,9 @@
 
   const isConsentModalOpen = ref(false);
   const db = useFirestore();
+  const router = useRouter();
+  const userOrganization = ref(false);
+  const userOrganizationId = ref("");
 
   const checkConsentStatus = async () => {
     if (auth?.currentUser) {
@@ -23,13 +27,24 @@
 
       if (userDoc.exists()) {
         const userData = userDoc.data();
+        userOrganizationId.value = userData?.organizationId || "";
+        userOrganization.value = userData?.hasOrganization || false;
+        console.log("User Data: ", userData);
         if (userData.consentedToPrivacyAndTerms === undefined) {
           // If the field does not exist, create it with a default value of false
           await updateDoc(userDocRef, { consentedToPrivacyAndTerms: false });
           isConsentModalOpen.value = true; // Open modal since consent is not given
         } else if (userData.consentedToPrivacyAndTerms === true) {
           // If consent is already given, navigate to the homepage
-          return navigateTo("/", { replace: true });
+          console.log("User organization? ", userData.hasOrganization);
+          console.log("User organization ID: ", userData.organizationId);
+          if (userData.hasOrganization) {
+            console.log("User has an organization.");
+            return router.push(`/organization/${userData.organizationId}`);
+          } else {
+            console.log("User does not have an organization.");
+            return router.push("/");
+          }
         } else {
           isConsentModalOpen.value = true; // Open modal if consent is not given
         }
@@ -70,7 +85,13 @@
 
       // If consent is already given, navigate to the home page
       if (!isConsentModalOpen.value) {
-        return navigateTo("/", { replace: true });
+        if (userOrganization.value) {
+          console.log("User has an organization.");
+          return router.push(`/organization/${userOrganizationId.value}`);
+        } else {
+          console.log("User does not have an organization.");
+          return router.push("/");
+        }
       }
     } catch (error: any) {
       console.error("Google Sign-In Error:", error.message);

@@ -1,4 +1,3 @@
-import { useFetchUser } from "~/composables/user/useFetchUser";
 import { doc, getDoc, Timestamp, updateDoc } from "firebase/firestore";
 import {
   deleteObject,
@@ -50,11 +49,13 @@ export function useEditProduct() {
     }
   };
 
-  const updateProduct = async (productID: string, updatedData: Partial<Product>) => {
-    const { userData } = await useFetchUser();
+  const updateProduct = async (
+    productID: string,
+    updatedData: Partial<Product>,
+    organizationID: string
+  ) => {
     const productRef = doc(db, "products", productID);
     console.log("Product passed: ", updatedData);
-    console.log("User data: ", userData);
 
     // Fetch the current product data
     const productSnap = await getDoc(productRef);
@@ -67,7 +68,7 @@ export function useEditProduct() {
 
     // Handle photo uploads
     const timestamp = Timestamp.now().toMillis();
-    const basePath = `organizations/${userData.organizationID}/products/${updatedData.name}`;
+    const basePath = `organizations/${organizationID}/products/${updatedData.name}`;
 
     const urlToBlob = async (url: string): Promise<Blob> => {
       const response = await fetch(url);
@@ -101,7 +102,7 @@ export function useEditProduct() {
 
     // Move existing images if the product name has changed
     if (currentName !== updatedData.name) {
-      const oldBasePath = `${userData.organization}/products/${currentName}`;
+      const oldBasePath = `${organizationID}/products/${currentName}`;
       await moveImages(oldBasePath, basePath);
 
       // Delete old folder after moving images

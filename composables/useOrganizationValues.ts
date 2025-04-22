@@ -11,7 +11,6 @@ import {
   where,
 } from "firebase/firestore";
 import { useFirestore } from "vuefire";
-import type { CommissionRateWithId } from "~/types/models/CommissionRate";
 import type { Organization } from "~/types/models/Organization";
 
 // Add this type if not already in your types file
@@ -50,6 +49,20 @@ export const useOrganization = () => {
     };
   };
 
+  const getOrganizationIDFromUserId = async (
+    userId: string
+  ): Promise<{ userData: any; organizationId: string | null }> => {
+    const docRef = doc(db, "accounts", userId);
+    const docSnap = await getDoc(docRef);
+    if (!docSnap.exists()) {
+      throw new Error("User not found");
+    }
+    const userData = docSnap.data();
+    const organizationId = userData?.organizationId || null;
+
+    return { userData, organizationId };
+  };
+
   const searchOrganizations = async (searchTerm: string): Promise<OrganizationWithId[]> => {
     const cleanedTerm = searchTerm.trim();
     console.log("cleanedTerm: ", cleanedTerm);
@@ -60,6 +73,7 @@ export const useOrganization = () => {
     const q = query(
       collection(db, "organizations"),
       where("searchKeywords", "array-contains", cleanedTerm),
+      where("isPublic", "==", true),
       orderBy("name"),
       limit(20)
     );
@@ -120,8 +134,8 @@ export const useOrganization = () => {
 
   const transformOrganizationData = (data: any) => ({
     ...data,
-    dateCreated: data.dateCreated?.toDate(),
-    lastModified: data.lastModified?.toDate(),
+    dateCreated: data.dateCreated?.toDate ? data.dateCreated.toDate() : data.dateCreated,
+    lastModified: data.lastModified?.toDate ? data.lastModified.toDate() : data.lastModified,
     addressImagesURL: data.addressImagesURL || [],
     imagesURL: data.imagesURL || [],
     adminAccounts: data.adminAccounts || [],
@@ -143,5 +157,6 @@ export const useOrganization = () => {
     searchOrganizations,
     getOrganizationFinancials,
     getOrganizationCommissions,
+    getOrganizationIDFromUserId,
   };
 };

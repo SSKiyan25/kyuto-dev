@@ -28,10 +28,10 @@ export async function fetchProducts(
   const db = useFirestore();
   const { userData } = await useFetchUser();
 
-  console.log("Organization ID in composable: ", userData.organizationID);
+  console.log("Organization ID in composable: ", userData.organizationId);
   let productsQuery = query(
     collection(db, "products"),
-    where("organizationID", "==", userData.organizationID),
+    where("organizationID", "==", userData.organizationId),
     firestoreLimit(limit)
   );
 

@@ -19,6 +19,7 @@ export type ExtendedOrderItem = OrderItem &
     productDetails: Product | null;
     packageDetails: any | null;
     variationDetails: Variation | null;
+    organizationName: string | null;
   }>;
 
 export const useFetchOrders = () => {
@@ -36,6 +37,13 @@ export const useFetchOrders = () => {
     const packageRef = doc(db, "packages", packageID);
     const packageDoc = await getDoc(packageRef);
     return packageDoc.exists() ? packageDoc.data() : null;
+  };
+
+  // Helper function to fetch organization details
+  const fetchOrganizationName = async (organizationID: string): Promise<string | null> => {
+    const orgRef = doc(db, "organizations", organizationID);
+    const orgDoc = await getDoc(orgRef);
+    return orgDoc.exists() ? orgDoc.data().name || "Unknown Organization" : null;
   };
 
   // Helper function to fetch variation details from the sub-collection of the product
@@ -56,6 +64,9 @@ export const useFetchOrders = () => {
     for (const doc of querySnapshot.docs) {
       const orderItem = doc.data() as OrderItem;
       const productDetails = await fetchProductDetails(orderItem.productID);
+      const organizationName = productDetails?.organizationID
+        ? await fetchOrganizationName(productDetails.organizationID)
+        : null;
       const packageDetails = orderItem.isPackage
         ? await fetchPackageDetails(orderItem.packageID)
         : null;
@@ -68,6 +79,7 @@ export const useFetchOrders = () => {
         productDetails,
         packageDetails,
         variationDetails,
+        organizationName,
       });
     }
     return orderItems;
@@ -76,23 +88,40 @@ export const useFetchOrders = () => {
   // 1. Fetch the user order according to the passed userID parameter
   const fetchUserOrders = async (
     userID: string
-  ): Promise<(Order & { id: string; orderItems: OrderItem[] })[]> => {
+  ): Promise<
+    (Order & { id: string; orderItems: ExtendedOrderItem[]; organizationName: string })[]
+  > => {
     const ordersRef = collection(db, "orders");
     const q = query(ordersRef, where("buyerID", "==", userID));
     const querySnapshot = await getDocs(q);
-    const orders: (Order & { id: string; orderItems: OrderItem[] })[] = [];
+
+    const orders: (Order & {
+      id: string;
+      orderItems: ExtendedOrderItem[];
+      organizationName: string;
+    })[] = [];
     for (const doc of querySnapshot.docs) {
       const order = doc.data() as Order;
       const orderItems = await fetchOrderItems(doc.id);
-      orders.push({ ...order, id: doc.id, orderItems });
+
+      // Extract the organization name from the first order item
+      const organizationName =
+        orderItems.length > 0
+          ? orderItems[0].organizationName || "Unknown Organization"
+          : "Unknown Organization";
+
+      orders.push({ ...order, id: doc.id, orderItems, organizationName });
     }
+
     return orders;
   };
 
   // 2. Fetch the latest pending order for the user
   const fetchLatestOrder = async (
     userID: string
-  ): Promise<(Order & { id: string; orderItems: OrderItem[] }) | null> => {
+  ): Promise<
+    (Order & { id: string; orderItems: ExtendedOrderItem[]; organizationName: string }) | null
+  > => {
     const ordersRef = collection(db, "orders");
     const q = query(
       ordersRef,
@@ -101,12 +130,21 @@ export const useFetchOrders = () => {
       limit(1)
     );
     const querySnapshot = await getDocs(q);
+
     if (!querySnapshot.empty) {
       const doc = querySnapshot.docs[0];
       const order = doc.data() as Order;
       const orderItems = await fetchOrderItems(doc.id);
-      return { ...order, id: doc.id, orderItems };
+
+      // Extract the organization name from the first order item
+      const organizationName =
+        orderItems.length > 0
+          ? orderItems[0].organizationName || "Unknown Organization"
+          : "Unknown Organization";
+
+      return { ...order, id: doc.id, orderItems, organizationName };
     }
+
     return null;
   };
 

@@ -285,7 +285,9 @@
     layout: "user",
   });
 
-  const recentOrder = ref<Order | null>(null);
+  const recentOrder = ref<
+    (Order & { id: string; orderItems: ExtendedOrderItem[]; organizationName: string }) | null
+  >(null);
   const orders = ref<(Order & { id: string })[]>([]);
   const filteredOrders = ref<(Order & { id: string })[]>([]);
   const selectedStatus = ref<string>("all");
@@ -330,10 +332,15 @@
 
   const refreshLatestOrder = () => {
     fetchLatestOrder(userID.value).then((latestOrder) => {
-      console.log("Latest Order:", latestOrder);
-      recentOrder.value = latestOrder;
+      if (latestOrder) {
+        recentOrder.value = latestOrder;
+      } else {
+        recentOrder.value = null;
+      }
+      console.log("Latest Order:", recentOrder.value);
     });
   };
+
   // Fetch and log the latest pending order
   refreshLatestOrder();
 
@@ -487,16 +494,26 @@
   };
 
   const viewOrderDialog = ref(false);
-  const selectedOrder = ref<(Order & { id: string; orderItems: ExtendedOrderItem[] }) | null>(null);
+  const selectedOrder = ref<
+    (Order & { id: string; orderItems: ExtendedOrderItem[]; organizationName: string }) | null
+  >(null);
 
   const openViewOrderDialog = async (orderID: string) => {
     const order = orders.value.find((order) => order.id === orderID);
     if (order) {
       const orderItems = await fetchOrderItems(orderID);
-      selectedOrder.value = { ...order, orderItems };
+
+      // Extract the organization name from the first order item (assuming all items belong to the same organization)
+      const organizationName =
+        orderItems.length > 0
+          ? orderItems[0].organizationName || "Unknown Organization"
+          : "Unknown Organization";
+
+      selectedOrder.value = { ...order, orderItems, organizationName };
       viewOrderDialog.value = true;
     }
   };
+
   const closeViewOrderDialog = () => {
     viewOrderDialog.value = false;
     selectedOrder.value = null;

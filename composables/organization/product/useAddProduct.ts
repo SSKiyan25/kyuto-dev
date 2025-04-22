@@ -3,16 +3,13 @@ import { ref as storageRef } from "firebase/storage";
 import { sha256 } from "js-sha256";
 import type { Product, StocksLogs, Variation } from "~/types/models/Product";
 
-import { useFetchUser } from "../../user/useFetchUser";
-
-export const useAddProduct = async (values: any, canPreOrder: boolean) => {
+export const useAddProduct = async (values: any, canPreOrder: boolean, organizationID: string) => {
   const user = useCurrentUser();
   const db = useFirestore();
   const storage = useFirebaseStorage();
-  const { userData } = await useFetchUser();
 
   const timestamp = Date.now();
-  const basePath = `organizations/${userData.organizationID}/products/${values.name}`;
+  const basePath = `organizations/${organizationID}/products/${values.name}`;
 
   try {
     // Upload featured image
@@ -41,8 +38,8 @@ export const useAddProduct = async (values: any, canPreOrder: boolean) => {
     // Create the new product
     const newProduct: Partial<Product> = {
       accountID: user.value?.uid ?? "",
-      organizationID: userData.organizationID,
-      organization: userData.organization,
+      organizationID: organizationID,
+      // organization: userData.organization,
       name: values.name,
       category: values.category,
       description: values.description ?? "",

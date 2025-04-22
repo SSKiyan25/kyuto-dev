@@ -28,7 +28,10 @@ export interface Organization {
 
   dateCreated: Date;
   lastModified: Date;
+
   // Verifications & Statuses
+  isPublic: boolean;
+  isSetupComplete: boolean;
   isVerified: boolean;
   isArchived: boolean;
 }

@@ -298,6 +298,7 @@
 
 <script lang="ts" setup>
   import { useCommissionRate } from "~/composables/useCommissionRate";
+  import { useOrganization } from "~/composables/useOrganizationValues";
   import { usePriceCalculator } from "~/composables/usePriceCalculator";
   import { useCheckoutCart } from "~/composables/user/useCheckoutCart";
   import { useEmailOrder } from "~/composables/user/useEmailOrder";
@@ -324,10 +325,11 @@
   const removeModal = ref(false);
   const orderLoading = ref(false);
   const router = useRouter();
+  const orgName = ref<string | null>(null);
 
   const { commissionRate, fetchCommissionRate } = useCommissionRate();
   const { calculatePriceWithCommission } = usePriceCalculator(commissionRate);
-
+  const { getOrganizationIDFromUserId } = useOrganization();
   onMounted(() => {
     fetchCommissionRate();
     console.log("Commission rate fetched:", commissionRate.value);
@@ -394,10 +396,13 @@
 
   const products = ref<Record<string, Partial<Product>>>({});
   const variations = ref<Record<string, Partial<Variation>>>({});
+  const organizations = ref<Record<string, { id: string; name: string }>>({});
 
   const fetchProductAndVariationDetails = async () => {
     for (const cartItem of userCart.value) {
       console.log("Cart item:", cartItem);
+
+      // Fetch product details
       if (cartItem?.productID && !products.value[cartItem.productID]) {
         const productDocRef = doc(collection(db, "products"), cartItem.productID);
         const productDoc = await getDoc(productDocRef);
@@ -409,6 +414,7 @@
         }
       }
 
+      // Fetch variation details
       if (cartItem?.variationID && !variations.value[cartItem.variationID]) {
         const variationDocRef = doc(
           collection(doc(db, "products", cartItem.productID), "variations"),
@@ -420,6 +426,22 @@
           console.log("Fetched variation:", variations.value[cartItem.variationID]);
         } else {
           console.error("Variation not found");
+        }
+      }
+
+      // Fetch organization details
+      const product = products.value[cartItem.productID];
+      if (product?.organizationID && !organizations.value[product.organizationID]) {
+        const orgDocRef = doc(collection(db, "organizations"), product.organizationID);
+        const orgDoc = await getDoc(orgDocRef);
+        if (orgDoc.exists()) {
+          organizations.value[product.organizationID] = {
+            id: orgDoc.id,
+            name: orgDoc.data().name || "Unknown Organization",
+          };
+          console.log("Fetched organization:", organizations.value[product.organizationID]);
+        } else {
+          console.error("Organization not found");
         }
       }
     }
@@ -439,12 +461,16 @@
   const groupedCartItems = computed(() => {
     const groups: Record<string, (Cart & { id: string })[]> = {};
     userCart.value.forEach((cartItem) => {
-      const organization =
-        products.value[cartItem.productID]?.organization || "Unknown Organization";
-      if (!groups[organization]) {
-        groups[organization] = [];
+      const product = products.value[cartItem.productID];
+      const organizationID = product?.organizationID;
+      const organizationName = organizationID
+        ? organizations.value[organizationID]?.name || "Unknown Organization"
+        : "Unknown Organization";
+
+      if (!groups[organizationName]) {
+        groups[organizationName] = [];
       }
-      groups[organization].push(cartItem);
+      groups[organizationName].push(cartItem);
     });
     return groups;
   });
@@ -463,9 +489,14 @@
 
   const isOtherGroupSelected = (cartItem: Cart & { id: string }) => {
     if (selectedItems.value.length === 0) return false;
-    const selectedOrganization = products.value[selectedItems.value[0].productID]?.organization;
-    const currentOrganization = products.value[cartItem.productID]?.organization;
-    return selectedOrganization !== currentOrganization;
+
+    const selectedProduct = products.value[selectedItems.value[0].productID];
+    const selectedOrganizationID = selectedProduct?.organizationID;
+
+    const currentProduct = products.value[cartItem.productID];
+    const currentOrganizationID = currentProduct?.organizationID;
+
+    return selectedOrganizationID !== currentOrganizationID;
   };
 
   const totalPrice = computed(() => {
@@ -496,7 +527,6 @@
       // console.log("Selected items:", selectedItems.value);
 
       const organizationID = products.value[selectedItems.value[0].productID]?.organizationID;
-      const organizationName = products.value[selectedItems.value[0].productID]?.organization;
 
       // console.log("Organization ID:", organizationID);
       // console.log("Organization Name:", organizationName);
@@ -513,7 +543,6 @@
       const uniqRefNumber = await createOrder(
         userID.value as string,
         organizationID as string,
-        organizationName as string,
         totalPrice.value,
         selectedPaymentMethod.value as string,
         selectedItems.value,

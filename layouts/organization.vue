@@ -145,7 +145,7 @@
 </template>
 
 <script lang="ts" setup>
-  import { fetchOrganization } from "~/composables/organization/useOrganization";
+  import { useOrganization } from "~/composables/useOrganizationValues";
   import { signOut } from "firebase/auth";
   import { doc } from "firebase/firestore";
   import { useRoute, useRouter } from "vue-router";
@@ -171,21 +171,37 @@
     router.push(url);
   };
 
-  const orgData = await fetchOrganization();
-  const userDocRef = computed(() => (user.value ? doc(db, "accounts", user.value.uid) : null));
-  const userData = useDocument<Partial<Account>>(userDocRef) as Partial<Account> | undefined;
+  const { getOrganizationIDFromUserId } = useOrganization();
+  const userData = ref<Account | null>(null);
 
-  console.log("OrganizationData: ", orgData);
+  const organizationIdParams = route.params.id as string;
+  const fetchOrganizationData = async () => {
+    try {
+      const userId = auth?.currentUser?.uid; // Ensure you have the current user's ID
+      if (!userId) {
+        throw new Error("User is not logged in");
+      }
+
+      const { userData: fetchedUserData } = await getOrganizationIDFromUserId(userId);
+      userData.value = fetchedUserData;
+      // Use organizationPath or organizationId as needed
+    } catch (error) {
+      console.error("Error fetching organization data:", error);
+    }
+  };
 
   const logout = async () => {
     await signOut(auth!);
     navigateTo("/");
   };
 
-  console.log("Organization id:", userData?.organizationID);
-  const organizationPath = `/organization/${orgData.id}`;
-  const organizationID = orgData.id || userData?.organizationID;
-  console.log(organizationPath);
+  onMounted(() => {
+    fetchOrganizationData();
+  });
+
+  console.log("Organization id:", organizationIdParams);
+  const organizationPath = `/organization/${organizationIdParams}`;
+  const organizationID = organizationIdParams;
 
   const topNav = [
     { title: "Organization", icon: "lucide:newspaper", link: organizationPath },

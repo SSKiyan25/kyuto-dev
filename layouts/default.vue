@@ -162,7 +162,7 @@
                     <div class="flex w-[200px] flex-col justify-start px-4 py-4 text-sm">
                       <span></span>
                       <!-- User Profile -->
-                      <NuxtLink :to="`/user/profile/${userData?.organizationID}`">
+                      <NuxtLink :to="`/user/profile/${userData?.organizationId}`">
                         <div
                           class="flex flex-row items-center justify-between rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
                         >
@@ -178,7 +178,7 @@
                         <div
                           class="flex flex-row items-center justify-between rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
                         >
-                          <NuxtLink :to="`/user/orders/track-orders/${userData?.organizationID}`">
+                          <NuxtLink :to="`/user/orders/track-orders/${userData?.organizationId}`">
                             <div class="flex items-center">
                               <Icon name="lucide:box" class="h-4 w-4" />
                               <div class="pl-2">Your Orders</div>
@@ -188,7 +188,7 @@
                           <Icon name="lucide:move-up-right" class="h-2 w-2 opacity-70" />
                         </div>
                       </NuxtLink>
-                      <NuxtLink :to="`/user/inbox/${userData?.organizationID}`">
+                      <NuxtLink :to="`/user/inbox/${userData?.organizationId}`">
                         <div
                           class="flex flex-row items-center justify-between rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
                         >
@@ -203,7 +203,7 @@
                       <div v-if="userData && userData.hasOrganization">
                         <UiDivider class="py-2" />
                         <!-- Organization Dashboard -->
-                        <NuxtLink :to="`/organization/products/${userData?.organizationID}`">
+                        <NuxtLink :to="`/organization/products/${userData?.organizationId}`">
                           <div
                             class="flex flex-row items-center justify-start rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
                           >
@@ -211,7 +211,7 @@
                             <div class="pl-2">Manage Store</div>
                           </div>
                         </NuxtLink>
-                        <NuxtLink :to="`/organization/orders/${userData?.organizationID}`">
+                        <NuxtLink :to="`/organization/orders/${userData?.organizationId}`">
                           <div
                             class="flex flex-row items-center justify-start rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
                           >
@@ -307,7 +307,7 @@
     navigateTo("/login");
   };
 
-  const organizationID = computed(() => userData?.organizationID);
+  const organizationID = computed(() => userData?.organizationId);
 
   const mobileLinks = computed(() => [
     { name: "Home", to: "/", icon: "lucide:house" },

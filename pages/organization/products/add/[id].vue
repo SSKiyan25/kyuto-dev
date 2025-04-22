@@ -2,8 +2,10 @@
   import { UiVeeFileInput } from "#components";
   import { useAddProduct } from "~/composables/organization/product/useAddProduct";
   import { useCommissionRate } from "~/composables/useCommissionRate";
+  import { useOrganization } from "~/composables/useOrganizationValues";
   import { usePriceCalculator } from "~/composables/usePriceCalculator";
   import type { Crumbs } from "~/components/Ui/Breadcrumbs.vue";
+  import type { OrganizationWithId } from "~/composables/useOrganizationValues";
 
   definePageMeta({
     layout: "no-nav",
@@ -13,6 +15,8 @@
   const route = useRoute();
 
   const organizationID = route.params.id as string;
+  const organization = ref<OrganizationWithId | null>(null);
+  const { getOrganizationById } = useOrganization();
   console.log("Organization ID: ", organizationID);
 
   const crumbs: Crumbs[] = [
@@ -112,7 +116,7 @@
     const messageInterval = setInterval(updateMessage, 2000);
 
     try {
-      await useAddProduct(values, canPreOrder.value);
+      await useAddProduct(values, canPreOrder.value, organizationID);
       toast.toast({
         title: "Product Added",
         description: "Your product has been added successfully.",
@@ -141,6 +145,13 @@
 
   onMounted(() => {
     fetchCommissionRate();
+    getOrganizationById(organizationID)
+      .then((org) => {
+        organization.value = org;
+      })
+      .catch((error) => {
+        console.error("Error fetching organization:", error);
+      });
   });
 </script>
 
@@ -182,12 +193,22 @@
               <TransitionSlide>
                 <UiVeeSelect label="Set Status" name="status" required class="">
                   <option disabled value="">Select a category</option>
-                  <option v-for="stat in status" :key="stat" :value="stat">
+                  <option
+                    v-for="stat in status"
+                    :key="stat"
+                    :value="stat"
+                    :disabled="stat === 'Publish' && !organization?.isPublic"
+                  >
                     {{ stat }}
                   </option>
                 </UiVeeSelect>
               </TransitionSlide>
             </div>
+            <!-- Reason for disabling Publish -->
+            <p v-if="!organization?.isPublic" class="mt-2 text-xs text-muted-foreground">
+              The "Publish" option is disabled because the organization is currently hidden. Make
+              the organization public to enable publishing.
+            </p>
             <UiVeeTextarea
               label="Description"
               name="description"

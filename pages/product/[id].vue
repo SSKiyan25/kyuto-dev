@@ -33,7 +33,7 @@
           <h1 class="w-full text-wrap text-xl font-semibold sm:text-4xl">{{ product.name }}</h1>
           <div class="flex flex-row items-center space-x-1 text-[12px] sm:text-sm">
             <Icon name="lucide:building-2" />
-            <span class="pr-4">{{ product.organization }}</span>
+            <span class="pr-4">{{ orgName }}</span>
             <Icon name="lucide:credit-card" class="" />
             <span class="pr-4"> Sales: {{ product.totalSales }}</span>
             <Icon name="lucide:eye" />
@@ -313,8 +313,7 @@
   import { collection, doc } from "firebase/firestore";
   import { Carousel, Slide } from "vue3-carousel";
   import type { Crumbs } from "~/components/Ui/Breadcrumbs.vue";
-  import type { EnhancedProduct } from "~/composables/useOrganizationProducts";
-  import type { Product, Variation } from "~/types/models/Product";
+  import type { Product, ProductWithId, Variation } from "~/types/models/Product";
 
   import "vue3-carousel/dist/carousel.css";
 
@@ -521,7 +520,7 @@
   };
 
   // Organization Products
-  const orgProducts = ref<EnhancedProduct[]>([]);
+  const orgProducts = ref<ProductWithId[]>([]);
   const productViewCounts = reactive<Record<string, number>>({});
   const fetchProductViewCounts = async () => {
     // console.log("Fetching product view counts...");
@@ -552,11 +551,12 @@
       // console.log(`Product ID: ${product.id}, View Count: ${viewCount}`);
     }
   };
+  const orgName = ref<string | null>(null);
   watch(
     product,
     async () => {
       if (product.value?.organizationID) {
-        const { products, fetchOrganizationProducts } = useOrganizationProducts(
+        const { products, fetchOrganizationProducts, organizationName } = useOrganizationProducts(
           product.value.organizationID,
           productID.value as string
         );
@@ -566,7 +566,9 @@
             ...p,
             id: p.id,
             price: p.price,
+            organization: p.organization,
           }));
+          orgName.value = organizationName.value;
           await fetchProductViewCounts();
         } catch (error) {
           console.error("Error fetching organization products:", error);
