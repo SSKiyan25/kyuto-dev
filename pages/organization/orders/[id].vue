@@ -1,5 +1,5 @@
 <template>
-  <div class="mb-24 flex h-screen w-full flex-col p-8">
+  <div class="mb-24 flex h-screen w-full flex-col p-2">
     <div class="flex h-auto w-full flex-col items-start p-4">
       <div class="flex w-full flex-row items-center justify-between gap-1">
         <div class="flex flex-col space-y-2">
@@ -271,30 +271,12 @@
         <!-- Add a GIF here -->
       </div>
     </div>
-    <!-- For testing -->
-    <!-- <div class="flex h-lvh flex-col py-8">
-      <span>For testing purposes</span>
-      <UiButton @click="deleteAllOrders">Delete All Orders</UiButton>
-    </div>
-    <div
-      v-if="deleteLoading"
-      class="fixed inset-0 z-50 flex min-h-screen w-full items-center justify-center bg-secondary/40 backdrop-blur"
-    >
-      <div class="flex flex-col items-center justify-center gap-4">
-        <Icon name="lucide:loader-circle" class="size-16 animate-spin text-primary" />
-        <span class="text-sm font-semibold text-secondary-foreground"> Deleting Orders </span>
-      </div>
-    </div> -->
   </div>
 </template>
 
 <script lang="ts" setup>
   import { useFetchOrders } from "~/composables/organization/orders/useFetchOrders";
   import { useTrackCommission } from "~/composables/organization/useTrackCommission";
-  //For Testing
-  import { useFetchUser } from "~/composables/user/useFetchUser";
-  import { collection, deleteDoc, doc, getDocs, query, where } from "firebase/firestore";
-  // ...
   import type { ExtendedOrder } from "~/composables/organization/orders/useFetchOrders";
   import type { Product, Variation } from "~/types/models/Product";
 
@@ -342,12 +324,12 @@
   };
 
   onMounted(() => {
-    fetchCommissionData;
+    fetchCommissionData();
   });
 
   onMounted(async () => {
     try {
-      fetchCommissionData;
+      fetchCommissionData();
 
       console.log("Calling trackCommission with orgID:", orgIDparams.value);
 
@@ -367,7 +349,7 @@
 
   onMounted(async () => {
     try {
-      fetchCommissionData;
+      fetchCommissionData();
       // Fetch products for the organization using the organization ID from params
       const fetchedProducts = await fetchOrganizationProducts(orgIDparams.value);
       products.value = fetchedProducts;
@@ -478,54 +460,4 @@
     });
     return summary;
   });
-
-  // For testing purposes
-  const deleteLoading = ref(false);
-  const db = useFirestore();
-  const { userData } = await useFetchUser();
-  console.log("Organization ID:", userData?.organizationID);
-  const router = useRouter();
-
-  const deleteAllOrders = async () => {
-    if (!userData) {
-      return;
-    }
-    console.log("Organization ID:", userData?.organizationID);
-    deleteLoading.value = true;
-    try {
-      // Fetch all orders for the organization
-      const ordersQuery = query(
-        collection(db, "orders"),
-        where("organizationID", "==", userData.organizationID)
-      );
-      const querySnapshot = await getDocs(ordersQuery);
-
-      // Delete each order document and its subcollections from Firestore
-      const deletePromises = querySnapshot.docs.map(async (orderDoc) => {
-        const orderID = orderDoc.id;
-
-        // Fetch and delete all orderItems subcollection documents
-        const orderItemsQuery = collection(db, "orders", orderID, "orderItems");
-        const orderItemsSnapshot = await getDocs(orderItemsQuery);
-        const deleteOrderItemsPromises = orderItemsSnapshot.docs.map(async (orderItemDoc) => {
-          await deleteDoc(orderItemDoc.ref);
-        });
-
-        // Wait for all orderItems delete operations to complete
-        await Promise.all(deleteOrderItemsPromises);
-
-        // Delete the order document
-        await deleteDoc(doc(db, "orders", orderID));
-      });
-
-      // Wait for all Firestore delete operations to complete
-      await Promise.all(deletePromises);
-      router.push("/organization/products");
-      console.log("All orders and their subcollections deleted successfully.");
-    } catch (error) {
-      console.error("Error deleting orders:", error);
-    } finally {
-      deleteLoading.value = false;
-    }
-  };
 </script>

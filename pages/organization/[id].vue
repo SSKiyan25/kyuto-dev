@@ -26,18 +26,16 @@
   }
 
   const organization = ref<ExtendedOrganization | null>(null);
-  const editDialog = ref(false);
   const editAddressDialog = ref(false);
   const editCoverDialog = ref(false);
   const editGalleryDialog = ref(false);
   const editLogoDialog = ref(false);
   const editInfo = ref(false);
   const loading = ref(true);
-  const loadingEdit = ref(false);
   const db = useFirestore();
   const route = useRoute();
   const orgIDparams = route.params.id as string;
-  const { getOrganizationById } = useOrganization();
+  const { getOrganizationById, clearCache: clearOrgCache } = useOrganization();
 
   onMounted(async () => {
     try {
@@ -52,6 +50,7 @@
 
   const refreshOrganization = async () => {
     try {
+      clearOrgCache();
       const orgData = await getOrganizationById(orgIDparams);
       organization.value = orgData;
     } catch (error) {

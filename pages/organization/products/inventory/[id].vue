@@ -38,7 +38,7 @@
   const db = useFirestore();
   const productID = route.params.id as string;
 
-  const { commissionRate, fetchCommissionRate } = useCommissionRate();
+  const { commissionRate, fetchCommissionRate, clearCache } = useCommissionRate();
   const { calculatePriceWithCommission } = usePriceCalculator(commissionRate);
 
   const variationsRef = computed(() =>
@@ -336,6 +336,7 @@
   });
 
   onMounted(() => {
+    clearCache();
     fetchCommissionRate();
   });
 </script>

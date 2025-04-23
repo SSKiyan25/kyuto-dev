@@ -16,7 +16,7 @@
 
   const organizationID = route.params.id as string;
   const organization = ref<OrganizationWithId | null>(null);
-  const { getOrganizationById } = useOrganization();
+  const { getOrganizationById, clearCache: clearOrgCache } = useOrganization();
   console.log("Organization ID: ", organizationID);
 
   const crumbs: Crumbs[] = [
@@ -55,7 +55,11 @@
   const canPreOrder = ref(false);
   const currentMessage = ref("");
 
-  const { commissionRate, fetchCommissionRate } = useCommissionRate();
+  const {
+    commissionRate,
+    fetchCommissionRate,
+    clearCache: clearCommissionCache,
+  } = useCommissionRate();
   const { calculatePriceWithCommission } = usePriceCalculator(commissionRate);
 
   // Refs for the UiVeeFileInput components
@@ -116,6 +120,9 @@
     const messageInterval = setInterval(updateMessage, 2000);
 
     try {
+      clearOrgCache();
+      await getOrganizationById(organizationID);
+
       await useAddProduct(values, canPreOrder.value, organizationID);
       toast.toast({
         title: "Product Added",
@@ -144,6 +151,8 @@
   });
 
   onMounted(() => {
+    clearCommissionCache();
+    clearOrgCache();
     fetchCommissionRate();
     getOrganizationById(organizationID)
       .then((org) => {
@@ -362,7 +371,7 @@
   >
     <div class="flex flex-col items-center justify-center gap-4">
       <Icon name="lucide:loader-circle" class="size-16 animate-spin text-primary" />
-      <span class="text-sm text-primary-foreground/70"> {{ currentMessage }}</span>
+      <span class="text-sm"> {{ currentMessage }}</span>
       <!-- Add a GIF here -->
     </div>
   </div>

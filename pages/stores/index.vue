@@ -14,14 +14,23 @@
           <!-- Keep trailing icon button -->
         </UiVeeInput>
       </div>
+      <div class="mt-2 text-center text-xs text-gray-500">
+        Press <strong>Enter</strong> to search for an organization.
+      </div>
       <div v-if="isLoading" class="mt-2 text-center text-sm text-gray-500">
         Searching organizations...
       </div>
     </div>
 
     <div class="flex flex-col space-y-4">
-      <div class="border-b-2">
+      <div class="flex items-center justify-between border-b-2">
         <span class="text-lg font-semibold">Organization Stores</span>
+        <UiButton :disabled="isRefreshing" @click="refreshOrganizations" class="text-xs">
+          <template #default>
+            <span v-if="isRefreshing">Refreshing...</span>
+            <span v-else>Refresh</span>
+          </template>
+        </UiButton>
       </div>
 
       <div v-if="error" class="p-4 text-red-500">Error: {{ error.message }}</div>
@@ -67,6 +76,7 @@
 
   const searchTerm = ref("");
   const isLoading = ref(false);
+  const isRefreshing = ref(false);
   const error = ref<Error | null>(null);
   const organizations = ref<
     Array<{
@@ -78,10 +88,10 @@
     }>
   >([]);
 
-  const { searchOrganizations } = useOrganization();
+  const { searchOrganizations, clearCache } = useOrganization();
 
   const isValidSearchTerm = (term: string): boolean => {
-    const regex = /^[^<@#`'"%;\\\[\]{}|&$*^~:/?!+=,\r\n]*$/;
+    const regex = /^[^<@#`'"%;\\\[\]{}|&$*^~:/?!+=\r\n]*$/;
     return regex.test(term);
   };
 
@@ -94,6 +104,7 @@
       // Reset error and reload default organizations after 3-5 seconds
       setTimeout(async () => {
         error.value = null;
+        clearCache();
         const defaultResults = await searchOrganizations("");
         organizations.value = defaultResults.map((org) => ({
           id: org.id,
@@ -129,13 +140,29 @@
     debouncedSearch(searchTerm.value);
   };
 
-  // Watch search term changes
-  watch(searchTerm, (newVal) => {
-    if (newVal.trim() === "") {
-      organizations.value = [];
+  // Refresh organizations
+  const refreshOrganizations = async () => {
+    if (isRefreshing.value) return; // Prevent spamming
+    isRefreshing.value = true;
+
+    try {
+      clearCache(); // Clear cache before refreshing
+      isLoading.value = true;
+      const refreshedResults = await searchOrganizations("");
+      organizations.value = refreshedResults.map((org) => ({
+        id: org.id,
+        name: org.name || "",
+        description: org.description,
+        address: org.address,
+        logoImageURL: org.logoImageURL,
+      }));
+    } catch (err) {
+      error.value = err as Error;
+    } finally {
+      isRefreshing.value = false;
+      isLoading.value = false;
     }
-    debouncedSearch(newVal);
-  });
+  };
 
   // Initial load
   onMounted(async () => {

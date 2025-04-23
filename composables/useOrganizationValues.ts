@@ -1,15 +1,4 @@
-import {
-  collection,
-  doc,
-  getAggregateFromServer,
-  getDoc,
-  getDocs,
-  limit,
-  orderBy,
-  query,
-  sum,
-  where,
-} from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, limit, orderBy, query, where } from "firebase/firestore";
 import { useFirestore } from "vuefire";
 import type { Organization } from "~/types/models/Organization";
 
@@ -25,17 +14,61 @@ export type OrganizationWithId = Partial<Organization> & {
 
 export const useOrganization = () => {
   const db = useFirestore();
+  const CACHE_KEY = "cachedOrganizations";
+
+  // Helper to generate a unique cache key
+  const getCacheKey = (key: string) => `${CACHE_KEY}-${key}`;
+
+  // Helper to get cached data
+  const getCachedData = (key: string) => {
+    const cachedData = localStorage.getItem(CACHE_KEY);
+    const cache = cachedData ? JSON.parse(cachedData) : {};
+    return cache[key] || null;
+  };
+
+  // Helper to set cached data
+  const setCachedData = (key: string, data: any) => {
+    const cachedData = localStorage.getItem(CACHE_KEY);
+    const cache = cachedData ? JSON.parse(cachedData) : {};
+    cache[key] = data;
+    localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+  };
+
+  // Helper to clear the cache
+  const clearCache = () => {
+    localStorage.removeItem(CACHE_KEY);
+    console.log("Organization cache cleared");
+  };
 
   // Existing functions
   const getAllOrganizations = async (): Promise<OrganizationWithId[]> => {
+    const cacheKey = getCacheKey("allOrganizations");
+    const cachedOrganizations = getCachedData(cacheKey);
+
+    if (cachedOrganizations) {
+      console.log("Loaded organizations from cache");
+      return cachedOrganizations;
+    }
+
     const querySnapshot = await getDocs(collection(db, "organizations"));
-    return querySnapshot.docs.map((doc) => ({
+    const organizations = querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...transformOrganizationData(doc.data()),
     }));
+
+    setCachedData(cacheKey, organizations);
+    return organizations;
   };
 
   const getOrganizationById = async (id: string): Promise<OrganizationWithId> => {
+    const cacheKey = getCacheKey(`organization-${id}`);
+    const cachedOrganization = getCachedData(cacheKey);
+
+    if (cachedOrganization) {
+      console.log(`Loaded organization ${id} from cache`);
+      return cachedOrganization;
+    }
+
     const docRef = doc(db, "organizations", id);
     const docSnap = await getDoc(docRef);
 
@@ -43,10 +76,13 @@ export const useOrganization = () => {
       throw new Error("Organization not found");
     }
 
-    return {
+    const organization = {
       id: docSnap.id,
       ...transformOrganizationData(docSnap.data()),
     };
+
+    setCachedData(cacheKey, organization);
+    return organization;
   };
 
   const getOrganizationIDFromUserId = async (
@@ -64,8 +100,15 @@ export const useOrganization = () => {
   };
 
   const searchOrganizations = async (searchTerm: string): Promise<OrganizationWithId[]> => {
+    const cacheKey = getCacheKey(`search-${searchTerm}`);
+    const cachedSearchResults = getCachedData(cacheKey);
+
+    if (cachedSearchResults) {
+      console.log(`Loaded search results for "${searchTerm}" from cache`);
+      return cachedSearchResults;
+    }
+
     const cleanedTerm = searchTerm.trim();
-    console.log("cleanedTerm: ", cleanedTerm);
     if (!cleanedTerm) {
       return getAllOrganizations();
     }
@@ -79,57 +122,64 @@ export const useOrganization = () => {
     );
 
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map((doc) => ({
+    const organizations = querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...transformOrganizationData(doc.data()),
       searchKeywords: (doc.data().searchKeywords || []) as string[],
     })) as OrganizationWithId[];
+
+    setCachedData(cacheKey, organizations);
+    return organizations;
   };
 
   const getOrganizationFinancials = async (organizationId: string) => {
-    try {
-      // Fetch organization document
-      const orgRef = doc(db, "organizations", organizationId);
-      const orgDoc = await getDoc(orgRef);
+    const cacheKey = getCacheKey(`financials-${organizationId}`);
+    const cachedFinancials = getCachedData(cacheKey);
 
-      if (!orgDoc.exists()) {
-        throw new Error("Organization not found");
-      }
-
-      const orgData = orgDoc.data();
-
-      // Return financial data directly from the organization document
-      return {
-        totalPaid: orgData.totalPaid || 0,
-        totalDue: orgData.totalDue || 0,
-      };
-    } catch (error) {
-      console.error("Error fetching financial data:", error);
-      return { totalPaid: 0, totalDue: 0 };
+    if (cachedFinancials) {
+      console.log(`Loaded financials for organization ${organizationId} from cache`);
+      return cachedFinancials;
     }
+
+    const orgRef = doc(db, "organizations", organizationId);
+    const orgDoc = await getDoc(orgRef);
+
+    if (!orgDoc.exists()) {
+      throw new Error("Organization not found");
+    }
+
+    const financials = {
+      totalPaid: orgDoc.data().totalPaid || 0,
+      totalDue: orgDoc.data().totalDue || 0,
+    };
+
+    setCachedData(cacheKey, financials);
+    return financials;
   };
 
   const getOrganizationCommissions = async (organizationId: string) => {
-    try {
-      // Fetch organization document
-      const orgRef = doc(db, "organizations", organizationId);
-      const orgDoc = await getDoc(orgRef);
+    const cacheKey = getCacheKey(`commissions-${organizationId}`);
+    const cachedCommissions = getCachedData(cacheKey);
 
-      if (!orgDoc.exists()) {
-        throw new Error("Organization not found");
-      }
-
-      const orgData = orgDoc.data();
-
-      // Return commission data directly from the organization document
-      return {
-        totalPaid: orgData.totalPaid || 0,
-        totalDue: orgData.totalDue || 0,
-      };
-    } catch (error) {
-      console.error("Error fetching commission data:", error);
-      return { totalPaid: 0, totalDue: 0 };
+    if (cachedCommissions) {
+      console.log(`Loaded commissions for organization ${organizationId} from cache`);
+      return cachedCommissions;
     }
+
+    const orgRef = doc(db, "organizations", organizationId);
+    const orgDoc = await getDoc(orgRef);
+
+    if (!orgDoc.exists()) {
+      throw new Error("Organization not found");
+    }
+
+    const commissions = {
+      totalPaid: orgDoc.data().totalPaid || 0,
+      totalDue: orgDoc.data().totalDue || 0,
+    };
+
+    setCachedData(cacheKey, commissions);
+    return commissions;
   };
 
   const transformOrganizationData = (data: any) => ({
@@ -144,19 +194,13 @@ export const useOrganization = () => {
     searchKeywords: data.searchKeywords || [],
   });
 
-  const transformOrderData = (data: any) => ({
-    ...data,
-    dateOrdered: data.dateOrdered?.toDate(),
-    lastModified: data.lastModified?.toDate(),
-    receivedDate: data.receivedDate?.toDate(),
-  });
-
   return {
     getAllOrganizations,
     getOrganizationById,
     searchOrganizations,
     getOrganizationFinancials,
     getOrganizationCommissions,
+    clearCache,
     getOrganizationIDFromUserId,
   };
 };

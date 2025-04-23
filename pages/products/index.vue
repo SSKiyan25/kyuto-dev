@@ -26,15 +26,28 @@
             </div>
           </div>
 
-          <UiButton
-            @click="toggleFilterCommands"
-            variant="secondary"
-            size="sm"
-            class="px-2 py-1 text-[10px] sm:mt-0 sm:px-4 sm:py-2 sm:text-sm"
-          >
-            Filter By
-            <Icon name="lucide:list-filter" class="h-3 w-3 sm:h-4 sm:w-4" />
-          </UiButton>
+          <div class="flex flex-row space-x-1">
+            <UiButton
+              @click="toggleFilterCommands"
+              variant="secondary"
+              size="sm"
+              class="px-2 py-1 text-[10px] sm:mt-0 sm:px-4 sm:py-2 sm:text-sm"
+            >
+              Filter By
+              <Icon name="lucide:list-filter" class="" />
+            </UiButton>
+            <UiButton
+              @click="refreshProducts"
+              variant="ghost"
+              class="px-2 py-1 text-white sm:mt-0 sm:px-4 sm:py-2 sm:text-sm"
+            >
+              <Icon
+                :class="{ 'animate-spin': loadingProducts }"
+                name="lucide:refresh-cw"
+                title="Refresh Products"
+              />
+            </UiButton>
+          </div>
         </div>
 
         <!-- Filter Commands -->
@@ -189,7 +202,7 @@
   import { useViewProducts } from "~/composables/useViewProducts";
   import type { ProductSearchResult } from "~/types/models/Product";
 
-  const { products, loading, fetchProducts } = useViewProducts();
+  const { products, loading, fetchProducts, clearCache } = useViewProducts();
   const { commissionRate, fetchCommissionRate } = useCommissionRate();
   const { calculatePriceWithCommission } = usePriceCalculator(commissionRate);
   const { addView, countViews } = useAddProductViews();
@@ -256,6 +269,20 @@
     await fetchCommissionRate();
   });
 
+  const refreshProducts = async () => {
+    if (loadingProducts.value) return;
+
+    loadingProducts.value = true;
+    try {
+      clearCache();
+      await fetchProducts();
+    } catch (error) {
+      console.error("Error refreshing products:", error);
+    } finally {
+      loadingProducts.value = false;
+    }
+  };
+
   const nextPage = () => {
     if (currentPage.value < totalPages.value) {
       console.log("Current Page:", currentPage.value);
@@ -272,7 +299,6 @@
     }
   };
 
-  const { categories } = useCategoryValues();
   const showAs = ref<{ value: string; isActive: boolean; name: string }[]>([
     { value: "All", isActive: true, name: "all" },
     { value: "New", isActive: false, name: "new" },
@@ -309,31 +335,9 @@
     showFilterCommands.value = !showFilterCommands.value;
   };
 
-  const priceRangeMin = ref(0);
-  const priceRangeMax = ref(0);
-
-  // const applyFilters = () => {
-  //   const activeFilter = showAs.value.find((item) => item.isActive);
-  //   const sortBy = activeFilter ? activeFilter.name : "all";
-  //   const selectedCategoryTitles = selectedCategories.value
-  //     .map((key) => {
-  //       const category = filterCategories.find((c) => c.key === key);
-  //       return category ? category.title : "";
-  //     })
-  //     .filter((title) => title !== "");
-  //   fetchProducts(sortBy, selectedCategoryTitles, sortPrice.value);
-  // };
-
   const applyFilters = () => {
+    clearCache();
     currentPage.value = 1;
-    updateProducts();
-  };
-
-  const clearFilters = () => {
-    selectedCategories.value = [];
-    sortPrice.value = "none";
-    priceRangeMin.value = 0;
-    priceRangeMax.value = 0;
     updateProducts();
   };
 

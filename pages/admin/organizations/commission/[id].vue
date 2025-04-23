@@ -88,7 +88,6 @@
 
 <script lang="ts" setup>
   import { useCommission } from "~/composables/admin/useCommission";
-  import DataTable from "datatables.net";
   import type { CommissionPayment } from "~/composables/admin/useCommission";
   import type { OrganizationWithId } from "~/composables/useOrganizationValues";
   import type { Config } from "datatables.net";

@@ -20,49 +20,11 @@
         and hoodies to practical lanyards and stickers, we’ve got everything you need to showcase
         your school spirit.
       </p>
-
-      <!-- <div
-        class="mt-8 grid w-full grid-cols-1 items-center gap-3 sm:flex sm:justify-center lg:mt-10"
-      >
-        <UiButton size="lg" variant="outline"> <Icon name="lucide:mail" /> Contact Us </UiButton>
-        <UiButton size="lg"> <Icon name="lucide:shopping-basket" />Shop now</UiButton>
-      </div> -->
     </UiContainer>
 
     <ClientOnly>
       <UiGradientDivider class="sm:my-5" />
     </ClientOnly>
-    <!-- Categories -->
-    <!-- <div
-      class="mx-auto my-4 flex h-auto w-11/12 flex-col items-start justify-center rounded bg-muted p-4"
-    >
-      <span class="font-semibold uppercase text-muted-foreground">Categories</span>
-      <div
-        class="mt-0 flex w-full flex-row flex-wrap items-center justify-center gap-1 p-2 md:mt-3 md:gap-4"
-      >
-        <CategoryCard
-          v-for="(item, index) in categories"
-          :key="index"
-          :icon="item.icon"
-          :title="item.title"
-        />
-      </div>
-    </div> -->
-
-    <!-- Ad Space
-    <div
-      class="mx-auto my-4 flex h-48 w-11/12 flex-col items-center justify-center rounded bg-muted p-4 shadow"
-    >
-      <div class="flex">Ad-Space</div>
-    </div> -->
-
-    <!-- Top Products-->
-    <!-- <div
-      class="mx-auto my-4 flex h-96 w-11/12 flex-col items-start justify-center rounded bg-muted p-4"
-    >
-      <span class="font-semibold uppercase text-muted-foreground">Top Products</span>
-    </div> -->
-
     <!-- Products -->
     <div class="mx-auto mb-24 flex min-h-lvh w-11/12 flex-col pt-4 sm:pt-8">
       <div
@@ -84,15 +46,28 @@
           </div>
         </div>
 
-        <UiButton
-          @click="toggleFilterCommands"
-          variant="secondary"
-          size="sm"
-          class="px-2 py-1 text-[10px] sm:mt-0 sm:px-4 sm:py-2 sm:text-sm"
-        >
-          Filter By
-          <Icon name="lucide:list-filter" class="h-3 w-3 sm:h-4 sm:w-4" />
-        </UiButton>
+        <div class="flex flex-row space-x-1">
+          <UiButton
+            @click="toggleFilterCommands"
+            variant="secondary"
+            size="sm"
+            class="px-2 py-1 text-[10px] sm:mt-0 sm:px-4 sm:py-2 sm:text-sm"
+          >
+            Filter By
+            <Icon name="lucide:list-filter" class="" />
+          </UiButton>
+          <UiButton
+            @click="refreshProducts"
+            variant="ghost"
+            class="px-2 py-1 text-white sm:mt-0 sm:px-4 sm:py-2 sm:text-sm"
+          >
+            <Icon
+              :class="{ 'animate-spin': loadingProducts }"
+              name="lucide:refresh-cw"
+              title="Refresh Products"
+            />
+          </UiButton>
+        </div>
       </div>
 
       <!-- Filter Commands -->
@@ -245,7 +220,7 @@
   import { usePriceCalculator } from "~/composables/usePriceCalculator";
   import { useViewProducts } from "~/composables/useViewProducts";
 
-  const { products, fetchProducts } = useViewProducts();
+  const { products, fetchProducts, clearCache } = useViewProducts();
   const { commissionRate, fetchCommissionRate } = useCommissionRate();
   const { calculatePriceWithCommission } = usePriceCalculator(commissionRate);
   const { addView, countViews } = useAddProductViews();
@@ -307,6 +282,20 @@
     await fetchCommissionRate();
   });
 
+  const refreshProducts = async () => {
+    if (loadingProducts.value) return;
+
+    loadingProducts.value = true;
+    try {
+      clearCache();
+      await fetchProducts();
+    } catch (error) {
+      console.error("Error refreshing products:", error);
+    } finally {
+      loadingProducts.value = false;
+    }
+  };
+
   const nextPage = () => {
     if (currentPage.value < totalPages.value) {
       console.log("Current Page:", currentPage.value);
@@ -323,7 +312,6 @@
     }
   };
 
-  const { categories } = useCategoryValues();
   const showAs = ref<{ value: string; isActive: boolean; name: string }[]>([
     { value: "All", isActive: true, name: "all" },
     { value: "New", isActive: false, name: "new" },
@@ -360,31 +348,9 @@
     showFilterCommands.value = !showFilterCommands.value;
   };
 
-  const priceRangeMin = ref(0);
-  const priceRangeMax = ref(0);
-
-  // const applyFilters = () => {
-  //   const activeFilter = showAs.value.find((item) => item.isActive);
-  //   const sortBy = activeFilter ? activeFilter.name : "all";
-  //   const selectedCategoryTitles = selectedCategories.value
-  //     .map((key) => {
-  //       const category = filterCategories.find((c) => c.key === key);
-  //       return category ? category.title : "";
-  //     })
-  //     .filter((title) => title !== "");
-  //   fetchProducts(sortBy, selectedCategoryTitles, sortPrice.value);
-  // };
-
   const applyFilters = () => {
+    clearCache();
     currentPage.value = 1;
-    updateProducts();
-  };
-
-  const clearFilters = () => {
-    selectedCategories.value = [];
-    sortPrice.value = "none";
-    priceRangeMin.value = 0;
-    priceRangeMax.value = 0;
     updateProducts();
   };
 

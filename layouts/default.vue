@@ -178,7 +178,7 @@
                         <div
                           class="flex flex-row items-center justify-between rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
                         >
-                          <NuxtLink :to="`/user/orders/track-orders/${userData?.organizationId}`">
+                          <NuxtLink :to="`/user/orders/track-orders/${userData?.id}`">
                             <div class="flex items-center">
                               <Icon name="lucide:box" class="h-4 w-4" />
                               <div class="pl-2">Your Orders</div>
@@ -188,7 +188,7 @@
                           <Icon name="lucide:move-up-right" class="h-2 w-2 opacity-70" />
                         </div>
                       </NuxtLink>
-                      <NuxtLink :to="`/user/inbox/${userData?.organizationId}`">
+                      <NuxtLink :to="`/user/inbox/${userData?.id}`">
                         <div
                           class="flex flex-row items-center justify-between rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
                         >
@@ -263,7 +263,6 @@
 </template>
 
 <script lang="ts" setup>
-  // import { fetchOrganization } from "~/composables/organization/useOrganization";
   import { useFetchUserCart } from "~/composables/user/useFetchUserCart";
   import { signOut } from "firebase/auth";
   import { doc } from "firebase/firestore";
@@ -272,7 +271,7 @@
   const user = useCurrentUser();
   const db = useFirestore();
   console.log("user", user);
-  console.log("User iud", user.value?.uid);
+  console.log("User uid", user.value?.uid);
 
   const cartNum = ref(0);
   const userId = ref<string | null>(null);

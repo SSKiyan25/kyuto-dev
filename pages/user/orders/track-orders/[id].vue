@@ -293,6 +293,7 @@
   const selectedStatus = ref<string>("all");
   const route = useRoute();
   const userID = computed(() => route.params.id as string);
+  console.log("User ID:", userID.value);
 
   const isMobile = ref(false);
 
@@ -301,6 +302,22 @@
   };
 
   onMounted(() => {
+    // Fetch and log user orders
+    fetchUserOrders(userID.value).then((userOrders) => {
+      console.log("User Orders:", userOrders);
+      orders.value = userOrders;
+      filterOrders(selectedStatus.value);
+    });
+
+    refreshLatestOrder();
+
+    // Fetch and log all orders with filters
+    fetchOrders(userID.value, "all", "").then((allOrders) => {
+      console.log("All Orders:", allOrders);
+      orders.value = allOrders;
+      filterOrders(selectedStatus.value);
+    });
+
     handleResize();
     window.addEventListener("resize", handleResize);
   });
@@ -323,13 +340,6 @@
     }
   };
 
-  // Fetch and log user orders
-  fetchUserOrders(userID.value).then((userOrders) => {
-    console.log("User Orders:", userOrders);
-    orders.value = userOrders;
-    filterOrders(selectedStatus.value);
-  });
-
   const refreshLatestOrder = () => {
     fetchLatestOrder(userID.value).then((latestOrder) => {
       if (latestOrder) {
@@ -343,13 +353,6 @@
 
   // Fetch and log the latest pending order
   refreshLatestOrder();
-
-  // Fetch and log all orders with filters
-  fetchOrders(userID.value, "all", "").then((allOrders) => {
-    console.log("All Orders:", allOrders);
-    orders.value = allOrders;
-    filterOrders(selectedStatus.value);
-  });
 
   const steps = computed(() => {
     if (!recentOrder.value) return [];

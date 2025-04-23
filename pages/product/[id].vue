@@ -332,11 +332,15 @@
 
   const crumbs: Crumbs[] = [
     { label: "Home", link: "/", icon: "lucide:house" },
-    { label: "All Products", link: "/", icon: "lucide:box" },
+    { label: "All Products", link: "/products", icon: "lucide:box" },
     { label: "Product", link: "/", disabled: true, icon: "lucide:shirt" },
   ];
 
-  const { commissionRate, fetchCommissionRate } = useCommissionRate();
+  const {
+    commissionRate,
+    fetchCommissionRate,
+    clearCache: clearCommissionCache,
+  } = useCommissionRate();
   const { calculatePriceWithCommission } = usePriceCalculator(commissionRate);
   const { addView, countViews } = useAddProductViews();
 
@@ -368,14 +372,11 @@
   );
   const { data: variationsSnapshot } = useCollection(variationsRef);
 
-  console.log("variationsSnapshot", variationsSnapshot);
-
   const variations = computed(() => {
     if (!variationsSnapshot.value) {
       return [];
     }
     return variationsSnapshot.value.map((doc) => {
-      console.log("doc", doc); // Debugging log
       return {
         id: doc.id,
         ...doc,
@@ -383,7 +384,6 @@
     }) as (Variation & { id: string })[];
   });
 
-  // watch(productID, fetchVariations, { immediate: true });
   const priceRange = computed(() => {
     if (variations.value.length === 0) return "";
 
@@ -395,8 +395,6 @@
       ? `₱${minPrice.toFixed(2)}`
       : `₱${minPrice.toFixed(2)} - ₱${maxPrice.toFixed(2)}`;
   });
-  // console.log("Variations: ", variations.value);
-  // console.log("Price range: ", priceRange.value);
 
   const selectedVariationAddToCart = ref<(Variation & { id: string }) | null>(null);
   const quantityAddToCart = ref(1);
@@ -523,15 +521,12 @@
   const orgProducts = ref<ProductWithId[]>([]);
   const productViewCounts = reactive<Record<string, number>>({});
   const fetchProductViewCounts = async () => {
-    // console.log("Fetching product view counts...");
-
     // Fetch view count for the current product
     if (product.value?.id) {
       try {
-        console.log(`Fetching view count for Current Product ID: ${product.value.id}`);
         const viewCount = await countViews(product.value.id);
         productViewCounts[product.value.id] = viewCount;
-        console.log(`Current Product ID: ${product.value.id}, View Count: ${viewCount}`);
+        // console.log(`Current Product ID: ${product.value.id}, View Count: ${viewCount}`);
       } catch (error) {
         console.error(
           `Error fetching view count for Current Product ID: ${product.value.id}`,
@@ -541,7 +536,7 @@
     }
 
     if (!orgProducts.value || orgProducts.value.length === 0) {
-      console.log("No products found to fetch view counts.");
+      // console.log("No products found to fetch view counts.");
       return;
     }
 
@@ -556,10 +551,12 @@
     product,
     async () => {
       if (product.value?.organizationID) {
-        const { products, fetchOrganizationProducts, organizationName } = useOrganizationProducts(
-          product.value.organizationID,
-          productID.value as string
-        );
+        const {
+          products,
+          fetchOrganizationProducts,
+          organizationName,
+          clearCache: clearOrgProductsCache,
+        } = useOrganizationProducts(product.value.organizationID, productID.value as string);
         try {
           await fetchOrganizationProducts();
           orgProducts.value = products.value.map((p) => ({
@@ -590,7 +587,17 @@
     }
   });
 
+  // Clear cache and fetch fresh data on mount
   onMounted(async () => {
+    clearCommissionCache();
     await fetchCommissionRate();
+
+    if (product.value?.organizationID) {
+      const { clearCache: clearOrgProductsCache, fetchOrganizationProducts } =
+        useOrganizationProducts(product.value.organizationID, productID.value as string);
+
+      clearOrgProductsCache();
+      await fetchOrganizationProducts();
+    }
   });
 </script>

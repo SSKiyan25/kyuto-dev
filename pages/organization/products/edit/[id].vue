@@ -40,7 +40,7 @@
   const { data: product, pending } = useDocument<Partial<Product>>(productRef);
 
   const orgId = product.value?.organizationID;
-  const { getOrganizationById } = useOrganization();
+  const { getOrganizationById, clearCache } = useOrganization();
   const organization = ref<OrganizationWithId | null>(null);
 
   // Constants and Meta
@@ -233,6 +233,7 @@
 
   onMounted(() => {
     if (orgId) {
+      clearCache();
       getOrganizationById(orgId)
         .then((org) => {
           organization.value = org;
@@ -321,8 +322,8 @@
                 </div>
                 <!-- Reason for disabling Publish -->
                 <p v-if="!organization?.isPublic" class="mt-2 text-sm text-muted-foreground">
-                  The "Publish" option is disabled because the organization is currently hidden.
-                  Make the organization public to enable publishing.
+                  The "Publish" option will be disabled if the organization visibility is currently
+                  hidden. Make the organization public to enable publishing.
                 </p>
               </div>
               <div class="flex flex-col gap-2 pt-4">

@@ -5,6 +5,7 @@ export const useViewProducts = () => {
   const db = useFirestore();
   const products = ref<ProductWithId[]>([]);
   const loading = ref(false);
+  const CACHE_KEY = "cachedProducts";
 
   const loadImage = (url: string): Promise<void> => {
     return new Promise((resolve, reject) => {
@@ -15,6 +16,10 @@ export const useViewProducts = () => {
     });
   };
 
+  const getCacheKey = (sortBy: string, categories: string[], sortPrice: string, page: number) => {
+    return `${sortBy}-${categories.join(",")}-${sortPrice}-${page}`;
+  };
+
   const fetchProducts = async (
     sortBy: string = "all",
     categories: string[] = [],
@@ -23,7 +28,22 @@ export const useViewProducts = () => {
     page: number = 1
   ): Promise<{ products: ProductWithId[]; totalProducts: number }> => {
     loading.value = true;
+
     try {
+      // Generate a unique cache key
+      const cacheKey = getCacheKey(sortBy, categories, sortPrice, page);
+
+      // Check if products are cached
+      const cachedData = localStorage.getItem(CACHE_KEY);
+      const cache = cachedData ? JSON.parse(cachedData) : {};
+
+      if (cache[cacheKey]) {
+        console.log("Loaded products from cache:", cache[cacheKey]);
+        products.value = cache[cacheKey].products;
+        return cache[cacheKey];
+      }
+
+      // If not cached, fetch from Firebase
       let productsQuery = query(
         collection(db, "products"),
         where("status", "==", "Publish"),
@@ -44,7 +64,6 @@ export const useViewProducts = () => {
       const totalSnapshot = await getDocs(productsQuery);
       const totalProducts = totalSnapshot.size;
 
-      console.log("Total products:", totalProducts);
       // Apply limit and orderBy
       productsQuery = query(productsQuery, orderBy("dateCreated", "desc"), limit(limitCount));
 
@@ -88,6 +107,10 @@ export const useViewProducts = () => {
         enhancedProducts.sort((a, b) => b.price - a.price);
       }
 
+      // Cache the fetched products
+      cache[cacheKey] = { products: enhancedProducts, totalProducts };
+      localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+
       products.value = enhancedProducts;
       console.log("Fetched products:", enhancedProducts);
       return { products: enhancedProducts, totalProducts };
@@ -99,9 +122,15 @@ export const useViewProducts = () => {
     }
   };
 
+  const clearCache = () => {
+    localStorage.removeItem(CACHE_KEY);
+    console.log("Cache cleared");
+  };
+
   return {
     products,
     loading,
     fetchProducts,
+    clearCache,
   };
 };
