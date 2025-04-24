@@ -147,7 +147,6 @@
 <script lang="ts" setup>
   import { useOrganization } from "~/composables/useOrganizationValues";
   import { signOut } from "firebase/auth";
-  import { doc } from "firebase/firestore";
   import { useRoute, useRouter } from "vue-router";
   import type { Crumbs } from "~/components/Ui/Breadcrumbs.vue";
   import type { Account } from "~/types/models/Account";
@@ -213,6 +212,11 @@
     { title: "Inbox", icon: "lucide:inbox", link: `/organization/inbox/${organizationID}` },
     { title: "Products", icon: "lucide:package", link: `/organization/products/${organizationID}` },
     { title: "Orders", icon: "lucide:list-checks", link: `/organization/orders/${organizationID}` },
+    {
+      title: "Billings",
+      icon: "lucide:credit-card",
+      link: `/organization/billings/${organizationID}`,
+    },
     { title: "Members", icon: "lucide:users", link: `/organization/members/${organizationID}` },
   ];
 

@@ -13,19 +13,11 @@
         </div>
       </div>
       <div class="flex flex-row space-x-2">
-        <UiButton @click="handleNewPayment">
-          <Icon name="lucide:plus" class="mr-2" />
-          Record Payment
+        <UiButton @click="refreshData" :disabled="isRefreshing" class="flex items-center p-4">
+          <Icon name="lucide:refresh-cw" class="mr-2" :class="{ 'animate-spin': isRefreshing }" />
+          Refresh
         </UiButton>
-        <UiButton @click="refreshData" class="p-4"> Refresh </UiButton>
       </div>
-      <AdminCommissionAddPayment
-        ref="paymentModal"
-        :organization-name="organization?.name || ''"
-        :unpaid-amount="financials?.totalDue || 0"
-        :organization-id="organizationId"
-        @submit="handlePaymentSuccess"
-      />
     </div>
 
     <!-- Commission Summary -->
@@ -93,16 +85,12 @@
   import type { Config } from "datatables.net";
 
   definePageMeta({
-    layout: "admin",
-    middleware: ["auth-admin"],
+    layout: "organization",
+    middleware: ["auth"],
   });
 
-  interface StatusSlotProps {
-    cellData: CommissionPayment;
-  }
-
   const search = ref("");
-
+  const isRefreshing = ref(false);
   const route = useRoute();
   const organizationId = route.params.id as string;
   const paymentModal = ref();
@@ -173,27 +161,26 @@
     return useDateFormat(last.dateCreated, "MMM DD, YYYY").value;
   });
 
-  const handleNewPayment = () => {
-    paymentModal.value?.open();
-  };
-
   const refreshData = async () => {
-    clearCache("");
-    await fetchOrganization();
-    await fetchFinancials();
-    await refreshCommissionHistory();
+    if (isRefreshing.value) return; // Prevent multiple clicks
+    isRefreshing.value = true;
+
+    try {
+      clearCache();
+      await fetchOrganization();
+      await fetchFinancials();
+      await refreshCommissionHistory();
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+    } finally {
+      isRefreshing.value = false; // Re-enable the button
+    }
   };
 
   onMounted(() => {
     fetchOrganization();
     fetchFinancials();
   });
-
-  const handlePaymentSuccess = async () => {
-    // Fetch updated data after a successful payment
-    fetchOrganization();
-    await fetchFinancials();
-  };
 
   const options: Config = {
     dom: `<'overflow-hidden rounded-lg border border-border bg-background'<'overflow-auto't>>`,

@@ -24,7 +24,17 @@ export interface CommissionPayment {
 export const useCommission = () => {
   const db = useFirestore();
 
+  // In-memory cache
+  const cache: Record<string, CommissionPayment[]> = {};
+
   const getCommissionHistory = async (organizationId: string) => {
+    // Check if data is already in cache
+    if (cache[organizationId]) {
+      console.log("Returning cached data for organization:", organizationId);
+      return cache[organizationId];
+    }
+
+    // Fetch data from Firestore
     const q = query(
       collection(db, "commissionPayments"),
       where("organizationId", "==", organizationId),
@@ -32,12 +42,17 @@ export const useCommission = () => {
     );
 
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((doc) => ({
+    const data = snapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
       dateCreated: doc.data().dateCreated.toDate(),
       lastModified: doc.data().lastModified.toDate(),
     })) as CommissionPayment[];
+
+    // Store data in cache
+    cache[organizationId] = data;
+
+    return data;
   };
 
   const recordCommissionPayment = async (
@@ -82,6 +97,9 @@ export const useCommission = () => {
         });
       });
 
+      // Clear cache for the organization after a successful payment
+      clearCache(organizationId);
+
       return paymentRef.id;
     } catch (error) {
       console.error("Payment failed:", error);
@@ -89,8 +107,21 @@ export const useCommission = () => {
     }
   };
 
+  const clearCache = (organizationId?: string) => {
+    if (organizationId) {
+      console.log("Clearing cache for organization:", organizationId);
+      delete cache[organizationId];
+    } else {
+      console.log("Clearing entire cache");
+      for (const key in cache) {
+        delete cache[key];
+      }
+    }
+  };
+
   return {
     getCommissionHistory,
     recordCommissionPayment,
+    clearCache,
   };
 };
