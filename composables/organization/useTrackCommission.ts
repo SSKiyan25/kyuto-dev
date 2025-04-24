@@ -4,7 +4,7 @@ export const useTrackCommission = () => {
   const db = useFirestore();
 
   const trackCommission = async (organizationID: string) => {
-    console.log("Tracking commission for organization ID:", organizationID);
+    // console.log("Tracking commission for organization ID:", organizationID);
     try {
       // Fetch organization document
       const orgRef = doc(db, "organizations", organizationID);
@@ -19,7 +19,7 @@ export const useTrackCommission = () => {
       }
 
       const orgData = orgDoc.data();
-      console.log("Organization data:", orgData);
+      // console.log("Organization data:", orgData);
 
       // Extract totalPaid and totalDue
       const paidCommission = orgData.totalPaid || 0;

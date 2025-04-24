@@ -1,7 +1,6 @@
 export interface Order {
   buyerID: string;
   organizationID: string;
-  // organizationName: string;
   orderStatus: string;
   uniqRefNumber: string;
   paymentMethod: string;

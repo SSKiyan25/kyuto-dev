@@ -28,7 +28,7 @@ export async function fetchProducts(
   const db = useFirestore();
   const { userData } = await useFetchUser();
 
-  console.log("Organization ID in composable: ", userData.organizationId);
+  // console.log("Organization ID in composable: ", userData.organizationId);
   let productsQuery = query(
     collection(db, "products"),
     where("organizationID", "==", userData.organizationId),
@@ -54,7 +54,7 @@ export async function fetchProducts(
     const product = doc.data() as Product;
     return { ...product, id: doc.id };
   });
-  console.log("Products in composable: ", products);
+  // console.log("Products in composable: ", products);
 
   const enhancedProducts = await Promise.all(
     products.map(async (product) => {
@@ -74,7 +74,7 @@ export async function fetchProducts(
     })
   );
 
-  console.log("Enhanced Products in composable: ", enhancedProducts);
+  // console.log("Enhanced Products in composable: ", enhancedProducts);
   return {
     products: enhancedProducts,
     lastVisible: productsSnapshot.docs[productsSnapshot.docs.length - 1],

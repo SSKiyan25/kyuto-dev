@@ -314,8 +314,8 @@
     statusLoading.value = true;
     if (selectedOrder.value && selectedOrder.value.id) {
       try {
-        console.log("Cancelling order:", selectedOrder.value.id);
-        console.log("Remarks:", cancelRemarks.value);
+        // console.log("Cancelling order:", selectedOrder.value.id);
+        // console.log("Remarks:", cancelRemarks.value);
         await cancelOrder(
           selectedOrder.value.id,
           cancelRemarks.value,
