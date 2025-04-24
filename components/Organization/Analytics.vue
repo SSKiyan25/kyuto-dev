@@ -330,11 +330,6 @@
         </UiCardContent>
       </UiCard>
     </template>
-
-    <!-- Error State -->
-    <div v-else class="text-destructive">
-      Failed to load analytics data. Please try again later.
-    </div>
   </div>
 </template>
 

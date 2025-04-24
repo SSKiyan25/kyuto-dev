@@ -330,6 +330,16 @@
     },
   ];
 
+  const formattedStockLogs = computed(() => {
+    if (!selectedVariation.value) return [];
+    return (
+      stocksLogs.value[selectedVariation.value.id]?.map((log) => ({
+        ...log,
+        selectedVariation: selectedVariation.value?.value || "Unknown",
+      })) || []
+    );
+  });
+
   onMounted(async () => {
     orgID.value = await getOrgIDFromProduct(productID);
     console.log("Org ID:", orgID.value);
@@ -582,47 +592,7 @@
           </div>
           <div class="grid grid-cols-9 items-center justify-center">
             <div class="col-span-9 mx-16 pt-10">
-              <UiTable class="border">
-                <UiTableCaption>Stock History</UiTableCaption>
-                <UiTableHeader>
-                  <UiTableRow>
-                    <UiTableHead>Date</UiTableHead>
-                    <UiTableHead>Action</UiTableHead>
-                    <UiTableHead>Quantity</UiTableHead>
-                    <UiTableHead> Selected Variation</UiTableHead>
-                  </UiTableRow>
-                </UiTableHeader>
-                <UiTableBody class="last:border-b">
-                  <template
-                    v-if="selectedVariation && selectedVariation.id"
-                    v-for="log in stocksLogs[selectedVariation.id]"
-                    :key="log.dateCreated"
-                  >
-                    <UiTableRow>
-                      <UiTableCell class="bg-secondary">{{
-                        formatDate(log.dateCreated)
-                      }}</UiTableCell>
-                      <UiTableCell>
-                        <UiBadge v-if="log.action === 'Initial Stock'" variant="secondary">
-                          Initial Stock
-                        </UiBadge>
-                        <UiBadge v-else-if="log.action === 'Add Stock'" variant="default">
-                          Add Stock
-                        </UiBadge>
-                        <UiBadge v-else-if="log.action === 'Remove Stock'" variant="destructive">
-                          Remove Stock
-                        </UiBadge>
-                        <UiBadge v-else-if="log.remarks === 'ordered'"> Ordered </UiBadge>
-                        <UiBadge v-else-if="log.remarks === 'cancelled'" variant="destructive">
-                          Ordered
-                        </UiBadge>
-                      </UiTableCell>
-                      <UiTableCell>{{ log.quantity }}</UiTableCell>
-                      <UiTableCell>{{ selectedVariation.value }}</UiTableCell>
-                    </UiTableRow>
-                  </template>
-                </UiTableBody>
-              </UiTable>
+              <OrganizationStocksHistory :tableData="formattedStockLogs" />
             </div>
           </div>
         </div>
