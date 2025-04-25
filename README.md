@@ -61,7 +61,28 @@ Kyuto is a modern, scalable e-commerce platform designed specifically for studen
 - **Known Issues**  
   - Simple analytics still in development.  
   - GCash payment option pending.  
-  - Limited admin automation tools (e.g., account tracking).  
+  - Limited admin automation tools (e.g., account tracking). 
+
+### **KT.010.003 (Latest)**  
+- **Added**  
+  - **Analytics Dashboard:** Real-time tracking of sales and user activity.  
+  - **Email Notifications:** Order confirmations sent to buyers' Gmail.  
+  - **Forgot Password:** Self-service password recovery.  
+  - **Terms & Privacy Pages:** Compliance-ready policies.  
+  - **Caching System:** Reduced database load for faster performance.  
+  - **Admin Tools:** Enhanced user/content management.  
+
+- **Fixed**  
+  - Database alignment for organization functions.  
+  - Improved Stocks Logs Table readability.  
+
+- **Known Issues**  
+  - Mobile responsiveness pending optimization.  
+  - Auth middleware session-handling errors.  
+
+- **Next Release**  
+  - **GCash Payment Integration**  
+  - **Staff/Manager Account Management for Organizations**  
  
 Important Links:
  - Design Specs: https://github.com/SSKiyan25/kyuto
