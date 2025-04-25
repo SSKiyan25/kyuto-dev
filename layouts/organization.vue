@@ -153,8 +153,6 @@
 
   const route = useRoute();
   const router = useRouter();
-  const user = useCurrentUser();
-  const db = useFirestore();
   const auth = useFirebaseAuth();
 
   const links = computed(() => [

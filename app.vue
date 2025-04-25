@@ -1,6 +1,17 @@
 <script setup lang="ts">
   import { useSidebar } from "~/composables/misc/useSidebar";
 
+  const { isReady } = useAuthStore();
+
+  // Global loading state
+  const showLoader = ref(true);
+
+  watchEffect(() => {
+    if (isReady) {
+      showLoader.value = false;
+    }
+  });
+
   useHead({
     title: "Verch | The Central Store for Organization Merchandises",
     link: [
@@ -28,12 +39,26 @@
 </script>
 
 <template>
-  <div>
-    <NuxtLoadingIndicator />
-    <NuxtLayout>
-      <NuxtPage />
-    </NuxtLayout>
-    <UiVueSonner />
-    <UiToastToaster />
-  </div>
+  <NuxtLoadingIndicator />
+  <NuxtLayout>
+    <div class="relative">
+      <!-- Loader -->
+      <div
+        v-if="showLoader"
+        class="fixed inset-0 z-50 flex min-h-screen w-full items-center justify-center bg-secondary/40 backdrop-blur"
+      >
+        <div class="text-center">
+          <Icon name="lucide:loader-2" class="mx-auto h-8 w-8 animate-spin" />
+          <p class="mt-2 text-lg font-semibold">Loading...</p>
+        </div>
+      </div>
+
+      <!-- Page Content -->
+      <div v-else>
+        <NuxtPage />
+        <UiVueSonner />
+        <UiToastToaster />
+      </div>
+    </div>
+  </NuxtLayout>
 </template>

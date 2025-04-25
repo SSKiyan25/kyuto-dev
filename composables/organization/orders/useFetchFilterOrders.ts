@@ -96,7 +96,7 @@ export const useFetchFilterOrders = () => {
     organizationID: string,
     orderStatus: string = "all"
   ): Promise<ExtendedOrder[]> => {
-    console.log("Fetching filtered orders for organization: ", organizationID);
+    // console.log("Fetching filtered orders for organization: ", organizationID);
     const orders: ExtendedOrder[] = [];
     try {
       const ordersRef = collection(db, "orders");
@@ -111,14 +111,14 @@ export const useFetchFilterOrders = () => {
       }
 
       const querySnapshot = await getDocs(q);
-      console.log("Total orders fetched: ", querySnapshot.docs.length);
+      // console.log("Total orders fetched: ", querySnapshot.docs.length);
       for (const doc of querySnapshot.docs) {
         const order = doc.data() as Order;
-        console.log("Processing order: ", order);
+        // console.log("Processing order: ", order);
         const orderItems = await fetchOrderItems(doc.id);
-        console.log("Order items fetched: ", orderItems);
+        // console.log("Order items fetched: ", orderItems);
         const buyerAccountDetails = await fetchBuyerAccountDetails(order.buyerID);
-        orders.push({ ...order, id: doc.id, orderItems, buyerAccountDetails });
+        // orders.push({ ...order, id: doc.id, orderItems, buyerAccountDetails });
       }
       return orders;
     } catch (error) {

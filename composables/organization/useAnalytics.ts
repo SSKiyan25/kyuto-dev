@@ -108,7 +108,7 @@ export const useOrganizationAnalytics = () => {
     const cacheKey = `orderStats:${organizationID}`;
     const cachedData = getCache(cacheKey);
     if (cachedData) return cachedData;
-    console.log("Fetching order stats for organization ID:", organizationID);
+    // console.log("Fetching order stats for organization ID:", organizationID);
     const ordersRef = collection(db, "orders");
     const q = query(ordersRef, where("organizationID", "==", organizationID));
 
@@ -150,20 +150,20 @@ export const useOrganizationAnalytics = () => {
   const getOrganizationAnalytics = async (
     organizationID: string
   ): Promise<OrganizationAnalytics> => {
-    console.log("Fetching organization analytics for ID:", organizationID);
+    // console.log("Fetching organization analytics for ID:", organizationID);
     const cacheKey = `organizationAnalytics:${organizationID}`;
     const cachedData = getCache(cacheKey);
     if (cachedData) return cachedData;
 
     const { orderCount, totalRevenue } = await getOrderStats(organizationID);
     const productSales = await getProductSales(organizationID);
-    console.log("Product Sales:", productSales);
+    // console.log("Product Sales:", productSales);
 
     const productIDs = Object.keys(productSales);
     if (productIDs.length === 0) {
       console.warn("No products found for the organization.");
     }
-    console.log("Product IDs:", productIDs);
+    // console.log("Product IDs:", productIDs);
 
     const viewCounts = await getProductViews(productIDs);
 

@@ -37,7 +37,7 @@ export const useOrganization = () => {
   // Helper to clear the cache
   const clearCache = () => {
     localStorage.removeItem(CACHE_KEY);
-    console.log("Organization cache cleared");
+    // console.log("Organization cache cleared");
   };
 
   // Existing functions
@@ -65,7 +65,7 @@ export const useOrganization = () => {
     const cachedOrganization = getCachedData(cacheKey);
 
     if (cachedOrganization) {
-      console.log(`Loaded organization ${id} from cache`);
+      // console.log(`Loaded organization ${id} from cache`);
       return cachedOrganization;
     }
 
@@ -104,7 +104,7 @@ export const useOrganization = () => {
     const cachedSearchResults = getCachedData(cacheKey);
 
     if (cachedSearchResults) {
-      console.log(`Loaded search results for "${searchTerm}" from cache`);
+      // console.log(`Loaded search results for "${searchTerm}" from cache`);
       return cachedSearchResults;
     }
 
@@ -137,7 +137,7 @@ export const useOrganization = () => {
     const cachedFinancials = getCachedData(cacheKey);
 
     if (cachedFinancials) {
-      console.log(`Loaded financials for organization ${organizationId} from cache`);
+      // console.log(`Loaded financials for organization ${organizationId} from cache`);
       return cachedFinancials;
     }
 
@@ -162,7 +162,7 @@ export const useOrganization = () => {
     const cachedCommissions = getCachedData(cacheKey);
 
     if (cachedCommissions) {
-      console.log(`Loaded commissions for organization ${organizationId} from cache`);
+      // console.log(`Loaded commissions for organization ${organizationId} from cache`);
       return cachedCommissions;
     }
 

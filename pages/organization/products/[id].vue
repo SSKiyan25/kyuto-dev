@@ -160,9 +160,10 @@
         pageSize,
         filterBy.value,
         defaultCategory.value,
-        reset ? null : lastVisible.value
+        reset ? null : lastVisible.value,
+        orgIDLink
       );
-      console.log("Products in script:", result.products);
+      // console.log("Products in script:", result.products);
 
       const newData = result.products.map((product) => ({
         id: product.id,
@@ -187,7 +188,7 @@
       }
 
       lastVisible.value = result.lastVisible;
-      console.log("Data: ", data.value);
+      // console.log("Data: ", data.value);
     }
   };
 
@@ -252,9 +253,9 @@
   });
 
   const onSubmit = handleSubmit(async (values) => {
-    console.log(discountTarget.value, discountType.value);
-    console.log("productSelected", productSelected.value);
-    console.log("Form values:", values);
+    // console.log(discountTarget.value, discountType.value);
+    // console.log("productSelected", productSelected.value);
+    // console.log("Form values:", values);
 
     const validCustomDiscountPrices = values.customDiscountPrices?.filter(
       (item) => item.price !== undefined

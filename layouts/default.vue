@@ -61,7 +61,7 @@
                         <UiButton
                           variant="ghost"
                           class="justify-start text-sm"
-                          :to="`/user/profile/${userData?.id}`"
+                          :to="`/user/profile/${user?.id}`"
                         >
                           My Profile
                         </UiButton>
@@ -78,7 +78,7 @@
                         <UiButton
                           variant="ghost"
                           class="justify-start text-sm"
-                          :to="`/user/cart/${userData?.id}`"
+                          :to="`/user/cart/${user?.id}`"
                         >
                           Cart
                         </UiButton>
@@ -89,7 +89,7 @@
                         <UiButton
                           variant="ghost"
                           class="justify-start text-sm"
-                          :to="`/user/orders/track-orders/${userData?.id}`"
+                          :to="`/user/orders/track-orders/${user?.id}`"
                         >
                           My Orders
                         </UiButton>
@@ -103,7 +103,7 @@
                         <UiButton
                           variant="ghost"
                           class="justify-start text-sm"
-                          :to="`/organization/products/${organizationID}`"
+                          :to="`/organization/products/${user?.organizationId}`"
                         >
                           Manage Store
                         </UiButton>
@@ -114,7 +114,7 @@
                         <UiButton
                           variant="ghost"
                           class="justify-start text-sm"
-                          :to="`/organization/orders/${organizationID}`"
+                          :to="`/organization/orders/${user?.organizationId}`"
                         >
                           Manage Orders
                         </UiButton>
@@ -136,7 +136,7 @@
         </div>
         <div class="hidden items-center gap-3 sm:flex">
           <template v-if="user">
-            <UiButton :to="`/user/cart/${userData?.id}`" variant="ghost">
+            <UiButton :to="`/user/cart/${user?.id}`" variant="ghost">
               <UiChip
                 :class="cartNum > 0 ? 'bg-red-700 text-white' : ''"
                 size="lg"
@@ -162,7 +162,7 @@
                     <div class="flex w-[200px] flex-col justify-start px-4 py-4 text-sm">
                       <span></span>
                       <!-- User Profile -->
-                      <NuxtLink :to="`/user/profile/${userData?.organizationId}`">
+                      <NuxtLink :to="`/user/profile/${user?.id}`">
                         <div
                           class="flex flex-row items-center justify-between rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
                         >
@@ -174,11 +174,11 @@
                           <Icon name="lucide:move-up-right" class="h-2 w-2 opacity-70" />
                         </div>
                       </NuxtLink>
-                      <NuxtLink :to="`/user/orders/track-orders/${userData?.id}`">
+                      <NuxtLink :to="`/user/orders/track-orders/${user?.id}`">
                         <div
                           class="flex flex-row items-center justify-between rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
                         >
-                          <NuxtLink :to="`/user/orders/track-orders/${userData?.id}`">
+                          <NuxtLink :to="`/user/orders/track-orders/${user?.id}`">
                             <div class="flex items-center">
                               <Icon name="lucide:box" class="h-4 w-4" />
                               <div class="pl-2">Your Orders</div>
@@ -188,7 +188,7 @@
                           <Icon name="lucide:move-up-right" class="h-2 w-2 opacity-70" />
                         </div>
                       </NuxtLink>
-                      <NuxtLink :to="`/user/inbox/${userData?.id}`">
+                      <NuxtLink :to="`/user/inbox/${user?.id}`">
                         <div
                           class="flex flex-row items-center justify-between rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
                         >
@@ -200,10 +200,10 @@
                           <Icon name="lucide:move-up-right" class="h-2 w-2 opacity-70" />
                         </div>
                       </NuxtLink>
-                      <div v-if="userData && userData.hasOrganization">
+                      <div v-if="hasOrganization">
                         <UiDivider class="py-2" />
                         <!-- Organization Dashboard -->
-                        <NuxtLink :to="`/organization/products/${userData?.organizationId}`">
+                        <NuxtLink :to="`/organization/products/${user?.organizationId}`">
                           <div
                             class="flex flex-row items-center justify-start rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
                           >
@@ -211,7 +211,7 @@
                             <div class="pl-2">Manage Store</div>
                           </div>
                         </NuxtLink>
-                        <NuxtLink :to="`/organization/orders/${userData?.organizationId}`">
+                        <NuxtLink :to="`/organization/orders/${user?.organizationId}`">
                           <div
                             class="flex flex-row items-center justify-start rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
                           >
@@ -252,7 +252,7 @@
           <UiButton
             variant="ghost"
             class="flex h-16 flex-1 flex-col justify-center border-l py-2 text-sm text-muted-foreground"
-            v-if="!(link.name === 'My Store' && !userData?.hasOrganization)"
+            v-if="!(link.name === 'My Store' && !user?.hasOrganization)"
           >
             <Icon :name="link.icon" class="h-5 w-5" />
             {{ link.name }}
@@ -266,27 +266,24 @@
 <script lang="ts" setup>
   import { useFetchUserCart } from "~/composables/user/useFetchUserCart";
   import { signOut } from "firebase/auth";
-  import { doc } from "firebase/firestore";
   import type { Account } from "~/types/models/Account";
 
-  const user = useCurrentUser();
-  const db = useFirestore();
-  console.log("user", user);
-  console.log("User uid", user.value?.uid);
+  const user = ref<Account | null>(null);
+
+  onMounted(async () => {
+    const authStore = useAuthStore();
+    user.value = authStore.user;
+  });
+
+  const hasOrganization = computed(() => !!user.value?.organizationId);
 
   const cartNum = ref(0);
-  const userId = ref<string | null>(null);
-
-  //const orgData = await fetchOrganization();
-  const userDocRef = computed(() => (user.value ? doc(db, "accounts", user.value.uid) : null));
-  const userData = useDocument<Partial<Account>>(userDocRef) as Partial<Account> | undefined;
-  console.log("userData in Navbar", userData);
 
   watch(
     () => user.value,
     (newUser) => {
       if (newUser) {
-        const { userCart, fetchUserCart } = useFetchUserCart(newUser.uid);
+        const { userCart, fetchUserCart } = useFetchUserCart(newUser.id);
         watch(
           () => userCart.value,
           (newCart) => {
@@ -307,20 +304,22 @@
     navigateTo("/login");
   };
 
-  const organizationID = computed(() => userData?.organizationId);
-
   const mobileLinks = computed(() => [
     { name: "Home", to: "/", icon: "lucide:house" },
     {
       name: "My Profile",
-      to: user.value ? `/user/profile/${user.value.uid}` : "",
+      to: user.value ? `/user/profile/${user.value.id}` : "",
       icon: "lucide:user",
     },
     {
       name: "Cart",
-      to: user.value ? `/user/cart/${user.value.uid}` : "",
+      to: user.value ? `/user/cart/${user.value.id}` : "",
       icon: "lucide:shopping-cart",
     },
-    { name: "My Store", to: `/organization/products/${organizationID}`, icon: "lucide:store" },
+    {
+      name: "My Store",
+      to: `/organization/products/${user.value?.organizationId}`,
+      icon: "lucide:store",
+    },
   ]);
 </script>

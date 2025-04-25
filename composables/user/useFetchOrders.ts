@@ -166,7 +166,7 @@ export const useFetchOrders = () => {
     }
 
     const querySnapshot = await getDocs(q);
-    console.log("querySnapshot size:", querySnapshot.size);
+    // console.log("querySnapshot size:", querySnapshot.size);
     if (querySnapshot.empty) {
       console.log("No matching documents.");
     } else {

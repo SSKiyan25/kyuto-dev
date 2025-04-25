@@ -20,13 +20,13 @@ export const useCheckoutCart = () => {
 
   const removeCartItem = async (userID: string, cartItemID: string) => {
     loading.value = true;
-    console.log(`Removing cart item in composable ${cartItemID}...`);
-    console.log(`User ID: ${userID}`);
+    // console.log(`Removing cart item in composable ${cartItemID}...`);
+    // console.log(`User ID: ${userID}`);
     try {
       const cartItemDocRef = doc(db, `accounts/${userID}/cart/${cartItemID}`);
       await deleteDoc(cartItemDocRef);
       userCart.value = userCart.value.filter((item) => item.id !== cartItemID);
-      console.log(`Cart item ${cartItemID} removed successfully`);
+      // console.log(`Cart item ${cartItemID} removed successfully`);
     } catch (error) {
       console.error("Error removing cart item:", error);
     } finally {
@@ -158,7 +158,7 @@ export const useCheckoutCart = () => {
         await removeCartItem(userID, item.id);
       }
 
-      console.log("Order created successfully");
+      // console.log("Order created successfully");
     } catch (error) {
       console.error("Error creating order:", error);
     } finally {

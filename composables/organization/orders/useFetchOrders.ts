@@ -38,22 +38,22 @@ export const useFetchOrders = () => {
 
   // Helper function to fetch order items for a given order ID
   const fetchOrderItems = async (orderID: string): Promise<ExtendedOrderItem[]> => {
-    console.log("Fetching order items for order: ", orderID);
+    // console.log("Fetching order items for order: ", orderID);
     const orderItems: ExtendedOrderItem[] = [];
     try {
       const orderItemsRef = collection(db, `orders/${orderID}/orderItems`);
       const querySnapshot = await getDocs(orderItemsRef);
-      console.log("Total order items fetched: ", querySnapshot.docs.length);
+      // console.log("Total order items fetched: ", querySnapshot.docs.length);
       for (const doc of querySnapshot.docs) {
         const orderItem = doc.data() as OrderItem;
-        console.log("Processing order item: ", orderItem);
+        // console.log("Processing order item: ", orderItem);
         const productDetails = await fetchProductDetails(orderItem.productID);
-        console.log("Product details fetched: ", productDetails);
+        // console.log("Product details fetched: ", productDetails);
         const variationDetails = await fetchVariationDetails(
           orderItem.productID,
           orderItem.variationID
         );
-        console.log("Variation details fetched: ", variationDetails);
+        // console.log("Variation details fetched: ", variationDetails);
         orderItems.push({
           ...orderItem,
           id: doc.id,
@@ -91,14 +91,14 @@ export const useFetchOrders = () => {
     try {
       const ordersRef = collection(db, "orders");
       const querySnapshot = await getDocs(ordersRef);
-      console.log("Total orders fetched: ", querySnapshot.docs.length);
+      // console.log("Total orders fetched: ", querySnapshot.docs.length);
       for (const doc of querySnapshot.docs) {
         const order = doc.data() as Order;
-        console.log("Processing order: ", order);
+        // console.log("Processing order: ", order);
         const orderItems = await fetchOrderItems(doc.id);
-        console.log("Order items fetched: ", orderItems);
+        // console.log("Order items fetched: ", orderItems);
         const filteredOrderItems = orderItems.filter((item) => item.productID === productID);
-        console.log(`Order ID: ${doc.id}, Filtered Order Items:`, filteredOrderItems);
+        // console.log(`Order ID: ${doc.id}, Filtered Order Items:`, filteredOrderItems);
         if (filteredOrderItems.length > 0) {
           orders.push({ ...order, id: doc.id, orderItems: filteredOrderItems });
         }
@@ -106,24 +106,24 @@ export const useFetchOrders = () => {
     } catch (error) {
       console.error("Error fetching product orders:", error);
     }
-    console.log("Fetched Orders:", orders);
+    // console.log("Fetched Orders:", orders);
     return orders;
   };
 
   // Fetch orders for the organization
   const fetchOrganizationOrders = async (organizationID: string): Promise<ExtendedOrder[]> => {
-    console.log("Fetching orders for organization: ", organizationID);
+    // console.log("Fetching orders for organization: ", organizationID);
     const orders: ExtendedOrder[] = [];
     try {
       const ordersRef = collection(db, "orders");
       const q = query(ordersRef, where("organizationID", "==", organizationID));
       const querySnapshot = await getDocs(q);
-      console.log("Total orders fetched: ", querySnapshot.docs.length);
+      // console.log("Total orders fetched: ", querySnapshot.docs.length);
       for (const doc of querySnapshot.docs) {
         const order = doc.data() as Order;
-        console.log("Processing order: ", order);
+        // console.log("Processing order: ", order);
         const orderItems = await fetchOrderItems(doc.id);
-        console.log("Order items fetched: ", orderItems);
+        // console.log("Order items fetched: ", orderItems);
         orders.push({ ...order, id: doc.id, orderItems });
       }
     } catch (error) {
@@ -137,7 +137,7 @@ export const useFetchOrders = () => {
     productID: string,
     orderStatus: "preparing" | "ready"
   ): Promise<void> => {
-    console.log(`Setting orders for product ${productID} to ${orderStatus}`);
+    // console.log(`Setting orders for product ${productID} to ${orderStatus}`);
     try {
       const orders = await fetchProductOrders(productID);
       for (const order of orders) {

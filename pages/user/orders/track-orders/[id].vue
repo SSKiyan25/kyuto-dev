@@ -293,7 +293,7 @@
   const selectedStatus = ref<string>("all");
   const route = useRoute();
   const userID = computed(() => route.params.id as string);
-  console.log("User ID:", userID.value);
+  // console.log("User ID:", userID.value);
 
   const isMobile = ref(false);
 
@@ -304,7 +304,7 @@
   onMounted(() => {
     // Fetch and log user orders
     fetchUserOrders(userID.value).then((userOrders) => {
-      console.log("User Orders:", userOrders);
+      // console.log("User Orders:", userOrders);
       orders.value = userOrders;
       filterOrders(selectedStatus.value);
     });
@@ -313,7 +313,7 @@
 
     // Fetch and log all orders with filters
     fetchOrders(userID.value, "all", "").then((allOrders) => {
-      console.log("All Orders:", allOrders);
+      // console.log("All Orders:", allOrders);
       orders.value = allOrders;
       filterOrders(selectedStatus.value);
     });
@@ -347,7 +347,7 @@
       } else {
         recentOrder.value = null;
       }
-      console.log("Latest Order:", recentOrder.value);
+      // console.log("Latest Order:", recentOrder.value);
     });
   };
 

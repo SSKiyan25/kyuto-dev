@@ -244,7 +244,7 @@
     // console.log("Fetching product view counts...");
 
     if (!products.value || products.value.length === 0) {
-      console.log("No products found to fetch view counts.");
+      // console.log("No products found to fetch view counts.");
       return;
     }
 
@@ -257,7 +257,7 @@
 
   const updateProducts = async () => {
     loadingProducts.value = true;
-    console.log("Current Page in script:", currentPage.value);
+    // console.log("Current Page in script:", currentPage.value);
     const activeFilter = showAs.value.find((item) => item.isActive);
     const sortBy = activeFilter ? activeFilter.name : "all";
     const selectedCategoryTitles = selectedCategories.value
@@ -274,7 +274,7 @@
       currentPage.value
     );
     totalPages.value = Math.ceil(totalProducts / 10);
-    console.log("Total Pages in script:", totalPages.value);
+    // console.log("Total Pages in script:", totalPages.value);
     loadingProducts.value = false;
   };
 

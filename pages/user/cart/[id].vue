@@ -329,10 +329,9 @@
 
   const { commissionRate, fetchCommissionRate } = useCommissionRate();
   const { calculatePriceWithCommission } = usePriceCalculator(commissionRate);
-  const { getOrganizationIDFromUserId } = useOrganization();
   onMounted(() => {
     fetchCommissionRate();
-    console.log("Commission rate fetched:", commissionRate.value);
+    // console.log("Commission rate fetched:", commissionRate.value);
   });
 
   const {
@@ -400,7 +399,7 @@
 
   const fetchProductAndVariationDetails = async () => {
     for (const cartItem of userCart.value) {
-      console.log("Cart item:", cartItem);
+      // console.log("Cart item:", cartItem);
 
       // Fetch product details
       if (cartItem?.productID && !products.value[cartItem.productID]) {

@@ -34,8 +34,7 @@ export default defineNuxtConfig({
   vuefire: {
     auth: {
       enabled: true,
-      //sessionCookie: true,
-      persistence: ["indexedDBLocal"],
+      persistence: ["browserLocal"],
     },
 
     config: {
@@ -57,8 +56,8 @@ export default defineNuxtConfig({
     service: "gmail",
     from: "VSU E-Commerce <verchcsofficial@gmail.com>",
     auth: {
-      user: process.env.NUXT_SMTP_USER, // verchcsofficial@gmail.com
-      pass: process.env.NUXT_SMTP_PASS, // Your app password
+      user: process.env.NUXT_SMTP_USER,
+      pass: process.env.NUXT_SMTP_PASS,
     },
   },
 
