@@ -1,5 +1,5 @@
 <template>
-  <div class="h-screen">
+  <div class="flex min-h-screen flex-col">
     <UiContainer class="relative flex flex-col items-center py-10 text-center lg:py-20">
       <div>
         <UiBadge to="#" variant="outline" class="px-3 py-1.5 text-sm font-normal lg:py-2"
@@ -26,7 +26,8 @@
       <UiGradientDivider class="sm:my-5" />
     </ClientOnly>
     <!-- Products -->
-    <div class="mx-auto mb-24 flex min-h-lvh w-11/12 flex-col pt-4 sm:pt-8">
+
+    <div class="mx-auto mb-20 flex w-11/12 flex-col pt-4 sm:pt-8">
       <div
         class="flex w-full flex-row flex-wrap items-center justify-between rounded-md bg-primary/90 p-4 text-primary-foreground shadow"
       >
@@ -133,83 +134,84 @@
       </transition>
 
       <!-- Products Container -->
-      <div class="mt-4 flex flex-row flex-wrap gap-1 sm:mt-6 sm:gap-6 sm:px-9">
-        <template v-if="loadingProducts">
-          <div v-for="i in 5" :key="i" class="flex flex-col items-center space-x-4">
-            <div
-              class="flex max-h-[32rem] max-w-[16rem] flex-col rounded-md border border-secondary p-2 sm:max-h-[40rem] sm:max-w-[24rem]"
-            >
-              <div class="flex justify-center border-b p-2">
-                <div class="h-32 w-32 overflow-hidden sm:h-52 sm:w-52">
-                  <UiSkeleton loading class="h-full w-full rounded-sm" />
-                </div>
-              </div>
-              <div class="flex w-full flex-col items-start pt-1">
-                <UiSkeleton loading class="h-4 w-24 rounded-sm" />
-                <UiSkeleton loading class="mt-2 h-6 w-32 rounded-sm" />
-                <UiSkeleton loading class="mt-1 h-4 w-16 rounded-sm" />
-              </div>
-            </div>
-          </div>
-        </template>
-        <template v-else>
-          <div v-for="(product, i) in products" :key="i">
-            <NuxtLink :to="`/product/${product.id}`" @click="handleProductClick(product.id)">
+      <div class="flex-grow">
+        <div class="mt-4 flex flex-row flex-wrap gap-1 sm:mt-6 sm:gap-6 sm:px-9">
+          <template v-if="loadingProducts">
+            <div v-for="i in 5" :key="i" class="flex flex-col items-center space-x-4">
               <div
-                class="flex max-h-[32rem] max-w-[16rem] flex-col rounded-sm border p-2 hover:shadow-lg sm:max-h-[40rem] sm:max-w-[24rem]"
+                class="flex max-h-[32rem] max-w-[16rem] flex-col rounded-md border border-secondary p-2 sm:max-h-[40rem] sm:max-w-[24rem]"
               >
                 <div class="flex justify-center border-b p-2">
                   <div class="h-32 w-32 overflow-hidden sm:h-52 sm:w-52">
-                    <img
-                      :src="product.featuredPhotoURL"
-                      :alt="product.name"
-                      class="h-full w-full transform object-cover transition-transform duration-300 ease-in-out hover:scale-110"
-                    />
+                    <UiSkeleton loading class="h-full w-full rounded-sm" />
                   </div>
                 </div>
                 <div class="flex w-full flex-col items-start pt-1">
-                  <span class="text-[12px] text-muted-foreground sm:text-sm"
-                    >₱{{ calculatePriceWithCommission(product.price).toFixed(2) }}</span
-                  >
-                  <p class="w-full truncate pt-2 text-[12px] font-semibold sm:text-sm">
-                    {{ product.name }}
-                  </p>
-                  <div
-                    class="flex w-full flex-row justify-between pt-4 text-[10px] opacity-50 sm:text-[12px]"
-                  >
-                    <span>{{ productViewCounts[product.id] || 0 }} views</span>
-                    <span>{{ product.totalSales }} sales</span>
-                  </div>
+                  <UiSkeleton loading class="h-4 w-24 rounded-sm" />
+                  <UiSkeleton loading class="mt-2 h-6 w-32 rounded-sm" />
+                  <UiSkeleton loading class="mt-1 h-4 w-16 rounded-sm" />
                 </div>
               </div>
-            </NuxtLink>
-          </div>
-          <template v-if="products.length === 0">
-            <div class="flex h-32 w-full flex-col items-center justify-center">
-              <p>No Available Products.</p>
             </div>
           </template>
-        </template>
-        <div class="flex w-full items-end justify-end space-x-4">
-          <UiButton
-            :disabled="currentPage === 1"
-            @click="prevPage"
-            class="flex items-center p-2 px-3"
-          >
-            <Icon :name="prevIcon" class="h-6 w-6" />
-            <span class="text-[12px]">Previous</span>
-          </UiButton>
-          <UiButton
-            :disabled="currentPage === totalPages"
-            @click="nextPage"
-            class="flex items-center p-2 px-3"
-          >
-            <span class="text-[12px]">Next</span>
-            <Icon :name="nextIcon" class="h-6 w-6" />
-          </UiButton>
+          <template v-else>
+            <div v-for="(product, i) in products" :key="i">
+              <NuxtLink :to="`/product/${product.id}`" @click="handleProductClick(product.id)">
+                <div
+                  class="flex max-h-[32rem] max-w-[16rem] flex-col rounded-sm border p-2 hover:shadow-lg sm:max-h-[40rem] sm:max-w-[24rem]"
+                >
+                  <div class="flex justify-center border-b p-2">
+                    <div class="h-32 w-32 overflow-hidden sm:h-52 sm:w-52">
+                      <img
+                        :src="product.featuredPhotoURL"
+                        :alt="product.name"
+                        class="h-full w-full transform object-cover transition-transform duration-300 ease-in-out hover:scale-110"
+                      />
+                    </div>
+                  </div>
+                  <div class="flex w-full flex-col items-start pt-1">
+                    <span class="text-[12px] text-muted-foreground sm:text-sm"
+                      >₱{{ calculatePriceWithCommission(product.price).toFixed(2) }}</span
+                    >
+                    <p class="w-full truncate pt-2 text-[12px] font-semibold sm:text-sm">
+                      {{ product.name }}
+                    </p>
+                    <div
+                      class="flex w-full flex-row justify-between pt-4 text-[10px] opacity-50 sm:text-[12px]"
+                    >
+                      <span>{{ productViewCounts[product.id] || 0 }} views</span>
+                      <span>{{ product.totalSales }} sales</span>
+                    </div>
+                  </div>
+                </div>
+              </NuxtLink>
+            </div>
+            <template v-if="products.length === 0">
+              <div class="flex h-32 w-full flex-col items-center justify-center">
+                <p>No Available Products.</p>
+              </div>
+            </template>
+          </template>
+          <div class="flex w-full items-end justify-end space-x-4">
+            <UiButton
+              :disabled="currentPage === 1"
+              @click="prevPage"
+              class="flex items-center p-2 px-3"
+            >
+              <Icon :name="prevIcon" class="h-6 w-6" />
+              <span class="text-[12px]">Previous</span>
+            </UiButton>
+            <UiButton
+              :disabled="currentPage === totalPages"
+              @click="nextPage"
+              class="flex items-center p-2 px-3"
+            >
+              <span class="text-[12px]">Next</span>
+              <Icon :name="nextIcon" class="h-6 w-6" />
+            </UiButton>
+          </div>
         </div>
       </div>
-      <div class="min-h-96">.</div>
     </div>
   </div>
 </template>

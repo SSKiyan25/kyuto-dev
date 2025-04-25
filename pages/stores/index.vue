@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col justify-center space-y-12 p-16">
+  <div class="flex flex-col justify-center space-y-12 px-16 pb-32 pt-16">
     <div>
       <div class="flex items-center justify-center">
         <UiVeeInput

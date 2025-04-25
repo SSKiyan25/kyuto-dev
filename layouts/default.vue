@@ -242,8 +242,9 @@
         </div>
       </UiContainer>
     </header>
-    <div class="mt-0">
+    <div class="mt-0 flex min-h-screen flex-col">
       <slot />
+      <Footer />
     </div>
     <footer class="fixed bottom-0 left-0 right-0 border-t bg-white shadow-sm sm:hidden">
       <div class="flex w-full flex-row items-center justify-between">
