@@ -224,7 +224,12 @@
                       </div>
                       <UiDivider class="py-2" />
                       <!-- Logout -->
-                      <UiButton @click="logout" size="sm" class="flex w-full flex-row items-center">
+                      <UiButton
+                        @click="logout"
+                        size="sm"
+                        variant="destructive"
+                        class="flex w-full flex-row items-center"
+                      >
                         <Icon name="lucide:log-out" class="h-4 w-4" />
                         Log Out
                       </UiButton>

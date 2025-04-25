@@ -45,7 +45,7 @@
       <!-- Loader -->
       <div
         v-if="showLoader"
-        class="fixed inset-0 z-50 flex min-h-screen w-full items-center justify-center bg-secondary/40 backdrop-blur"
+        class="fixed inset-0 z-50 flex min-h-screen w-full items-center justify-center bg-secondary/20 backdrop-blur"
       >
         <div class="text-center">
           <Icon name="lucide:loader-2" class="mx-auto h-8 w-8 animate-spin" />
@@ -54,7 +54,7 @@
       </div>
 
       <!-- Page Content -->
-      <div v-else>
+      <div>
         <NuxtPage />
         <UiVueSonner />
         <UiToastToaster />
