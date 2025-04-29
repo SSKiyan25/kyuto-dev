@@ -221,6 +221,7 @@
   import { useCommissionRate } from "~/composables/useCommissionRate";
   import { usePriceCalculator } from "~/composables/usePriceCalculator";
   import { useViewProducts } from "~/composables/useViewProducts";
+  import type { Account as User } from "~/types/models/Account";
 
   const { products, fetchProducts, clearCache } = useViewProducts();
   const { commissionRate, fetchCommissionRate } = useCommissionRate();
@@ -234,6 +235,7 @@
   const nextIcon = "lucide:chevron-right";
   const loadingProducts = ref(false);
   const productViewCounts = reactive<Record<string, number>>({});
+  const user = ref<User | null>(null);
 
   const handleProductClick = (productID: string) => {
     // console.log("Product clicked:", productID);

@@ -382,6 +382,7 @@
 
   const fetchOrders = async (status: string) => {
     loading.value = true;
+    console.log(props.organizationID, status);
     try {
       const fetchedOrders = await fetchFilteredOrders(props.organizationID, status);
       orders.value = fetchedOrders;

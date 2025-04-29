@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-screen w-full flex-col items-start p-4 sm:p-12">
+  <div class="flex min-h-screen w-full flex-col items-start p-4 sm:p-12">
     <!-- <div><UiBreadcrumbs class="justify-center text-[12px] sm:text-sm" :items="crumbs" /></div> -->
     <div v-if="product" class="grid w-full gap-4 sm:mt-4 sm:grid-cols-2">
       <!-- Product Gallery -->
@@ -97,6 +97,7 @@
                       <div v-for="(vari, i) in variations" :key="i">
                         <UiButton
                           @click="selectVariation(vari, 'preOrder')"
+                          :disabled="isSubmitting"
                           class=""
                           :class="{
                             'bg-primary text-[12px] text-white sm:text-sm':
@@ -119,11 +120,11 @@
                           <UiNumberField
                             :min="1"
                             :max="1000"
-                            :disabled="!selectedVariationPreOrder"
+                            :disabled="!selectedVariationPreOrder || isSubmitting"
                             v-model="quantityPreOrder"
                           >
                             <UiNumberFieldInput
-                              :disabled="!selectedVariationPreOrder"
+                              :disabled="!selectedVariationPreOrder || isSubmitting"
                               placeholder="0"
                             />
                             <UiNumberFieldDecrement class="border-l" />
@@ -184,7 +185,7 @@
                       <div v-for="(vari, i) in variations" :key="i">
                         <UiButton
                           @click="selectVariation(vari, 'addToCart')"
-                          :disabled="vari.remainingStocks === 0"
+                          :disabled="vari.remainingStocks === 0 || isSubmitting"
                           :class="{
                             'bg-primary text-[12px] text-primary text-white':
                               selectedVariationAddToCart?.id === vari.id,
@@ -208,11 +209,11 @@
                           <UiNumberField
                             :min="1"
                             :max="selectedVariationAddToCart?.remainingStocks"
-                            :disabled="!selectedVariationAddToCart"
+                            :disabled="!selectedVariationAddToCart || isSubmitting"
                             v-model="quantityAddToCart"
                           >
                             <UiNumberFieldInput
-                              :disabled="!selectedVariationAddToCart"
+                              :disabled="!selectedVariationAddToCart || isSubmitting"
                               placeholder="0"
                             />
                             <UiNumberFieldDecrement class="border-l" />
@@ -406,23 +407,27 @@
     variation: Variation & { id: string },
     type: "addToCart" | "preOrder"
   ) => {
-    console.log("Selected Variation: ", variation);
-    console.log("Type: ", type);
+    // console.log("Selected Variation: ", variation);
+    // console.log("Type: ", type);
     if (type === "addToCart") {
       if (selectedVariationAddToCart.value?.id === variation.id) {
         selectedVariationAddToCart.value = null;
+        quantityAddToCart.value = 0;
       } else {
         selectedVariationAddToCart.value = variation;
+        quantityAddToCart.value = 1;
       }
     } else {
       if (selectedVariationPreOrder.value?.id === variation.id) {
         selectedVariationPreOrder.value = null;
+        quantityPreOrder.value = 0;
       } else {
         selectedVariationPreOrder.value = variation;
+        quantityPreOrder.value = 0;
       }
     }
-    console.log("selectedVariationAddToCart: ", selectedVariationAddToCart.value);
-    console.log("selectedVariationPreOrder: ", selectedVariationPreOrder.value);
+    // console.log("selectedVariationAddToCart: ", selectedVariationAddToCart.value);
+    // console.log("selectedVariationPreOrder: ", selectedVariationPreOrder.value);
   };
 
   const { addToCart, loading, error } = useAddToCart();
@@ -438,6 +443,8 @@
     }
   };
 
+  const isSubmitting = ref(false);
+
   const submitAddToCart = async (preOrder: boolean) => {
     if (!user.value) {
       router.push("/login");
@@ -446,15 +453,16 @@
         ? selectedVariationPreOrder.value
         : selectedVariationAddToCart.value;
       const quantity = preOrder ? quantityPreOrder.value : quantityAddToCart.value;
-      console.log("Adding to cart...");
-      console.log("Selected Variation: ", selectedVariation);
+      // console.log("Adding to cart...");
+      // console.log("Selected Variation: ", selectedVariation);
       if (selectedVariation) {
         try {
           loadingButton.value = true;
           loading.value = true;
-          console.log("Adding to cart...");
-          console.log("Selected Variation: ", selectedVariation);
-          console.log("Quantity: ", quantity);
+          isSubmitting.value = true;
+          // console.log("Adding to cart...");
+          // console.log("Selected Variation: ", selectedVariation);
+          // console.log("Quantity: ", quantity);
           // Trigger the drawer
           if (!preOrder) {
             if (quantity > selectedVariation.remainingStocks) {
@@ -492,6 +500,7 @@
             icon: "lucide:alert-circle",
           });
         } finally {
+          isSubmitting.value = false;
           loading.value = false;
           loadingButton.value = false;
         }

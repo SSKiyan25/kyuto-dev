@@ -1,8 +1,9 @@
 <script setup lang="ts">
   import { signInWithGoogle } from "~/composables/auth/useGoogle";
+  import { useAuthStore } from "~/stores/auth";
   import { signInWithEmailAndPassword, signOut } from "firebase/auth";
   import { doc, getDoc, updateDoc } from "firebase/firestore";
-  import type { Account } from "~/types/models/Account";
+  import type { Account as User } from "~/types/models/Account";
 
   definePageMeta({
     layout: "no-nav",
@@ -10,6 +11,7 @@
   });
 
   const auth = useFirebaseAuth();
+  const user = ref<User | null>(null);
   const { handleSubmit, isSubmitting } = useForm({
     validationSchema: toTypedSchema(LoginSchema),
   });
@@ -20,6 +22,8 @@
   const userOrganization = ref(false);
   const userOrganizationId = ref("");
 
+  const authStore = useAuthStore();
+
   const checkConsentStatus = async () => {
     if (auth?.currentUser) {
       const userDocRef = doc(db, "accounts", auth.currentUser.uid);
@@ -29,17 +33,19 @@
         const userData = userDoc.data();
         userOrganizationId.value = userData?.organizationId || "";
         userOrganization.value = userData?.hasOrganization || false;
-        console.log("User Data: ", userData);
+
+        authStore.user = userData as User; // Store user data in the auth store
+        // console.log("User Data: ", userData);
         if (userData.consentedToPrivacyAndTerms === undefined) {
           // If the field does not exist, create it with a default value of false
           await updateDoc(userDocRef, { consentedToPrivacyAndTerms: false });
           isConsentModalOpen.value = true; // Open modal since consent is not given
         } else if (userData.consentedToPrivacyAndTerms === true) {
           // If consent is already given, navigate to the homepage
-          console.log("User organization? ", userData.hasOrganization);
-          console.log("User organization ID: ", userData.organizationId);
+          // console.log("User organization? ", userData.hasOrganization);
+          // console.log("User organization ID: ", userData.organizationId);
           if (userData.hasOrganization) {
-            console.log("User has an organization.");
+            // console.log("User has an organization.");
             return router.push(`/organization/${userData.organizationId}`);
           } else {
             console.log("User does not have an organization.");
@@ -72,8 +78,9 @@
     }
   });
 
-  onMounted(() => {
-    checkConsentStatus();
+  onMounted(async () => {
+    authStore.user = null; // Clear user from store
+    await checkConsentStatus();
   });
 
   const handleGoogleSignIn = async () => {
@@ -111,6 +118,7 @@
   const handleCancel = async () => {
     if (auth?.currentUser) {
       await signOut(auth); // Sign out the user
+      authStore.user = null; // Clear user from store
       isConsentModalOpen.value = false; // Close modal
     }
   };

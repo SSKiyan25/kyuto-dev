@@ -82,13 +82,13 @@
       .required()
       .label("Organization Name")
       .max(128)
-      .matches(regex, "Password contains invalid characters"),
+      .matches(regex, "Name contains invalid characters"),
     contactEmail: string().email().required().label("Contact Email"),
     phoneNumber: string().required().label("Phone Number"),
     description: string()
       .max(500)
       .label("Description")
-      .matches(regex, "Password contains invalid characters"),
+      .matches(regex, "Description contains invalid characters"),
   });
 
   const { handleSubmit, isSubmitting, resetForm } = useForm({

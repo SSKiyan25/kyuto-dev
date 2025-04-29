@@ -188,8 +188,14 @@
   };
 
   const logout = async () => {
-    await signOut(auth!);
-    navigateTo("/");
+    const authStore = useAuthStore();
+    try {
+      await signOut(auth!);
+      authStore.user = null;
+      navigateTo("/");
+    } catch (error) {
+      console.error("Error during logout:", error);
+    }
   };
 
   onMounted(() => {

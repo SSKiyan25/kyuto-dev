@@ -46,7 +46,7 @@
                   <UiSheetX class="z-20" />
 
                   <UiScrollArea class="h-full p-5">
-                    <div class="flex flex-col gap-2">
+                    <div v-if="user" class="flex flex-col gap-2">
                       <!-- User -->
                       <span class="font-bold"> Main Menu </span>
                       <div class="flex flex-row items-center">
@@ -160,46 +160,48 @@
                   </UiNavigationMenuTrigger>
                   <UiNavigationMenuContent>
                     <div class="flex w-[200px] flex-col justify-start px-4 py-4 text-sm">
-                      <span></span>
-                      <!-- User Profile -->
-                      <NuxtLink :to="`/user/profile/${user?.id}`">
-                        <div
-                          class="flex flex-row items-center justify-between rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
-                        >
-                          <div class="flex items-center">
-                            <Icon name="lucide:user" class="h-4 w-4" />
-                            <div class="pl-2">Profile</div>
-                          </div>
-
-                          <Icon name="lucide:move-up-right" class="h-2 w-2 opacity-70" />
-                        </div>
-                      </NuxtLink>
-                      <NuxtLink :to="`/user/orders/track-orders/${user?.id}`">
-                        <div
-                          class="flex flex-row items-center justify-between rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
-                        >
-                          <NuxtLink :to="`/user/orders/track-orders/${user?.id}`">
+                      <div v-if="user.id">
+                        <span></span>
+                        <!-- User Profile -->
+                        <NuxtLink :to="`/user/profile/${user.id}`">
+                          <div
+                            class="flex flex-row items-center justify-between rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
+                          >
                             <div class="flex items-center">
-                              <Icon name="lucide:box" class="h-4 w-4" />
-                              <div class="pl-2">Your Orders</div>
+                              <Icon name="lucide:user" class="h-4 w-4" />
+                              <div class="pl-2">Profile</div>
                             </div>
-                          </NuxtLink>
 
-                          <Icon name="lucide:move-up-right" class="h-2 w-2 opacity-70" />
-                        </div>
-                      </NuxtLink>
-                      <NuxtLink :to="`/user/inbox/${user?.id}`">
-                        <div
-                          class="flex flex-row items-center justify-between rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
-                        >
-                          <div class="flex items-center">
-                            <Icon name="lucide:inbox" class="h-4 w-4" />
-                            <div class="pl-2">Inbox</div>
+                            <Icon name="lucide:move-up-right" class="h-2 w-2 opacity-70" />
                           </div>
+                        </NuxtLink>
+                        <NuxtLink :to="`/user/orders/track-orders/${user.id}`">
+                          <div
+                            class="flex flex-row items-center justify-between rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
+                          >
+                            <NuxtLink :to="`/user/orders/track-orders/${user.id}`">
+                              <div class="flex items-center">
+                                <Icon name="lucide:box" class="h-4 w-4" />
+                                <div class="pl-2">Your Orders</div>
+                              </div>
+                            </NuxtLink>
 
-                          <Icon name="lucide:move-up-right" class="h-2 w-2 opacity-70" />
-                        </div>
-                      </NuxtLink>
+                            <Icon name="lucide:move-up-right" class="h-2 w-2 opacity-70" />
+                          </div>
+                        </NuxtLink>
+                        <NuxtLink :to="`/user/inbox/${user.id}`">
+                          <div
+                            class="flex flex-row items-center justify-between rounded-sm p-2 hover:bg-primary hover:text-primary-foreground"
+                          >
+                            <div class="flex items-center">
+                              <Icon name="lucide:inbox" class="h-4 w-4" />
+                              <div class="pl-2">Inbox</div>
+                            </div>
+
+                            <Icon name="lucide:move-up-right" class="h-2 w-2 opacity-70" />
+                          </div>
+                        </NuxtLink>
+                      </div>
                       <div v-if="hasOrganization">
                         <UiDivider class="py-2" />
                         <!-- Organization Dashboard -->
@@ -278,6 +280,7 @@
   onMounted(async () => {
     const authStore = useAuthStore();
     user.value = authStore.user;
+    console.log("User in layout:", user.value);
   });
 
   const hasOrganization = computed(() => !!user.value?.organizationId);
@@ -296,6 +299,8 @@
           },
           { immediate: true }
         );
+        const authStore = useAuthStore();
+        authStore.user = newUser as Account;
         fetchUserCart();
       }
     },
@@ -305,9 +310,33 @@
   const auth = useFirebaseAuth();
 
   const logout = async () => {
+    const authStore = useAuthStore();
     await signOut(auth!);
+    authStore.user = null;
     navigateTo("/login");
   };
+
+  const userLinks = computed(() => {
+    if (!user.value?.id) return [];
+    return [
+      { name: "My Profile", to: `/user/profile/${user.value.id}`, icon: "lucide:user" },
+      { name: "Cart", to: `/user/cart/${user.value.id}`, icon: "lucide:shopping-cart" },
+      {
+        name: "My Orders",
+        to: `/user/orders/track-orders/${user.value.id}`,
+        icon: "lucide:shopping-basket",
+      },
+      ...(user.value.organizationId
+        ? [
+            {
+              name: "Manage Store",
+              to: `/organization/products/${user.value.organizationId}`,
+              icon: "lucide:building-2",
+            },
+          ]
+        : []),
+    ];
+  });
 
   const mobileLinks = computed(() => [
     { name: "Home", to: "/", icon: "lucide:house" },

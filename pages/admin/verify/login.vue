@@ -22,9 +22,11 @@
 </template>
 
 <script lang="ts" setup>
+  import { useAuthStore } from "~/stores/auth";
   import { signInWithEmailAndPassword } from "firebase/auth";
   import { doc, getDoc } from "firebase/firestore";
   import { object, string } from "yup";
+  import type { Account as User } from "~/types/models/Account";
   import type { InferType } from "yup";
 
   definePageMeta({
@@ -39,6 +41,8 @@
 
   const auth = useFirebaseAuth();
   const db = useFirestore();
+  const user = ref<User | null>(null);
+  const authStore = useAuthStore();
 
   const LoginSchema = object({
     email: string().email().required().label("Email"),
@@ -69,6 +73,7 @@
         if (role === "admin") {
           useSonner.success("Welcome back!", { id: loading });
           console.log("User: ", user);
+          authStore.user = userData as User;
           return navigateTo("/admin/dashboard");
         } else {
           useSonner.error("Unauthorized Access", {
