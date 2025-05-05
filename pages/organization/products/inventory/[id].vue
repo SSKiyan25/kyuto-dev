@@ -46,7 +46,7 @@
   );
   const { data: variationsSnapshot } = useCollection(variationsRef);
 
-  console.log("variationsSnapshot", variationsSnapshot);
+  // console.log("variationsSnapshot", variationsSnapshot);
 
   const variations = computed(() => {
     if (!variationsSnapshot.value) {
@@ -108,8 +108,8 @@
     changedVariationPrice.value = variation.price;
   };
 
-  console.log("Variations:", variations);
-  console.log("Stock Logs:", stocksLogs);
+  // console.log("Variations:", variations);
+  // console.log("Stock Logs:", stocksLogs);
   const loading = ref(false);
 
   const { updateVariation, addStocks, removeStocks, addVariation, getOrgIDFromProduct } =
@@ -135,8 +135,8 @@
     const updatedData: Partial<Variation> = {
       value: changedVariationValue.value,
     };
-    console.log("Passed variation ID:", selectedVariation.value.id);
-    console.log("Updated Data:", updatedData);
+    // console.log("Passed variation ID:", selectedVariation.value.id);
+    // console.log("Updated Data:", updatedData);
     await updateVariation(productID, selectedVariation.value.id, updatedData);
     isEditName.value = false;
     loading.value = false;
@@ -320,15 +320,23 @@
 
   const orgID = ref<string | null>(null);
 
-  const crumbs: Crumbs[] = [
-    { label: "Dashboard", link: `/organization/dashboard/${orgID}`, icon: "lucide:newspaper" },
-    { label: "All Products", link: `/organization/products/${orgID}`, icon: "lucide:package" },
+  const crumbs = reactive<Crumbs[]>([
+    {
+      label: "Dashboard",
+      link: "#", // Default value
+      icon: "lucide:newspaper",
+    },
+    {
+      label: "All Products",
+      link: "#", // Default value
+      icon: "lucide:package",
+    },
     {
       label: "Manage Inventory",
       icon: "lucide:file-pen-line",
       disabled: true,
     },
-  ];
+  ]);
 
   const formattedStockLogs = computed(() => {
     if (!selectedVariation.value) return [];
@@ -341,9 +349,24 @@
   });
 
   onMounted(async () => {
+    console.log("Product ID:", productID);
     orgID.value = await getOrgIDFromProduct(productID);
     console.log("Org ID:", orgID.value);
   });
+
+  watch(
+    () => orgID.value,
+    (newOrgID) => {
+      if (newOrgID) {
+        crumbs[0].link = `/organization/dashboard/${newOrgID}`;
+        crumbs[1].link = `/organization/products/${newOrgID}`;
+      } else {
+        crumbs[0].link = "#";
+        crumbs[1].link = "#";
+      }
+    },
+    { immediate: true }
+  );
 
   onMounted(() => {
     clearCache();

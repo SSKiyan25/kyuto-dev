@@ -39,17 +39,40 @@
   const productRef = computed(() => doc(collection(db, "products"), productID.value));
   const { data: product, pending } = useDocument<Partial<Product>>(productRef);
 
-  const orgId = product.value?.organizationID;
+  const orgId = ref<string | null>(null);
+  console.log("Organization ID: ", orgId);
   const { getOrganizationById, clearCache } = useOrganization();
   const organization = ref<OrganizationWithId | null>(null);
 
   // Constants and Meta
-  const crumbs: Crumbs[] = [
-    { label: "Dashboard", link: `/organization/dashboard/${orgId}`, icon: "lucide:newspaper" },
-    { label: "All Products", link: `/organization/products/${orgId}`, icon: "lucide:package" },
+  const crumbs = reactive<Crumbs[]>([
+    {
+      label: "Dashboard",
+      link: "#", // Default value
+      icon: "lucide:newspaper",
+    },
+    {
+      label: "All Products",
+      link: "#", // Default value
+      icon: "lucide:package",
+    },
     { label: "Edit Product", icon: "lucide:file-pen-line", disabled: true },
-  ];
+  ]);
 
+  // Watch orgId and update crumbs dynamically
+  watch(
+    () => orgId.value,
+    (newOrgId) => {
+      if (newOrgId) {
+        crumbs[0].link = `/organization/dashboard/${newOrgId}`;
+        crumbs[1].link = `/organization/products/${newOrgId}`;
+      } else {
+        crumbs[0].link = "#";
+        crumbs[1].link = "#";
+      }
+    },
+    { immediate: true }
+  );
   console.log("Organization ID: ", orgId);
   // Form data with original values tracking
   const formData = reactive({
@@ -79,9 +102,24 @@
         formData.canPreOrder = newProduct.canPreOrder || false;
         formData.photos = newProduct.photosURL || [];
         formData.newPhotos = [];
+        orgId.value = newProduct.organizationID || "";
+        console.log("Organization ID in watch function: ", orgId.value);
 
         // Update original data
         Object.assign(originalData, { ...formData });
+
+        // Fetch organization data if orgId is available
+        if (orgId.value) {
+          clearCache();
+          getOrganizationById(orgId.value)
+            .then((org) => {
+              organization.value = org;
+              console.log("Fetched organization:", org);
+            })
+            .catch((error) => {
+              console.error("Error fetching organization data:", error);
+            });
+        }
       }
     },
     { immediate: true }
@@ -218,7 +256,7 @@
       updatedData.canPreOrder = formData.canPreOrder;
 
     if (productID.value && Object.keys(updatedData).length > 0) {
-      await updateProduct(productID.value, updatedData, orgId as string);
+      await updateProduct(productID.value, updatedData, orgId.value as string);
     }
 
     loading.value = false;
@@ -228,13 +266,13 @@
       variant: "success",
       icon: "lucide:badge-check",
     });
-    router.push(`/organization/products/${orgId}`);
+    router.push(`/organization/products/${orgId.value}`);
   };
 
   onMounted(() => {
     if (orgId) {
       clearCache();
-      getOrganizationById(orgId)
+      getOrganizationById(orgId.value as string)
         .then((org) => {
           organization.value = org;
         })
@@ -494,7 +532,9 @@
           </div>
         </div>
         <div class="mb-24 flex w-full flex-row justify-end px-14">
-          <UiButton variant="outline" class="mr-4" to="/organization/products">Cancel</UiButton>
+          <UiButton variant="outline" class="mr-4" :to="`/organization/products/${orgId}`"
+            >Cancel</UiButton
+          >
           <UiButton
             @click.prevent="handleSaveChanges"
             type="submit"
