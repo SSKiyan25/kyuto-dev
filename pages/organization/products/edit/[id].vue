@@ -188,9 +188,12 @@
     formData.newPhotos.push(...files.map((file) => URL.createObjectURL(file)));
   };
 
-  // Validation
   const validateFields = () => {
-    const invalidChars = /[<@`#"]/;
+    // Regex to detect invalid characters
+    const invalidChars = /[<@#`"%;\\\[\]{}|$*^~:/?!+=,\r\n]/;
+
+    // Regex to detect HTML tags
+    const htmlTagRegex = /<\/?[\w\s="/.':;#-\/\?]+>/gi;
 
     if (!formData.name.trim()) {
       showError("Name cannot be empty");
@@ -203,12 +206,22 @@
     }
 
     if (invalidChars.test(formData.name)) {
-      showError("Name cannot contain <, @, `, or #");
+      showError("Name contains invalid characters");
+      return false;
+    }
+
+    if (htmlTagRegex.test(formData.name)) {
+      showError("Name cannot contain HTML tags");
       return false;
     }
 
     if (formData.description && invalidChars.test(formData.description)) {
-      showError("Description cannot contain <, @, `, or #");
+      showError("Description contains invalid characters");
+      return false;
+    }
+
+    if (formData.description && htmlTagRegex.test(formData.description)) {
+      showError("Description cannot contain HTML tags");
       return false;
     }
 

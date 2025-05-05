@@ -120,11 +120,27 @@
     loading.value = true;
     if (!selectedVariation.value) return;
 
-    const invalidChars = /[\/\*<>!]/;
+    // Regex to detect invalid characters
+    const invalidChars = /[\/\*<>!@]/;
+
+    // Regex to detect HTML tags
+    const htmlTagRegex = /<\/?[\w\s="/.':;#-\/\?]+>/gi;
+
     if (invalidChars.test(changedVariationValue.value)) {
       toast.toast({
         title: "Invalid Name",
-        description: "The name contains invalid characters: /, *, <, >, !",
+        description: "The name contains invalid characters: /, *, <, >, !, @",
+        variant: "warning",
+        icon: "lucide:triangle-alert",
+      });
+      loading.value = false;
+      return;
+    }
+
+    if (htmlTagRegex.test(changedVariationValue.value)) {
+      toast.toast({
+        title: "Invalid Name",
+        description: "The name cannot contain HTML tags.",
         variant: "warning",
         icon: "lucide:triangle-alert",
       });
@@ -288,6 +304,59 @@
 
   const handleAddVariation = async () => {
     loadingVariation.value = true;
+
+    // Regex to detect invalid characters
+    const invalidChars = /[\/\*<>!@]/;
+
+    // Regex to detect HTML tags
+    const htmlTagRegex = /<\/?[\w\s="/.':;#-\/\?]+>/gi;
+
+    // Validate the new variation name
+    if (!newVariationName.value.trim()) {
+      toast.toast({
+        title: "Invalid Name",
+        description: "The variation name cannot be empty.",
+        variant: "warning",
+        icon: "lucide:triangle-alert",
+      });
+      loadingVariation.value = false;
+      return;
+    }
+
+    if (invalidChars.test(newVariationName.value)) {
+      toast.toast({
+        title: "Invalid Name",
+        description: "The variation name contains invalid characters: /, *, <, >, !, @",
+        variant: "warning",
+        icon: "lucide:triangle-alert",
+      });
+      loadingVariation.value = false;
+      return;
+    }
+
+    if (htmlTagRegex.test(newVariationName.value)) {
+      toast.toast({
+        title: "Invalid Name",
+        description: "The variation name cannot contain HTML tags.",
+        variant: "warning",
+        icon: "lucide:triangle-alert",
+      });
+      loadingVariation.value = false;
+      return;
+    }
+
+    // Validate the price
+    if (newVariationPrice.value < 1) {
+      toast.toast({
+        title: "Invalid Price",
+        description: "The price cannot be less than zero.",
+        variant: "warning",
+        icon: "lucide:triangle-alert",
+      });
+      loadingVariation.value = false;
+      return;
+    }
+
     const newVariation: Partial<Variation> = {
       value: newVariationName.value,
       price: newVariationPrice.value,
