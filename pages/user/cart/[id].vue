@@ -1,9 +1,88 @@
 <template>
   <div class="flex h-screen w-full flex-col items-start p-4">
-    <ADUserOrderMore />
-    <!-- <div class="flex flex-row items-center gap-4 px-12 pt-2 text-4xl font-bold">
-      <Icon name="lucide:shopping-cart" /> <span>Shopping Cart</span>
-    </div> -->
+    <!-- Promotion Banner - Fixed position at top -->
+    <div class="mb-6 w-full">
+      <div
+        class="relative w-full overflow-hidden rounded-lg border border-border/40 bg-gradient-to-r from-primary/90 to-primary/70 shadow-md"
+      >
+        <div class="absolute inset-0 opacity-10">
+          <div
+            class="absolute -right-10 -top-10 h-20 w-20 rounded-full bg-secondary/30 blur-xl"
+          ></div>
+          <div
+            class="absolute -left-10 bottom-5 h-10 w-10 rounded-full bg-primary-foreground/20 blur-lg"
+          ></div>
+        </div>
+
+        <div class="relative flex flex-row items-center justify-between p-4">
+          <div class="flex max-w-[80%] flex-col space-y-1">
+            <h3 class="text-sm font-bold leading-tight text-primary-foreground sm:text-lg">
+              Looking for more items?
+            </h3>
+            <p class="text-[10px] leading-tight text-primary-foreground/80 sm:text-xs">
+              Explore our catalog for the latest products and exclusive deals.
+            </p>
+            <div class="flex flex-row gap-2 pt-2">
+              <UiButton
+                to="/products"
+                size="sm"
+                class="group h-8 bg-secondary/90 px-3 text-secondary-foreground hover:bg-secondary"
+              >
+                <span class="text-[10px]">Explore Products</span>
+                <Icon name="lucide:arrow-right" class="ml-1 h-3 w-3" />
+              </UiButton>
+            </div>
+          </div>
+
+          <div class="ml-2 flex items-center justify-center">
+            <Icon
+              name="lucide:shopping-bag"
+              class="h-8 w-8 text-primary-foreground/90 sm:h-10 sm:w-10"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="loading" class="flex w-full flex-col items-center justify-center p-12">
+      <div class="flex flex-col items-center space-y-6">
+        <div class="relative">
+          <Icon name="lucide:shopping-cart" class="h-16 w-16 text-primary/20" />
+          <div class="absolute inset-0 flex items-center justify-center">
+            <div
+              class="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"
+            ></div>
+          </div>
+        </div>
+        <div class="space-y-2 text-center">
+          <h3 class="text-lg font-medium">Loading your cart</h3>
+          <p class="text-sm text-muted-foreground">Retrieving your items, please wait...</p>
+        </div>
+      </div>
+    </div>
+
+    <div
+      v-else-if="error"
+      class="flex w-full flex-col items-center justify-center p-12 text-center"
+    >
+      <div class="flex flex-col items-center space-y-6">
+        <div class="relative text-destructive">
+          <Icon name="lucide:alert-octagon" class="h-16 w-16" />
+        </div>
+        <div class="space-y-2">
+          <h3 class="text-lg font-medium">Something went wrong</h3>
+          <p class="max-w-md text-sm text-muted-foreground">
+            We couldn't load your cart items. Please try again or contact customer support.
+          </p>
+          <UiButton @click="fetchUserCart(userID as string)" variant="outline" class="mt-4">
+            <Icon name="lucide:refresh-cw" class="mr-2 h-4 w-4" />
+            Try Again
+          </UiButton>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cart Content -->
     <div
       class="flex h-auto w-full flex-col justify-between px-4 pt-6 sm:flex-row sm:gap-8 sm:px-12"
     >
@@ -18,68 +97,120 @@
             <div
               v-for="(cartItems, organization) in groupedCartItems"
               :key="organization"
-              class="w-full px-2 pb-8 sm:px-4"
+              class="mb-8 w-full px-2 pb-6 sm:px-4"
             >
-              <h2 class="text-md font-semibold sm:text-lg">{{ organization }}</h2>
-              <UiDivider class="my-2" />
-              <div v-for="cartItem in cartItems" :key="cartItem?.productID" class="w-full">
+              <h2 class="text-md flex items-center gap-2 font-semibold sm:text-lg">
+                <Icon name="lucide:shopping-bag" class="h-4 w-4 text-primary" />
+                {{ organization }}
+              </h2>
+              <UiDivider class="my-3" />
+              <div v-for="cartItem in cartItems" :key="cartItem?.productID" class="mb-3 w-full">
                 <template v-if="cartItem">
                   <div
-                    class="flex w-full flex-col items-start justify-between gap-2 p-1 sm:flex-row sm:items-center sm:gap-6 sm:p-4"
+                    class="flex w-full flex-col items-start justify-between gap-2 rounded-lg border border-border/40 p-2 transition-all duration-200 hover:border-primary/20 hover:bg-secondary/10 sm:flex-row sm:items-center sm:gap-6 sm:p-4"
                     :class="{
-                      'round-sm bg-secondary': isSelected(cartItem),
+                      'border-primary/30 bg-secondary/40 shadow-sm': isSelected(cartItem),
                       'opacity-50': isOtherGroupSelected(cartItem),
                     }"
                   >
-                    <div class="flex flex-row items-center gap-2 sm:gap-6">
+                    <div class="flex flex-row items-center gap-3 sm:gap-6">
                       <input
                         type="checkbox"
-                        class="h-4 w-4 sm:h-6 sm:w-6"
+                        class="h-5 w-5 rounded accent-primary sm:h-6 sm:w-6"
                         :checked="isSelected(cartItem)"
                         @change="toggleSelection(cartItem)"
                         :disabled="isOtherGroupSelected(cartItem)"
                       />
-                      <div class="h-16 w-16 overflow-hidden sm:h-24 sm:w-24">
+
+                      <!-- Image with loading state -->
+                      <div class="h-20 w-20 overflow-hidden rounded-md sm:h-24 sm:w-24">
+                        <div
+                          v-if="!products[cartItem.productID]?.featuredPhotoURL"
+                          class="flex h-full w-full items-center justify-center rounded-md bg-muted"
+                        >
+                          <Icon
+                            name="lucide:image"
+                            class="h-8 w-8 animate-pulse text-muted-foreground/50"
+                          />
+                        </div>
                         <img
+                          v-else
                           :src="products[cartItem.productID]?.featuredPhotoURL"
-                          :alt="products[cartItem.productID]?.name"
-                          class="h-full w-full rounded-sm object-cover"
+                          :alt="products[cartItem.productID]?.name || 'Product image'"
+                          class="h-full w-full rounded-md object-cover"
+                          onerror="this.onerror=null; this.src='/placeholder-image.png';"
                         />
                       </div>
+
+                      <!-- Product details with loading states -->
                       <div class="flex flex-col">
-                        <span class="text-sm font-semibold hover:underline sm:text-lg">{{
-                          products[cartItem.productID]?.name
-                        }}</span>
+                        <div
+                          v-if="!products[cartItem.productID]?.name"
+                          class="mb-1 h-5 w-32 animate-pulse rounded bg-muted"
+                        ></div>
+                        <span v-else class="text-sm font-semibold hover:underline sm:text-lg">
+                          {{ products[cartItem.productID]?.name }}
+                        </span>
+
+                        <div
+                          v-if="cartItem.isPreOrder"
+                          class="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5"
+                        >
+                          <Icon name="lucide:clock" class="h-3 w-3 text-amber-600" />
+                          <span class="text-[10px] font-medium text-amber-700">Pre-Order</span>
+                        </div>
+
+                        <div
+                          v-if="!variations[cartItem.variationID]"
+                          class="mb-1 h-3 w-20 animate-pulse rounded bg-muted"
+                        ></div>
                         <span
-                          v-if="variations[cartItem.variationID]?.value !== 'None'"
+                          v-else-if="variations[cartItem.variationID]?.value !== 'None'"
                           class="text-[10px] text-muted-foreground sm:text-[12px]"
                         >
+                          <span class="font-medium">Variation:</span>
                           {{ variations[cartItem.variationID]?.value }}
                         </span>
-                        <span class="text-[10px] text-muted-foreground sm:text-[12px]"
-                          >Quantity: {{ cartItem.quantity }}</span
-                        >
-                        <span class="text-[10px] text-muted-foreground sm:text-[12px]"
-                          >Price per quantity:
-                          {{
-                            calculatePriceWithCommission(
-                              Number(variations[cartItem.variationID]?.price)
-                            ).toFixed(2)
-                          }}</span
-                        >
+
+                        <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1">
+                          <span
+                            class="flex items-center gap-1 text-[10px] text-muted-foreground sm:text-[12px]"
+                          >
+                            <Icon name="lucide:package" class="h-3 w-3" />
+                            <span class="font-medium">Qty:</span> {{ cartItem.quantity }}
+                          </span>
+
+                          <div
+                            v-if="!variations[cartItem.variationID]?.price"
+                            class="h-3 w-24 animate-pulse rounded bg-muted"
+                          ></div>
+                          <span
+                            v-else
+                            class="flex items-center gap-1 text-[10px] text-muted-foreground sm:text-[12px]"
+                          >
+                            <Icon name="lucide:tag" class="h-3 w-3" />
+                            <span class="font-medium">Price:</span>
+                            ₱{{
+                              calculatePriceWithCommission(
+                                Number(variations[cartItem.variationID]?.price)
+                              ).toFixed(2)
+                            }}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <div class="flex flex-row items-center gap-8">
+                    <div
+                      class="mt-2 flex w-full flex-row items-center justify-between gap-4 sm:mt-0 sm:w-auto sm:justify-end"
+                    >
                       <div class="flex flex-col">
-                        <span
-                          v-if="cartItem.isPreOrder"
-                          class="text-[10px] text-muted-foreground sm:text-[12px]"
-                          >Pre-Order</span
-                        >
                         <span class="text-[10px] text-muted-foreground sm:text-[12px]"
                           >Subtotal:</span
                         >
-                        <span class="sm:text-md text-sm font-semibold">
+                        <div
+                          v-if="!variations[cartItem.variationID]?.price"
+                          class="h-5 w-20 animate-pulse rounded bg-muted"
+                        ></div>
+                        <span v-else class="text-sm font-semibold text-primary sm:text-base">
                           ₱{{
                             (
                               calculatePriceWithCommission(
@@ -94,9 +225,12 @@
                           <UiAlertDialogTrigger as-child>
                             <UiButton
                               variant="destructive"
-                              class="rounded-sm p-2 opacity-75 hover:opacity-100 sm:p-4"
+                              size="sm"
+                              class="rounded p-1.5 opacity-90 hover:opacity-100 sm:p-2"
                               @click="openRemoveDialog(cartItem)"
-                              >Remove
+                            >
+                              <Icon name="lucide:trash-2" class="mr-1 h-4 w-4" />
+                              Remove
                             </UiButton>
                           </UiAlertDialogTrigger>
                           <UiAlertDialogContent
@@ -127,22 +261,70 @@
               <UiDivider class="my-2" />
             </div>
           </div>
-          <div v-else>No items in the cart.</div>
+          <div v-else class="flex w-full flex-col items-center justify-center p-10 text-center">
+            <Icon name="lucide:shopping-cart" class="mb-4 h-16 w-16 text-muted-foreground/30" />
+            <h3 class="mb-1 text-lg font-medium">Your cart is empty</h3>
+            <p class="mb-4 text-sm text-muted-foreground">
+              Explore our products and add items to your cart
+            </p>
+            <UiButton to="/products" class="mt-2">
+              <Icon name="lucide:shopping-bag" class="mr-2 h-4 w-4" />
+              Browse Products
+            </UiButton>
+          </div>
         </div>
       </div>
 
       <div class="flex h-auto w-full flex-col sm:w-1/4">
-        <div class="sticky top-20 p-4 shadow-sm">
-          <div class="flex flex-col space-y-2 py-2 pt-0">
-            <p class="text-[10px] text-muted-foreground sm:text-[12px]">
-              Select an Item to Proceed to Checkout
-            </p>
-            <p class="text-[12px] sm:text-sm">
-              <span class="font-bold">{{ selectedItems.length }}</span> Item(s) Selected
-            </p>
-            <UiDivider class="my-2" />
-            <span class="sm:text-md text-sm font-extrabold text-muted-foreground">Total:</span>
-            <span class="text-lg font-bold sm:text-2xl">₱ {{ totalPrice.toFixed(2) }}</span>
+        <div class="sticky top-20 rounded-lg border border-border/60 bg-card p-5 shadow-sm">
+          <div class="flex flex-col space-y-4">
+            <div class="flex flex-row items-center justify-between">
+              <h3 class="text-lg font-semibold">Order Summary</h3>
+              <Icon name="lucide:receipt" class="h-5 w-5 text-muted-foreground" />
+            </div>
+
+            <UiDivider />
+
+            <div class="space-y-2">
+              <div class="flex justify-between text-sm">
+                <span class="text-muted-foreground">Selected Items:</span>
+                <span class="font-medium">{{ selectedItems.length }}</span>
+              </div>
+
+              <div class="flex justify-between text-sm">
+                <span class="text-muted-foreground">Total Items in Cart:</span>
+                <span class="font-medium">{{ userCart.length }}</span>
+              </div>
+            </div>
+
+            <UiDivider />
+
+            <div class="flex flex-col">
+              <span class="text-sm text-muted-foreground">Total Amount:</span>
+              <div class="flex items-baseline justify-between">
+                <span class="text-2xl font-bold text-primary">₱{{ totalPrice.toFixed(2) }}</span>
+                <span class="text-xs text-muted-foreground">Including taxes & fees</span>
+              </div>
+            </div>
+
+            <UiDivider />
+
+            <div class="space-y-2">
+              <p class="text-xs text-muted-foreground">
+                <Icon name="lucide:info" class="mr-1 inline h-3 w-3" />
+                Select items from the same organization to proceed to checkout
+              </p>
+
+              <UiButton
+                class="w-full"
+                size="lg"
+                :disabled="!hasSelectedItems"
+                @click="dialog = true"
+              >
+                <Icon name="lucide:shopping-bag" class="mr-2 h-4 w-4" />
+                Proceed to Checkout
+              </UiButton>
+            </div>
           </div>
           <!-- <div class="flex flex-row items-center gap-2 pt-2">
             <span class="text-md text-muted-foreground line-through">₱ 150.00</span>
@@ -151,146 +333,250 @@
           <UiDivider class="mt-2" />
           <div class="w-full pt-4">
             <UiDialog v-model:open="dialog">
-              <UiDialogTrigger>
-                <UiButton class="w-full rounded-none" :disabled="!hasSelectedItems"
-                  >Checkout</UiButton
-                >
-              </UiDialogTrigger>
+              <UiDialogTrigger> </UiDialogTrigger>
               <UiDialogContent
                 :class="{ 'z-40': orderLoading }"
                 :overlayClass="orderLoading ? 'z-40' : ''"
-                class="max-h-[500px] overflow-y-auto bg-stone-50 p-4 sm:max-h-[700px] sm:max-w-[725px] sm:p-12"
+                class="max-h-[90vh] overflow-y-auto bg-card p-4 sm:max-h-[700px] sm:max-w-[725px] sm:p-8"
                 title="Checkout Order"
-                description="Please review your order details before proceeding to payment. Ensure that all items and quantities are correct."
+                description="Please review your order details before proceeding to payment."
               >
                 <template #content>
-                  <div class="flex flex-col gap-4 py-0 sm:py-6">
+                  <div class="flex flex-col gap-6 py-2">
                     <!-- Order Summary Section -->
-                    <div>
-                      <h3 class="text-md font-semibold">Order Summary</h3>
-                      <UiDivider class="my-2" />
-                      <div
-                        v-for="cartItem in selectedItems"
-                        :key="cartItem.productID"
-                        class="flex flex-row items-center justify-between gap-4 px-2 py-4 sm:px-8"
-                      >
-                        <div class="flex flex-row items-center gap-4">
-                          <div class="h-16 w-16 overflow-hidden">
-                            <img
-                              :src="products[cartItem.productID]?.featuredPhotoURL"
-                              :alt="products[cartItem.productID]?.name"
-                              class="h-full w-full rounded-sm object-cover"
-                            />
+                    <div class="rounded-lg border border-border/40 bg-background/50 p-4">
+                      <h3 class="flex items-center gap-2 text-lg font-semibold">
+                        <Icon name="lucide:shopping-bag" class="h-4 w-4 text-primary" />
+                        Order Summary
+                      </h3>
+                      <UiDivider class="my-3" />
+
+                      <!-- Order Items -->
+                      <div class="space-y-4">
+                        <div
+                          v-for="cartItem in selectedItems"
+                          :key="cartItem.productID"
+                          class="flex flex-col rounded-md border border-border/30 p-3 shadow-sm transition-all hover:border-primary/20 hover:bg-secondary/5 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+                        >
+                          <div class="flex items-center gap-3">
+                            <!-- Product Image -->
+                            <div class="h-16 w-16 overflow-hidden rounded-md">
+                              <img
+                                :src="products[cartItem.productID]?.featuredPhotoURL"
+                                :alt="products[cartItem.productID]?.name"
+                                class="h-full w-full rounded-md object-cover"
+                                onerror="this.onerror=null; this.src='/placeholder-image.png';"
+                              />
+                            </div>
+
+                            <!-- Product Details -->
+                            <div class="flex flex-col">
+                              <span class="line-clamp-1 text-sm font-semibold sm:text-base">
+                                {{ products[cartItem.productID]?.name }}
+                              </span>
+
+                              <!-- Pre-Order Badge -->
+                              <div
+                                v-if="cartItem.isPreOrder"
+                                class="mt-1 inline-flex w-fit items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5"
+                              >
+                                <Icon name="lucide:clock" class="h-3 w-3 text-amber-600" />
+                                <span class="text-[10px] font-medium text-amber-700"
+                                  >Pre-Order</span
+                                >
+                              </div>
+
+                              <!-- Variation -->
+                              <span
+                                v-if="variations[cartItem.variationID]?.value !== 'None'"
+                                class="flex items-center gap-1 text-[12px] text-muted-foreground"
+                              >
+                                <Icon name="lucide:tag" class="h-3 w-3" />
+                                {{ variations[cartItem.variationID]?.value }}
+                              </span>
+
+                              <!-- Quantity -->
+                              <div class="mt-1 flex flex-wrap gap-2">
+                                <span
+                                  class="flex items-center gap-1 text-[12px] text-muted-foreground"
+                                >
+                                  <Icon name="lucide:package" class="h-3 w-3" />
+                                  Qty: {{ cartItem.quantity }}
+                                </span>
+
+                                <!-- Price per Item -->
+                                <span
+                                  class="flex items-center gap-1 text-[12px] text-muted-foreground"
+                                >
+                                  <Icon name="lucide:coins" class="h-3 w-3" />
+                                  ₱{{
+                                    calculatePriceWithCommission(
+                                      Number(variations[cartItem.variationID]?.price)
+                                    ).toFixed(2)
+                                  }}
+                                  each
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                          <div class="flex flex-col">
-                            <span class="sm:text-md text-sm font-semibold">{{
-                              products[cartItem.productID]?.name
-                            }}</span>
-                            <span
-                              v-if="cartItem.isPreOrder"
-                              class="text-[12px] text-muted-foreground"
-                              >Pre-Order</span
-                            >
-                            <span
-                              v-if="variations[cartItem.variationID]?.value !== 'None'"
-                              class="text-[12px] text-muted-foreground"
-                              >{{ variations[cartItem.variationID]?.value }}</span
-                            >
-                            <span class="text-[12px] text-muted-foreground"
-                              >Quantity: {{ cartItem.quantity }}</span
-                            >
-                            <span class="text-[12px] text-muted-foreground"
-                              >Price per quantity:
-                              {{
-                                calculatePriceWithCommission(
-                                  Number(variations[cartItem.variationID]?.price)
-                                ).toFixed(2)
-                              }}</span
-                            >
-                          </div>
-                        </div>
-                        <div class="flex flex-col items-end">
-                          <span class="text-[12px] text-muted-foreground">Subtotal:</span>
-                          <span class="text-md font-semibold"
-                            >₱{{
-                              (
-                                calculatePriceWithCommission(
-                                  Number(variations[cartItem.variationID]?.price || 0)
-                                ) * cartItem.quantity
-                              ).toFixed(2)
-                            }}</span
+
+                          <!-- Subtotal -->
+                          <div
+                            class="mt-2 flex flex-row items-center justify-between sm:mt-0 sm:flex-col sm:items-end"
                           >
+                            <span class="text-[12px] text-muted-foreground sm:mb-1">Subtotal:</span>
+                            <span class="font-semibold text-primary">
+                              ₱{{
+                                (
+                                  calculatePriceWithCommission(
+                                    Number(variations[cartItem.variationID]?.price || 0)
+                                  ) * cartItem.quantity
+                                ).toFixed(2)
+                              }}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                    <UiDivider class="my-2" />
+
                     <!-- Payment Method Section -->
-                    <div>
-                      <h3 class="text-lg font-semibold">Payment Method</h3>
-                      <UiDivider class="my-2" />
-                      <div class="flex flex-col gap-2 px-4 text-sm">
-                        <label class="flex items-center opacity-50" title="Available soon">
-                          <input type="radio" name="paymentMethod" value="gcash" class="mr-2" />
-                          GCash
+                    <div class="rounded-lg border border-border/40 bg-background/50 p-4">
+                      <h3 class="flex items-center gap-2 text-lg font-semibold">
+                        <Icon name="lucide:credit-card" class="h-4 w-4 text-primary" />
+                        Payment Method
+                      </h3>
+                      <UiDivider class="my-3" />
+
+                      <div class="grid gap-3 px-2">
+                        <!-- GCash Option (Disabled) -->
+                        <label
+                          class="flex cursor-not-allowed items-center gap-3 rounded-md border border-border/30 p-3 opacity-50 transition-colors"
+                          title="Available soon"
+                        >
+                          <input
+                            type="radio"
+                            name="paymentMethod"
+                            value="gcash"
+                            class="h-4 w-4"
+                            disabled
+                          />
+                          <div class="flex items-center gap-2">
+                            <div
+                              class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100"
+                            >
+                              <Icon name="lucide:smartphone" class="h-4 w-4 text-blue-600" />
+                            </div>
+                            <div class="flex flex-col">
+                              <span class="text-sm font-medium">GCash</span>
+                              <span class="text-[10px] text-muted-foreground">Coming soon</span>
+                            </div>
+                          </div>
                         </label>
-                        <label class="flex items-center">
+
+                        <!-- Cash on Hand Option -->
+                        <label
+                          class="flex cursor-pointer items-center gap-3 rounded-md border border-border/30 p-3 transition-colors hover:border-primary/30 hover:bg-secondary/10"
+                          :class="{
+                            'border-primary bg-secondary/20':
+                              selectedPaymentMethod === 'cash_on_hand',
+                          }"
+                        >
                           <input
                             type="radio"
                             name="paymentMethod"
                             value="cash_on_hand"
-                            class="mr-2"
+                            class="h-4 w-4 accent-primary"
                             v-model="selectedPaymentMethod"
                           />
-                          Cash on Hand
+                          <div class="flex items-center gap-2">
+                            <div
+                              class="flex h-8 w-8 items-center justify-center rounded-full bg-green-100"
+                            >
+                              <Icon name="lucide:wallet" class="h-4 w-4 text-green-600" />
+                            </div>
+                            <div class="flex flex-col">
+                              <span class="text-sm font-medium">Cash on Hand</span>
+                              <span class="text-[10px] text-muted-foreground"
+                                >Pay upon claiming</span
+                              >
+                            </div>
+                          </div>
                         </label>
                       </div>
                     </div>
-                    <UiDivider class="my-2" />
-                    <!-- Discount Section -->
-                    <!-- <div>
-                      <h3 class="text-lg font-semibold">Avail Discount</h3>
-                      <UiDivider class="my-2" />
-                      <div class="flex flex-col gap-2">
-                        <input
-                          type="text"
-                          placeholder="Enter student id"
-                          class="rounded border p-2"
-                          name="discount"
-                        />
-                        <UiButton class="mt-2 bg-blue-500 hover:bg-blue-700">Send Request</UiButton>
+
+                    <!-- Order Total & Checkout -->
+                    <div class="rounded-lg border border-border/40 bg-background/50 p-4">
+                      <div class="flex flex-col space-y-3">
+                        <!-- Summary -->
+                        <div class="space-y-2">
+                          <div class="flex justify-between text-sm">
+                            <span class="text-muted-foreground">Items Total:</span>
+                            <span>₱{{ totalPrice.toFixed(2) }}</span>
+                          </div>
+                          <UiDivider class="my-2" />
+                          <div class="flex items-center justify-between">
+                            <span class="font-semibold">Total:</span>
+                            <span class="text-xl font-bold text-primary"
+                              >₱{{ totalPrice.toFixed(2) }}</span
+                            >
+                          </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <UiButton
+                          :disabled="!canSubmitOrder"
+                          @click="handleCheckout()"
+                          size="lg"
+                          class="mt-2 w-full"
+                        >
+                          <Icon name="lucide:check-circle" class="mr-2 h-4 w-4" />
+                          {{ canSubmitOrder ? "Place Order" : "Select Payment Method" }}
+                        </UiButton>
+
+                        <!-- Help Text -->
+                        <p class="mt-2 text-center text-[11px] text-muted-foreground">
+                          <Icon name="lucide:info" class="mr-1 inline h-3 w-3" />
+                          By placing an order, you agree to our terms and conditions.
+                        </p>
                       </div>
-                    </div> -->
-                    <UiDivider class="my-2" />
-                    <!-- Submit Order Button -->
-                    <div class="flex flex-row items-center justify-between">
-                      <span class="text-lg font-semibold">Total: ₱{{ totalPrice.toFixed(2) }}</span>
-                      <UiButton :disabled="!canSubmitOrder" @click="handleCheckout()"
-                        >Submit Order</UiButton
-                      >
                     </div>
                   </div>
                 </template>
               </UiDialogContent>
+              <!-- <UiDialogFooter>
+                <UiButton variant="outline" @click="dialog = false">Cancel</UiButton>
+                <UiButton
+                  variant="destructive"
+                  :disabled="removeLoading"
+                  @click="confirmRemoveCartItem"
+                >
+                  Confirm
+                </UiButton>
+              </UiDialogFooter> -->
             </UiDialog>
           </div>
         </div>
       </div>
     </div>
-    <div class="flex flex-col px-12 py-32">
-      <span class="text-lg font-semibold">You Might Also Like</span>
-      <UiDivider class="my-5" />
-      <!-- Recommended Products -->
-    </div>
     <div
       v-if="removeLoading || orderLoading"
-      class="fixed inset-0 z-50 flex min-h-screen w-full items-center justify-center bg-secondary/40 backdrop-blur"
+      class="fixed inset-0 z-50 flex min-h-screen w-full items-center justify-center bg-background/80 backdrop-blur-sm"
     >
-      <div class="flex flex-col items-center justify-center gap-4">
-        <Icon name="lucide:loader-circle" class="size-16 animate-spin text-primary" />
-        <span class="text-sm font-semibold text-secondary-foreground">
-          Processing Request ...
-        </span>
-        <!-- Add a GIF here -->
+      <div
+        class="flex max-w-[85%] flex-col items-center justify-center gap-4 rounded-lg bg-card p-6 text-center shadow-lg"
+      >
+        <div class="relative">
+          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+            <Icon name="lucide:loader-circle" class="size-12 animate-spin text-primary" />
+          </div>
+        </div>
+        <div>
+          <h3 class="mb-1 text-lg font-semibold">Processing Your Request</h3>
+          <p class="text-sm text-muted-foreground">
+            {{ removeLoading ? "Removing item from cart..." : "Finalizing your order..." }}
+          </p>
+        </div>
       </div>
     </div>
   </div>
@@ -298,7 +584,6 @@
 
 <script lang="ts" setup>
   import { useCommissionRate } from "~/composables/useCommissionRate";
-  import { useOrganization } from "~/composables/useOrganizationValues";
   import { usePriceCalculator } from "~/composables/usePriceCalculator";
   import { useCheckoutCart } from "~/composables/user/useCheckoutCart";
   import { useEmailOrder } from "~/composables/user/useEmailOrder";
@@ -325,10 +610,10 @@
   const removeModal = ref(false);
   const orderLoading = ref(false);
   const router = useRouter();
-  const orgName = ref<string | null>(null);
 
   const { commissionRate, fetchCommissionRate } = useCommissionRate();
   const { calculatePriceWithCommission } = usePriceCalculator(commissionRate);
+
   onMounted(() => {
     fetchCommissionRate();
     // console.log("Commission rate fetched:", commissionRate.value);
@@ -393,56 +678,118 @@
     removeLoading.value = false;
   };
 
-  const products = ref<Record<string, Partial<Product>>>({});
-  const variations = ref<Record<string, Partial<Variation>>>({});
+  // Add these at the top of your script section with the other refs
+  const products = ref<Record<string, Product>>({});
+  const variations = ref<Record<string, Variation>>({});
   const organizations = ref<Record<string, { id: string; name: string }>>({});
 
+  // The loading states you already have
+  const productLoadingStates = ref<Record<string, boolean>>({});
+  const variationLoadingStates = ref<Record<string, boolean>>({});
+  const organizationLoadingStates = ref<Record<string, boolean>>({});
+
   const fetchProductAndVariationDetails = async () => {
-    for (const cartItem of userCart.value) {
-      // console.log("Cart item:", cartItem);
+    // Set initial loading state
+    loading.value = true;
 
-      // Fetch product details
-      if (cartItem?.productID && !products.value[cartItem.productID]) {
-        const productDocRef = doc(collection(db, "products"), cartItem.productID);
-        const productDoc = await getDoc(productDocRef);
-        if (productDoc.exists()) {
-          products.value[cartItem.productID] = productDoc.data() as Product;
-          // console.log("Fetched product:", products.value[cartItem.productID]);
-        } else {
-          console.error("Product not found");
-        }
-      }
+    try {
+      const fetchPromises = userCart.value.map(async (cartItem) => {
+        // Track loading state separately from the model
+        if (cartItem?.productID && !products.value[cartItem.productID]) {
+          productLoadingStates.value[cartItem.productID] = true;
 
-      // Fetch variation details
-      if (cartItem?.variationID && !variations.value[cartItem.variationID]) {
-        const variationDocRef = doc(
-          collection(doc(db, "products", cartItem.productID), "variations"),
-          cartItem.variationID
-        );
-        const variationDoc = await getDoc(variationDocRef);
-        if (variationDoc.exists()) {
-          variations.value[cartItem.variationID] = variationDoc.data() as Variation;
-          // console.log("Fetched variation:", variations.value[cartItem.variationID]);
-        } else {
-          console.error("Variation not found");
-        }
-      }
+          try {
+            const productDocRef = doc(collection(db, "products"), cartItem.productID);
+            const productDoc = await getDoc(productDocRef);
 
-      // Fetch organization details
-      const product = products.value[cartItem.productID];
-      if (product?.organizationID && !organizations.value[product.organizationID]) {
-        const orgDocRef = doc(collection(db, "organizations"), product.organizationID);
-        const orgDoc = await getDoc(orgDocRef);
-        if (orgDoc.exists()) {
-          organizations.value[product.organizationID] = {
-            id: orgDoc.id,
-            name: orgDoc.data().name || "Unknown Organization",
-          };
-          // console.log("Fetched organization:", organizations.value[product.organizationID]);
-        } else {
-          console.error("Organization not found");
+            if (productDoc.exists()) {
+              products.value[cartItem.productID] = productDoc.data() as Product;
+            } else {
+              products.value[cartItem.productID] = {
+                name: "Product Not Found",
+                featuredPhotoURL: "/placeholder-image.png",
+              } as Product;
+            }
+          } catch (error) {
+            console.error("Error fetching product:", error);
+            products.value[cartItem.productID] = {
+              name: "Error Loading Product",
+              featuredPhotoURL: "/placeholder-image.png",
+            } as Product;
+          } finally {
+            productLoadingStates.value[cartItem.productID] = false;
+          }
         }
-      }
+
+        // Similar approach for variations
+        if (cartItem?.variationID && !variations.value[cartItem.variationID]) {
+          variationLoadingStates.value[cartItem.variationID] = true;
+
+          try {
+            const variationDocRef = doc(
+              collection(doc(db, "products", cartItem.productID), "variations"),
+              cartItem.variationID
+            );
+            const variationDoc = await getDoc(variationDocRef);
+
+            if (variationDoc.exists()) {
+              variations.value[cartItem.variationID] = variationDoc.data() as Variation;
+            } else {
+              variations.value[cartItem.variationID] = {
+                value: "Default",
+                price: 0,
+              } as Variation;
+            }
+          } catch (error) {
+            console.error("Error fetching variation:", error);
+            variations.value[cartItem.variationID] = {
+              value: "Error Loading",
+              price: 0,
+            } as Variation;
+          } finally {
+            variationLoadingStates.value[cartItem.variationID] = false;
+          }
+        }
+
+        // Organization fetching with loading state
+        const product = products.value[cartItem.productID];
+        if (product?.organizationID && !organizations.value[product.organizationID]) {
+          organizationLoadingStates.value[product.organizationID] = true;
+          organizations.value[product.organizationID] = { id: "", name: "Loading..." };
+
+          try {
+            const orgDocRef = doc(collection(db, "organizations"), product.organizationID);
+            const orgDoc = await getDoc(orgDocRef);
+
+            if (orgDoc.exists()) {
+              organizations.value[product.organizationID] = {
+                id: orgDoc.id,
+                name: orgDoc.data().name || "Unknown Organization",
+              };
+            } else {
+              organizations.value[product.organizationID] = {
+                id: product.organizationID,
+                name: "Organization Not Found",
+              };
+            }
+          } catch (error) {
+            console.error("Error fetching organization:", error);
+            organizations.value[product.organizationID] = {
+              id: product.organizationID,
+              name: "Error Loading Organization",
+            };
+          } finally {
+            organizationLoadingStates.value[product.organizationID] = false;
+          }
+        }
+      });
+
+      // Wait for all fetch operations to complete
+      await Promise.all(fetchPromises);
+    } catch (error) {
+      console.error("Error in fetchProductAndVariationDetails:", error);
+    } finally {
+      loading.value = false;
     }
   };
 
@@ -519,25 +866,13 @@
   const handleCheckout = async () => {
     orderLoading.value = true;
     try {
-      // console.log("Proceeding to checkout...");
-      // console.log("User ID:", userID.value);
-      // console.log("Total price:", totalPrice.value);
-      // console.log("Selected payment method:", selectedPaymentMethod.value);
-      // console.log("Selected items:", selectedItems.value);
-
       const organizationID = products.value[selectedItems.value[0].productID]?.organizationID;
-
-      // console.log("Organization ID:", organizationID);
-      // console.log("Organization Name:", organizationName);
 
       if (!commissionRate.value) {
         throw new Error("Commission rate not found");
       }
       const commissionRateID = commissionRate.value.id;
       const commissionRateValue = commissionRate.value.rate;
-
-      // console.log("Commission Rate ID:", commissionRateID);
-      // console.log("Commission Rate Value:", commissionRateValue);
 
       const uniqRefNumber = await createOrder(
         userID.value as string,
@@ -585,8 +920,6 @@
         orderDetails
       );
 
-      // await testUniqueRefNumber();
-
       toast.toast({
         title: "Order submitted",
         description: "Your order has been submitted successfully. Please wait for confirmation.",
@@ -600,10 +933,5 @@
     } finally {
       orderLoading.value = false;
     }
-  };
-
-  const testUniqueRefNumber = async () => {
-    const uniqueRefNumber = generateUniqueRefNumber();
-    console.log("Generated Unique Reference Number:", uniqueRefNumber);
   };
 </script>

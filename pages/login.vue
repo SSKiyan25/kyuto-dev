@@ -133,35 +133,88 @@
     >
       <NuxtLink to="/" class="ghost absolute right-4 top-4 md:right-8 md:top-8">
         <div class="flex flex-row items-center hover:underline hover:opacity-70">
-          <IconsChevronLeft class="pt-1" /> Back to Home
+          <IconsChevronLeft class="pt-1" /> <span class="text-xs lg:text-sm">Back to Home</span>
         </div>
       </NuxtLink>
       <div class="relative hidden h-full flex-col bg-muted p-10 text-white dark:border-r lg:flex">
-        <div class="absolute inset-0 bg-[#17321A]" />
+        <div class="absolute inset-0 bg-[#17321A]"></div>
         <NuxtLink to="/">
           <div class="relative z-20 flex items-center text-lg font-medium">
             <img src="/logo-verch-2.png" alt="logo" class="h-auto w-8" />
             <p class="pl-2 pt-2">Verch</p>
           </div>
         </NuxtLink>
-        <div class="relative z-20 mt-auto">
+
+        <!-- Features section -->
+        <div class="relative z-20 mt-10 flex flex-col space-y-8">
+          <h2 class="text-2xl font-bold">Welcome to Verch</h2>
+          <p class="text-lg opacity-90">
+            Your ultimate merchandise platform for schools and organizations
+          </p>
+
+          <!-- Feature cards -->
+          <div class="grid gap-6">
+            <!-- Feature 1 -->
+            <div class="flex items-start space-x-4 rounded-lg bg-white/10 p-4 backdrop-blur-sm">
+              <div class="rounded-full bg-emerald-600 p-2">
+                <Icon name="lucide:shopping-bag" class="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h3 class="font-semibold">Cross-Organization Shopping</h3>
+                <p class="text-sm opacity-90">
+                  Browse and purchase merchandise from your organization and others in one place
+                </p>
+              </div>
+            </div>
+
+            <!-- Feature 2 -->
+            <div class="flex items-start space-x-4 rounded-lg bg-white/10 p-4 backdrop-blur-sm">
+              <div class="rounded-full bg-emerald-600 p-2">
+                <Icon name="lucide:check-circle" class="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h3 class="font-semibold">Simple Ordering System</h3>
+                <p class="text-sm opacity-90">
+                  Streamlined checkout process designed for campus communities
+                </p>
+              </div>
+            </div>
+
+            <!-- Feature 3 -->
+            <div class="flex items-start space-x-4 rounded-lg bg-white/10 p-4 backdrop-blur-sm">
+              <div class="rounded-full bg-emerald-600 p-2">
+                <Icon name="lucide:award" class="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h3 class="font-semibold">Exclusive School Merchandise</h3>
+                <p class="text-sm opacity-90">
+                  Access official branded items from your favorite campus organizations
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="relative z-20 mt-20">
           <blockquote class="space-y-2">
-            <!-- <p class="text-lg">
-              &ldquo;This library has saved me countless hours of work and helped me deliver
-              stunning designs to my clients faster than ever before.&rdquo;
+            <p class="text-lg italic opacity-90">
+              "Verch makes it so easy to find and purchase merchandise from all student
+              organizations."
             </p>
-            <footer class="text-sm">Sofia Davis</footer> -->
+            <footer class="text-sm font-medium">— Campus Student</footer>
           </blockquote>
         </div>
       </div>
-      <div class="pt-20 sm:pt-0 lg:p-8">
+      <div class="pt-10 sm:pt-0 lg:p-8">
         <div class="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
+          <!-- Mobile features - shown only on mobile (hidden on lg screens) -->
+          <div class="block lg:hidden">
+            <MiscMobileFeatures />
+          </div>
           <div class="flex flex-col space-y-2 text-center">
             <h1 class="text-2xl font-semibold tracking-tight">Sign in your account</h1>
             <p class="text-sm text-muted-foreground">Enter your email and password to proceed</p>
           </div>
-          <!-- Login Component /component/Auth/Login.vue -->
-          <!--<AuthLogin />-->
           <div>
             <form @submit="submit">
               <fieldset :disabled="isSubmitting" class="grid gap-4">

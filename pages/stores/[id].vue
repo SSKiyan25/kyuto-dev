@@ -1,144 +1,170 @@
 <template>
-  <div class="mb-24 flex w-full flex-col p-14">
-    <div class="flex flex-row space-x-2">
-      <div class="flex w-1/3 flex-col space-y-1 pr-2">
-        <div class="pt-2">
-          <span class="text-wrap break-words text-4xl font-bold">{{ store?.name }}</span>
-          <p class="text-md text-wrap break-words pl-2 pt-4 opacity-80">{{ store?.description }}</p>
-          <p class="text-md text-wrap break-words pl-4 pt-4">{{ store?.address }}</p>
-        </div>
+  <div class="mb-12 flex w-full flex-col px-4 py-6 sm:px-6 md:px-8 lg:px-14">
+    <!-- Store Header -->
+    <div class="flex flex-col space-y-6 lg:flex-row lg:space-x-8 lg:space-y-0">
+      <!-- Cover image (full width on mobile) -->
+      <div class="order-1 w-full overflow-hidden rounded-lg lg:order-2 lg:w-2/3">
+        <img
+          :src="store?.coverImageURL || '/placeholder-cover.jpg'"
+          alt="Store Cover Image"
+          class="h-48 w-full rounded-lg object-cover shadow-md sm:h-64 md:h-80 lg:h-96"
+        />
       </div>
-      <div class="flex w-2/3 flex-col">
-        <div class="flex h-[512px] w-full justify-center">
-          <img :src="store?.coverImageURL" alt="Store Image" class="rounded-lg object-cover" />
+
+      <!-- Store details (below image on mobile) -->
+      <div class="order-2 flex w-full flex-col space-y-4 lg:order-1 lg:w-1/3">
+        <div class="flex items-center space-x-4">
+          <img
+            :src="store?.logoImageURL || '/logo-verch.webp'"
+            alt="Store Logo"
+            class="h-16 w-16 rounded-full border-2 border-white object-cover shadow-sm sm:h-20 sm:w-20"
+          />
+          <div class="mt-3 sm:mt-0">
+            <h1 class="line-clamp-2 text-xl font-bold leading-tight sm:text-2xl md:text-3xl">
+              {{ store?.name }}
+            </h1>
+          </div>
+        </div>
+
+        <div class="rounded-lg bg-gray-50 p-4 dark:bg-gray-800/50">
+          <p
+            v-if="store?.description"
+            class="mb-3 text-sm text-gray-600 dark:text-gray-300 sm:text-base"
+          >
+            {{ store?.description }}
+          </p>
+
+          <div v-if="store?.address" class="flex items-start space-x-2 text-sm text-gray-500">
+            <Icon name="lucide:map-pin" class="mt-0.5 h-4 w-4 flex-shrink-0" />
+            <span>{{ store?.address }}</span>
+          </div>
         </div>
       </div>
     </div>
-    <UiDivider class="my-6" />
 
-    <div class="flex flex-col space-y-2">
-      <div class="flex flex-row items-center space-x-1 opacity-80">
-        <Icon name="lucide:box" class="size-6" />
-        <p class="text-lg font-medium">Products from this store</p>
+    <UiDivider class="my-8" />
+
+    <!-- Products Section -->
+    <div class="flex flex-col space-y-4">
+      <div class="flex flex-row items-center space-x-2">
+        <Icon name="lucide:shopping-bag" class="size-5 text-primary" />
+        <h2 class="text-xl font-medium">Products</h2>
       </div>
-      <div class="mt-4 flex flex-row flex-wrap gap-1 sm:mt-6 sm:gap-6 sm:px-9">
-        <div
-          v-for="product in products"
-          :key="product.id"
-          class="flex flex-col items-center space-x-4"
-          v-if="products.length > 0"
-        >
+
+      <!-- Products grid -->
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5">
+        <div v-for="product in products" :key="product.id" v-if="products.length > 0">
           <NuxtLink
             :to="`/product/${product.id}`"
             @click="handleProductClick(product.id as string)"
+            class="flex h-full flex-col overflow-hidden rounded-md border bg-white transition-all hover:shadow-md dark:border-gray-700 dark:bg-gray-800/50"
           >
-            <div
-              class="flex max-h-[32rem] max-w-[16rem] flex-col rounded-sm border p-2 hover:shadow-lg sm:max-h-[40rem] sm:max-w-[24rem]"
-            >
-              <div class="flex justify-center border-b p-2">
-                <div class="h-32 w-32 overflow-hidden sm:h-52 sm:w-52">
-                  <img
-                    :src="product.featuredPhotoURL"
-                    :alt="product.name"
-                    class="h-full w-full transform object-cover transition-transform duration-300 ease-in-out hover:scale-110"
-                  />
-                </div>
-              </div>
-              <div class="flex w-full flex-col items-start pt-1">
-                <span class="text-[12px] text-muted-foreground sm:text-sm">
-                  ₱{{ calculatePriceWithCommission(Number(product.price)).toFixed(2) }}
-                </span>
-                <p class="w-full truncate pt-2 text-[12px] font-semibold sm:text-sm">
-                  {{ product.name }}
-                </p>
-                <div
-                  class="flex w-full flex-row justify-between pt-4 text-[10px] opacity-50 sm:text-[12px]"
-                >
-                  <span>{{ productViewCounts[product.id as string] || 0 }} views</span>
-                  <span>{{ product.totalSales }} sales</span>
-                </div>
+            <div class="relative aspect-square overflow-hidden">
+              <img
+                :src="product.featuredPhotoURL || '/placeholder-product.jpg'"
+                :alt="product.name"
+                class="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+              />
+            </div>
+
+            <div class="flex flex-1 flex-col p-3">
+              <p class="line-clamp-2 text-sm font-medium">
+                {{ product.name }}
+              </p>
+              <p class="mt-1 text-sm font-semibold text-primary">
+                ₱{{ calculatePriceWithCommission(Number(product.price)).toFixed(2) }}
+              </p>
+
+              <div class="mt-auto flex w-full justify-between pt-2 text-xs text-gray-500">
+                <span>{{ productViewCounts[product.id as string] || 0 }} views</span>
+                <span>{{ product.totalSales || 0 }} sold</span>
               </div>
             </div>
           </NuxtLink>
         </div>
+
         <template v-if="products.length === 0">
-          <div class="flex h-32 w-full flex-col items-center justify-center">
-            <p>No Available Products.</p>
+          <div
+            class="col-span-full flex h-32 items-center justify-center rounded-lg border border-dashed p-6 text-center text-gray-500"
+          >
+            <div>
+              <Icon name="lucide:package-x" class="mx-auto mb-2 h-8 w-8 text-gray-400" />
+              <p>No products available</p>
+            </div>
           </div>
         </template>
       </div>
     </div>
-    <UiDivider class="my-6" />
-    <div class="flex flex-col space-y-2">
-      <div class="flex flex-col items-center justify-center space-y-2">
-        <img
-          :src="store?.logoImageURL"
-          alt="Store Image"
-          class="h-28 w-28 rounded-lg object-cover"
-        />
-        <p class="text-lg font-medium uppercase opacity-70">Photos from this store</p>
+
+    <UiDivider class="my-8" />
+
+    <!-- Store Photos Section -->
+    <div class="flex flex-col space-y-6">
+      <div class="flex items-center justify-center space-x-2">
+        <Icon name="lucide:image" class="h-5 w-5 text-primary" />
+        <h2 class="text-xl font-medium">Store Gallery</h2>
       </div>
-      <div class="my-4 flex justify-center px-8">
-        <div class="h-auto rounded-sm bg-muted px-2 py-8">
-          <template v-if="store?.imagesURL && store.imagesURL.length > 0">
-            <Carousel v-bind="config">
-              <Slide v-for="(photo, index) in store?.imagesURL" :key="index">
+
+      <div class="overflow-hidden rounded-lg bg-gray-50 p-4 dark:bg-gray-800/50">
+        <template v-if="store?.imagesURL && store.imagesURL.length > 0">
+          <Carousel v-bind="galleryConfig" class="carousel-container">
+            <Slide v-for="(photo, index) in store?.imagesURL" :key="index">
+              <div class="carousel__item px-1">
                 <img
                   :src="photo.url"
-                  alt="Product Photo"
-                  class="h-auto w-96 rounded-sm object-cover"
+                  alt="Store Photo"
+                  class="h-full w-full rounded-md object-cover"
                 />
-              </Slide>
-              <template #addons>
-                <Navigation />
-              </template>
-            </Carousel>
-          </template>
-          <template v-else>
-            <div class="flex flex-col items-center justify-center">
-              <p class="text-sm text-muted-foreground">No images available yet for this store.</p>
-            </div>
-          </template>
-        </div>
+              </div>
+            </Slide>
+            <template #addons>
+              <Navigation />
+              <Pagination />
+            </template>
+          </Carousel>
+        </template>
+        <template v-else>
+          <div class="flex flex-col items-center justify-center py-8">
+            <Icon name="lucide:image-off" class="mb-2 h-10 w-10 text-gray-400" />
+            <p class="text-sm text-gray-500">No gallery images available</p>
+          </div>
+        </template>
       </div>
     </div>
 
-    <UiDivider class="my-6" />
-    <div class="flex flex-col space-y-2">
-      <div class="flex flex-col items-center justify-center space-y-2">
-        <img
-          :src="store?.logoImageURL"
-          alt="Store Image"
-          class="h-28 w-28 rounded-lg object-cover"
-        />
-        <p class="text-lg font-medium uppercase opacity-70">
-          Address Images Reference from this store
-        </p>
+    <UiDivider class="my-8" />
+
+    <!-- Address Reference Images Section -->
+    <div class="flex flex-col space-y-6">
+      <div class="flex items-center justify-center space-x-2">
+        <Icon name="lucide:map" class="h-5 w-5 text-primary" />
+        <h2 class="text-xl font-medium">Location Reference</h2>
       </div>
-      <div class="my-4 flex justify-center px-8">
-        <div class="h-auto rounded-sm bg-muted px-2 py-8">
-          <template v-if="store?.addressImagesURL && store.addressImagesURL.length > 0">
-            <Carousel v-bind="config">
-              <Slide v-for="(photo, index) in store?.addressImagesURL" :key="index">
+
+      <div class="overflow-hidden rounded-lg bg-gray-50 p-4 dark:bg-gray-800/50">
+        <template v-if="store?.addressImagesURL && store.addressImagesURL.length > 0">
+          <Carousel v-bind="galleryConfig" class="carousel-container">
+            <Slide v-for="(photo, index) in store?.addressImagesURL" :key="index">
+              <div class="carousel__item px-1">
                 <img
                   :src="photo.url"
-                  alt="Address Photo"
-                  class="h-auto w-96 rounded-sm object-cover"
+                  alt="Location Photo"
+                  class="h-full w-full rounded-md object-cover"
                 />
-              </Slide>
-              <template #addons>
-                <Navigation />
-              </template>
-            </Carousel>
-          </template>
-          <template v-else>
-            <div class="flex flex-col items-center justify-center">
-              <p class="text-sm text-muted-foreground">
-                No address images yet available for this store.
-              </p>
-            </div>
-          </template>
-        </div>
+              </div>
+            </Slide>
+            <template #addons>
+              <Navigation />
+              <Pagination />
+            </template>
+          </Carousel>
+        </template>
+        <template v-else>
+          <div class="flex flex-col items-center justify-center py-8">
+            <Icon name="lucide:map-off" class="mb-2 h-10 w-10 text-gray-400" />
+            <p class="text-sm text-gray-500">No location reference images available</p>
+          </div>
+        </template>
       </div>
     </div>
   </div>
@@ -146,7 +172,7 @@
 
 <script lang="ts" setup>
   import { useAddProductViews } from "~/composables/useAddProductViews";
-  import { Carousel, Navigation, Slide } from "vue3-carousel";
+  import { Carousel, Navigation, Pagination, Slide } from "vue3-carousel";
   import type { Organization } from "~/types/models/Organization";
   import type { ProductWithId, Variation } from "~/types/models/Product";
 
@@ -228,19 +254,52 @@
     return 3;
   });
 
-  const config = computed(() => ({
+  const galleryConfig = computed(() => ({
     height: 300,
-    itemsToShow: itemsToShow.value,
+    itemsToShow: 1,
+    snapAlign: "center" as const,
     gap: 15,
     autoplay: 3000,
     wrapAround: true,
     pauseAutoplayOnHover: true,
+    breakpoints: {
+      640: {
+        itemsToShow: 1,
+      },
+      768: {
+        itemsToShow: 2,
+      },
+      1024: {
+        itemsToShow: 3,
+      },
+    },
   }));
 </script>
 
 <style scoped>
-  .carousel {
-    --vc-nav-background: rgba(255, 255, 255, 0.7);
-    --vc-nav-border-radius: 100%;
+  .carousel-container {
+    --vc-pgn-active-color: var(--primary);
+    --vc-pgn-width: 10px;
+    --vc-pgn-height: 10px;
+    --vc-pgn-margin: 4px;
+    --vc-nav-color: var(--primary);
+    --vc-nav-background: rgba(255, 255, 255, 0.9);
+    --vc-nav-width: 30px;
+    --vc-nav-height: 30px;
+    --vc-nav-border-radius: 50%;
+  }
+
+  .carousel__item {
+    height: 280px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  @media (max-width: 640px) {
+    .carousel__item {
+      height: 240px;
+    }
   }
 </style>

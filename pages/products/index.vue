@@ -1,195 +1,255 @@
 <template>
-  <div class="flex flex-col justify-center space-y-12 p-16">
-    <ProductSearch @select="handleProductSelect" />
+  <div
+    class="flex flex-col justify-center space-y-6 p-4 sm:space-y-8 sm:p-8 md:space-y-12 md:p-12 lg:p-16"
+  >
+    <!-- Header section with description -->
+    <div class="mb-2 mt-8 flex w-full flex-col items-center justify-center space-y-2 sm:space-y-3">
+      <h2 class="text-xl font-bold uppercase sm:text-4xl">All Products</h2>
+      <p class="max-w-4xl text-center text-sm text-muted-foreground sm:text-base">
+        Explore our wide range of official merchandise. Find the perfect items for yourself or as
+        gifts.
+      </p>
+    </div>
+
+    <!-- Product Search -->
+    <ProductSearch @select="handleProductSelect" class="mx-auto w-full max-w-full" />
+
+    <!-- Products section -->
     <div class="flex flex-col space-y-4">
-      <div class="border-b-2">
-        <span class="text-lg font-semibold">Products</span>
-      </div>
-      <!-- Products -->
-      <div class="mx-auto mb-24 flex min-h-lvh w-full flex-col">
-        <div
-          class="flex w-full flex-row flex-wrap items-center justify-between rounded-md bg-primary/90 p-4 text-primary-foreground shadow"
-        >
-          <div class="flex flex-row items-start justify-start gap-1.5 sm:gap-2">
-            <div class="" v-for="(show, index) in showAs" :key="index">
-              <button
-                @click="toggleActive(index)"
-                :class="[
-                  'flex flex-row rounded-sm p-1 text-[11px] font-medium uppercase tracking-wider sm:p-2 sm:text-sm',
-                  show.isActive
-                    ? 'bg-secondary text-secondary-foreground'
-                    : 'border text-primary-foreground opacity-90',
-                ]"
-              >
-                {{ show.value }}
-              </button>
+      <!-- Filter bar - sleek horizontal design -->
+      <div class="flex flex-col space-y-4 rounded-lg border bg-card p-4 shadow-sm">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <!-- Category chips - horizontally scrollable on mobile -->
+          <div class="-mx-2 overflow-x-auto px-2 pb-2">
+            <div class="flex flex-row items-center space-x-2">
+              <div v-for="(show, index) in showAs" :key="index">
+                <button
+                  @click="toggleActive(index)"
+                  :class="[
+                    'whitespace-nowrap rounded-full px-4 py-1.5 text-xs font-medium transition-colors sm:text-sm',
+                    show.isActive
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'bg-secondary/30 hover:bg-secondary/50',
+                  ]"
+                >
+                  {{ show.value }}
+                </button>
+              </div>
             </div>
           </div>
 
-          <div class="flex flex-row space-x-1">
-            <UiButton
-              @click="toggleFilterCommands"
-              variant="secondary"
-              size="sm"
-              class="px-2 py-1 text-[10px] sm:mt-0 sm:px-4 sm:py-2 sm:text-sm"
-            >
-              Filter By
-              <Icon name="lucide:list-filter" class="" />
-            </UiButton>
-            <UiButton
-              @click="refreshProducts"
-              variant="ghost"
-              class="px-2 py-1 text-white sm:mt-0 sm:px-4 sm:py-2 sm:text-sm"
-            >
-              <Icon
-                :class="{ 'animate-spin': loadingProducts }"
-                name="lucide:refresh-cw"
-                title="Refresh Products"
-              />
-            </UiButton>
-          </div>
-        </div>
-
-        <!-- Filter Commands -->
-        <transition name="slide-fade">
-          <div
-            v-if="showFilterCommands"
-            class="flex flex-row justify-end space-x-2 rounded-sm p-2 shadow"
-          >
-            <!-- Filter Category -->
-            <div class="">
-              <UiDropdownMenu>
-                <UiDropdownMenuTrigger as-child>
-                  <UiButton variant="outline" class="text-[12px] sm:text-sm">
-                    Select Category
-                    <Icon name="lucide:chevron-down" class="h-4 w-4" />
-                  </UiButton>
-                </UiDropdownMenuTrigger>
-                <UiDropdownMenuContent class="w-48">
-                  <UiDropdownMenuLabel label="Categories" />
-                  <UiDropdownMenuSeparator />
+          <!-- Filter buttons group -->
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- Category filter -->
+            <UiDropdownMenu>
+              <UiDropdownMenuTrigger as-child>
+                <UiButton variant="outline" size="sm" class="text-xs sm:text-sm">
+                  Categories
+                  <Icon name="lucide:chevron-down" class="ml-1.5 h-3.5 w-3.5" />
+                </UiButton>
+              </UiDropdownMenuTrigger>
+              <UiDropdownMenuContent class="w-56">
+                <UiDropdownMenuLabel label="Product Categories" />
+                <UiDropdownMenuSeparator />
+                <div class="max-h-[240px] overflow-y-auto py-1">
                   <template v-for="c in filterCategories" :key="c.key">
                     <UiDropdownMenuCheckboxItem
                       :checked="selectedCategories.includes(c.key)"
                       @select="(e: any) => e.preventDefault()"
-                      class="mb-1"
                       @update:checked="
                         selectedCategories.includes(c.key)
                           ? selectedCategories.splice(selectedCategories.indexOf(c.key), 1)
                           : selectedCategories.push(c.key)
                       "
                     >
-                      <div class="flex items-center gap-4">
+                      <div class="flex items-center gap-2">
                         <span>{{ c.title }}</span>
                       </div>
                     </UiDropdownMenuCheckboxItem>
                   </template>
-                </UiDropdownMenuContent>
-              </UiDropdownMenu>
-            </div>
-            <!-- Sort by Price -->
-            <div class="flex flex-row items-center">
-              <UiDropdownMenu>
-                <UiDropdownMenuTrigger as-child>
-                  <UiButton variant="outline" class="text-[12px] sm:text-sm">
-                    Sort by price
-                    <Icon name="lucide:chevron-down" class="h-4 w-4" />
-                  </UiButton>
-                </UiDropdownMenuTrigger>
-                <UiDropdownMenuContent class="w-32">
-                  <UiDropdownMenuLabel label="Order" />
-                  <UiDropdownMenuSeparator />
-                  <UiDropdownMenuRadioGroup v-model="sortPrice">
-                    <UiDropdownMenuRadioItem value="none" title="None" text-value="none" />
-                    <UiDropdownMenuRadioItem value="lowest" title="Lowest" text-value="lowest" />
-                    <UiDropdownMenuRadioItem value="highest" title="Highest" text-value="highest" />
-                  </UiDropdownMenuRadioGroup>
-                </UiDropdownMenuContent>
-              </UiDropdownMenu>
-            </div>
-            <!-- Price Range -->
-            <div class="flex w-auto flex-row items-center pl-4"></div>
-          </div>
-        </transition>
-
-        <!-- Products Container -->
-        <div class="mt-4 flex flex-row flex-wrap gap-1 sm:mt-6 sm:gap-6 sm:px-9">
-          <template v-if="loadingProducts">
-            <div v-for="i in 5" :key="i" class="flex flex-col items-center space-x-4">
-              <div
-                class="flex max-h-[32rem] max-w-[16rem] flex-col rounded-md border border-secondary p-2 sm:max-h-[40rem] sm:max-w-[24rem]"
-              >
-                <div class="flex justify-center border-b p-2">
-                  <div class="h-32 w-32 overflow-hidden sm:h-52 sm:w-52">
-                    <UiSkeleton loading class="h-full w-full rounded-sm" />
-                  </div>
                 </div>
-                <div class="flex w-full flex-col items-start pt-1">
+                <UiDropdownMenuSeparator />
+                <div class="flex items-center justify-between p-2">
+                  <UiButton
+                    variant="ghost"
+                    size="sm"
+                    class="text-xs"
+                    @click="selectedCategories = []"
+                  >
+                    Clear All
+                  </UiButton>
+                </div>
+              </UiDropdownMenuContent>
+            </UiDropdownMenu>
+
+            <!-- Price sort -->
+            <UiDropdownMenu>
+              <UiDropdownMenuTrigger as-child>
+                <UiButton variant="outline" size="sm" class="text-xs sm:text-sm">
+                  <span>{{
+                    sortPrice === "none"
+                      ? "Price"
+                      : sortPrice === "lowest"
+                        ? "Price: Low to High"
+                        : "Price: High to Low"
+                  }}</span>
+                  <Icon name="lucide:chevron-down" class="ml-1.5 h-3.5 w-3.5" />
+                </UiButton>
+              </UiDropdownMenuTrigger>
+              <UiDropdownMenuContent class="w-40">
+                <UiDropdownMenuLabel label="Sort by Price" />
+                <UiDropdownMenuSeparator />
+                <UiDropdownMenuRadioGroup v-model="sortPrice">
+                  <UiDropdownMenuRadioItem value="none" title="Default" text-value="none" />
+                  <UiDropdownMenuRadioItem value="lowest" title="Low to High" text-value="lowest" />
+                  <UiDropdownMenuRadioItem
+                    value="highest"
+                    title="High to Low"
+                    text-value="highest"
+                  />
+                </UiDropdownMenuRadioGroup>
+              </UiDropdownMenuContent>
+            </UiDropdownMenu>
+
+            <!-- Apply filters button -->
+            <UiButton
+              @click="applyFilters"
+              size="sm"
+              variant="default"
+              class="text-xs sm:text-sm"
+              :disabled="loadingProducts"
+            >
+              <Icon name="lucide:filter" class="mr-1.5 h-3.5 w-3.5" />
+              <span class="hidden sm:inline">Apply Filters</span>
+              <span class="inline sm:hidden">Apply</span>
+            </UiButton>
+
+            <!-- Refresh button -->
+            <UiButton @click="refreshProducts" variant="ghost" size="icon" class="h-7 w-7">
+              <Icon
+                :class="{ 'animate-spin': loadingProducts }"
+                name="lucide:refresh-cw"
+                class="h-3 w-3"
+              />
+              <span class="sr-only">Refresh</span>
+            </UiButton>
+          </div>
+        </div>
+
+        <!-- Active filters display -->
+        <div v-if="selectedCategories.length > 0" class="flex flex-wrap items-center gap-2">
+          <span class="text-xs text-muted-foreground">Active filters:</span>
+          <div v-for="key in selectedCategories" :key="key" class="flex items-center">
+            <span
+              class="inline-flex items-center rounded-full bg-secondary/20 px-2.5 py-0.5 text-xs"
+            >
+              {{ filterCategories.find((c) => c.key === key)?.title }}
+              <button
+                @click="removeCategory(key)"
+                class="ml-1 text-muted-foreground hover:text-foreground"
+              >
+                <Icon name="lucide:x" class="h-3 w-3" />
+              </button>
+            </span>
+          </div>
+          <button
+            @click="clearFilters"
+            class="text-xs text-primary hover:text-primary/80 hover:underline"
+          >
+            Clear all
+          </button>
+        </div>
+      </div>
+
+      <!-- Products Grid -->
+      <div class="py-4">
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          <template v-if="loadingProducts">
+            <div v-for="i in 10" :key="i" class="flex flex-col items-center">
+              <div class="flex h-full w-full flex-col rounded-lg border p-3">
+                <div class="aspect-square w-full overflow-hidden rounded-md bg-secondary/20">
+                  <UiSkeleton loading class="h-full w-full" />
+                </div>
+                <div class="flex w-full flex-col items-start pt-3">
                   <UiSkeleton loading class="h-4 w-24 rounded-sm" />
-                  <UiSkeleton loading class="mt-2 h-6 w-32 rounded-sm" />
-                  <UiSkeleton loading class="mt-1 h-4 w-16 rounded-sm" />
+                  <UiSkeleton loading class="mt-2 h-5 w-32 rounded-sm" />
+                  <UiSkeleton loading class="mt-2 h-4 w-16 rounded-sm" />
                 </div>
               </div>
             </div>
           </template>
           <template v-else>
-            <div v-for="(product, i) in products" :key="i">
-              <NuxtLink :to="`/product/${product.id}`" @click="handleProductClick(product.id)">
+            <div v-for="(product, i) in products" :key="i" class="flex h-full">
+              <NuxtLink
+                :to="`/product/${product.id}`"
+                @click="handleProductClick(product.id)"
+                class="h-full w-full"
+              >
                 <div
-                  class="flex max-h-[32rem] max-w-[16rem] flex-col rounded-sm border p-2 hover:shadow-lg sm:max-h-[40rem] sm:max-w-[24rem]"
+                  class="flex h-full w-full flex-col rounded-lg border bg-card p-3 transition-all duration-200 hover:shadow-md"
                 >
-                  <div class="flex justify-center border-b p-2">
-                    <div class="h-32 w-32 overflow-hidden sm:h-52 sm:w-52">
-                      <img
-                        :src="product.featuredPhotoURL"
-                        :alt="product.name"
-                        class="h-full w-full transform object-cover transition-transform duration-300 ease-in-out hover:scale-110"
-                      />
-                    </div>
+                  <div class="aspect-square w-full overflow-hidden rounded-md bg-secondary/5">
+                    <img
+                      :src="product.featuredPhotoURL || '/placeholder-product.jpg'"
+                      :alt="product.name"
+                      class="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+                    />
                   </div>
-                  <div class="flex w-full flex-col items-start pt-1">
-                    <span class="text-[12px] text-muted-foreground sm:text-sm"
-                      >₱{{ calculatePriceWithCommission(product.price).toFixed(2) }}</span
-                    >
-                    <p class="w-full truncate pt-2 text-[12px] font-semibold sm:text-sm">
+                  <div class="flex w-full flex-col items-start pt-3">
+                    <p class="line-clamp-2 text-sm font-medium sm:text-base">
                       {{ product.name }}
                     </p>
+                    <p class="mt-1 text-sm font-semibold text-primary">
+                      ₱{{ calculatePriceWithCommission(product.price).toFixed(2) }}
+                    </p>
                     <div
-                      class="flex w-full flex-row justify-between pt-4 text-[10px] opacity-50 sm:text-[12px]"
+                      class="mt-auto flex w-full flex-row justify-between pt-2 text-xs text-muted-foreground"
                     >
                       <span>{{ productViewCounts[product.id] || 0 }} views</span>
-                      <span>{{ product.totalSales }} sales</span>
+                      <span>{{ product.totalSales || 0 }} sold</span>
                     </div>
                   </div>
                 </div>
               </NuxtLink>
             </div>
             <template v-if="products.length === 0">
-              <div class="flex h-32 w-full flex-col items-center justify-center">
-                <p>No Available Products.</p>
+              <div class="col-span-full flex h-40 flex-col items-center justify-center">
+                <Icon name="lucide:package-x" class="mb-2 h-10 w-10 text-muted-foreground" />
+                <p class="text-sm text-muted-foreground">No products found</p>
+                <p v-if="selectedCategories.length > 0" class="mt-1 text-xs text-muted-foreground">
+                  Try adjusting your filters
+                </p>
               </div>
             </template>
           </template>
-          <div class="flex w-full items-end justify-end space-x-4">
-            <UiButton
-              :disabled="currentPage === 1"
-              @click="prevPage"
-              class="flex items-center p-2 px-3"
-            >
-              <Icon :name="prevIcon" class="h-6 w-6" />
-              <span class="text-[12px]">Previous</span>
-            </UiButton>
-            <UiButton
-              :disabled="currentPage === totalPages"
-              @click="nextPage"
-              class="flex items-center p-2 px-3"
-            >
-              <span class="text-[12px]">Next</span>
-              <Icon :name="nextIcon" class="h-6 w-6" />
-            </UiButton>
-          </div>
         </div>
-        <div class="min-h-32">.</div>
+
+        <!-- Pagination -->
+        <div class="mt-8 flex items-center justify-center space-x-2">
+          <UiButton
+            :disabled="currentPage === 1"
+            @click="prevPage"
+            variant="outline"
+            size="sm"
+            class="flex items-center gap-1"
+          >
+            <Icon name="lucide:chevron-left" class="h-4 w-4" />
+            <span>Previous</span>
+          </UiButton>
+
+          <div class="text-sm">Page {{ currentPage }} of {{ totalPages || 1 }}</div>
+
+          <UiButton
+            :disabled="currentPage === totalPages"
+            @click="nextPage"
+            variant="outline"
+            size="sm"
+            class="flex items-center gap-1"
+          >
+            <span>Next</span>
+            <Icon name="lucide:chevron-right" class="h-4 w-4" />
+          </UiButton>
+        </div>
       </div>
     </div>
   </div>
@@ -223,6 +283,18 @@
   const handleProductClick = (productID: string) => {
     // console.log("Product clicked:", productID);
     addView(productID);
+  };
+
+  const removeCategory = (key: string) => {
+    const index = selectedCategories.value.indexOf(key);
+    if (index !== -1) {
+      selectedCategories.value.splice(index, 1);
+    }
+  };
+
+  const clearFilters = () => {
+    selectedCategories.value = [];
+    applyFilters();
   };
 
   const fetchProductViewCounts = async () => {

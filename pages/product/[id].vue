@@ -1,151 +1,255 @@
 <template>
-  <div class="flex min-h-screen w-full flex-col items-start p-4 sm:p-12">
-    <!-- <div><UiBreadcrumbs class="justify-center text-[12px] sm:text-sm" :items="crumbs" /></div> -->
-    <div v-if="product" class="grid w-full gap-4 sm:mt-4 sm:grid-cols-2">
+  <div class="container mx-auto flex min-h-screen w-full flex-col px-4 py-6 sm:py-12">
+    <!-- Breadcrumbs -->
+    <UiBreadcrumbs class="mb-4 text-[12px] sm:text-sm" :items="crumbs" />
+
+    <!-- Product Loading State -->
+    <div v-if="pending" class="flex w-full flex-col items-center justify-center py-16">
+      <div class="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+        <Icon name="lucide:shopping-bag" class="h-8 w-8 animate-pulse text-primary/70" />
+      </div>
+      <p class="mt-4 text-sm text-muted-foreground">Loading product details...</p>
+    </div>
+
+    <!-- Product Not Found -->
+    <div v-else-if="!product" class="flex w-full flex-col items-center justify-center py-16">
+      <div class="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+        <Icon name="lucide:x" class="h-8 w-8 text-destructive" />
+      </div>
+      <h3 class="mt-4 text-lg font-semibold">Product Not Found</h3>
+      <p class="mt-2 text-sm text-muted-foreground">
+        The product you're looking for doesn't exist or has been removed.
+      </p>
+      <UiButton to="/products" variant="outline" class="mt-6">
+        <Icon name="lucide:arrow-left" class="mr-2 h-4 w-4" />
+        Browse Products
+      </UiButton>
+    </div>
+
+    <!-- Product Details -->
+    <div v-else class="grid w-full gap-8 sm:mt-4 sm:grid-cols-2 lg:gap-12">
       <!-- Product Gallery -->
-      <div class="h-auto rounded-sm bg-muted px-2 py-8">
-        <Carousel id="gallery" :items-to-show="1" :wrap-around="false" v-model="currentSlide">
-          <Slide v-for="(photo, index) in allPhotos" :key="index">
-            <img :src="photo" alt="Product Photo" class="h-auto w-96 rounded-sm object-cover" />
-          </Slide>
-        </Carousel>
+      <div
+        class="flex flex-col overflow-hidden rounded-lg border border-border/40 bg-card shadow-sm"
+      >
         <Carousel
-          id="thumbnails"
-          :items-to-show="4"
+          id="gallery"
+          :items-to-show="1"
           :wrap-around="true"
           v-model="currentSlide"
-          ref="carousel"
+          class="bg-muted"
         >
-          <Slide v-for="(photo, index) in allPhotos" :key="index">
-            <div class="carousel__item overflow-hidden" @click="slideTo(index)">
+          <Slide
+            v-for="(photo, index) in allPhotos"
+            :key="index"
+            class="flex h-[300px] items-center justify-center px-2 py-2 sm:h-[400px]"
+          >
+            <img
+              :src="photo"
+              alt="Product Photo"
+              class="h-full max-h-full w-auto max-w-full rounded-md object-contain"
+              @error="
+                (e) => {
+                  if (e.target) (e.target as HTMLImageElement).src = '/placeholder-image.png';
+                }
+              "
+            />
+          </Slide>
+
+          <!-- Navigation Arrows -->
+          <template #addons>
+            <div class="absolute left-2 top-1/2 z-10 -translate-y-1/2">
+              <button
+                @click="currentSlide = (currentSlide - 1 + allPhotos.length) % allPhotos.length"
+                class="flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-gray-800 shadow-sm hover:bg-white"
+              >
+                <Icon name="lucide:chevron-left" class="h-5 w-5" />
+              </button>
+            </div>
+            <div class="absolute right-2 top-1/2 z-10 -translate-y-1/2">
+              <button
+                @click="currentSlide = (currentSlide + 1) % allPhotos.length"
+                class="flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-gray-800 shadow-sm hover:bg-white"
+              >
+                <Icon name="lucide:chevron-right" class="h-5 w-5" />
+              </button>
+            </div>
+          </template>
+        </Carousel>
+
+        <!-- Thumbnails -->
+        <div class="bg-card p-4">
+          <div class="scrollbar-thin flex gap-2 overflow-x-auto pb-2">
+            <div
+              v-for="(photo, index) in allPhotos"
+              :key="index"
+              @click="slideTo(index)"
+              class="flex-shrink-0 cursor-pointer overflow-hidden rounded-md border"
+              :class="
+                currentSlide === index ? 'ring-2 ring-primary' : 'opacity-70 hover:opacity-100'
+              "
+            >
               <img
                 :src="photo"
                 alt="Thumbnail"
-                class="mx-1 my-4 h-20 w-28 rounded-sm object-cover hover:shadow-md"
+                class="h-16 w-16 object-cover transition-all duration-200"
+                @error="
+                  (e) => {
+                    if (e.target) (e.target as HTMLImageElement).src = '/placeholder-image.png';
+                  }
+                "
               />
             </div>
-          </Slide>
-        </Carousel>
-      </div>
-      <!-- Product Details -->
-      <div class="flex w-full flex-col">
-        <div class="flex w-full flex-col space-y-4">
-          <h1 class="w-full text-wrap text-xl font-semibold sm:text-4xl">{{ product.name }}</h1>
-          <div class="flex flex-row items-center space-x-1 text-[12px] sm:text-sm">
-            <Icon name="lucide:building-2" />
-            <span class="pr-4">{{ orgName }}</span>
-            <Icon name="lucide:credit-card" class="" />
-            <span class="pr-4"> Sales: {{ product.totalSales }}</span>
-            <Icon name="lucide:eye" />
-            <span>Views: {{ productViewCounts[product.id] || 0 }}</span>
           </div>
-          <p
-            v-if="product.description"
-            class="sm:text-md text-wrap py-4 text-justify indent-8 text-[12px] opacity-60"
+        </div>
+      </div>
+
+      <!-- Product Info -->
+      <div class="flex w-full flex-col space-y-6">
+        <!-- Product Header -->
+        <div>
+          <span
+            class="inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary"
           >
-            {{ product.description }}
-          </p>
-          <div class="flex flex-col">
-            <span class="pb-4 text-[12px] font-semibold text-muted-foreground sm:text-sm"
-              >Price: {{ priceRange }}</span
-            >
-            <span class="text-sm font-semibold sm:text-xl">Variations</span>
-            <div class="flex flex-row flex-wrap gap-4 px-4 pt-4">
-              <div v-for="(vari, i) in variations" :key="i">
-                <div
-                  class="cursor-default rounded-sm border p-2 text-[12px] opacity-90 sm:text-sm"
-                  v-wave
-                >
-                  {{ vari.value }} | ₱{{ calculatePriceWithCommission(vari.price).toFixed(2) }}
-                </div>
-              </div>
+            {{ orgName }}
+          </span>
+          <h1 class="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">{{ product.name }}</h1>
+
+          <!-- Stats -->
+          <div
+            class="mt-3 flex flex-wrap items-center gap-4 text-xs text-muted-foreground sm:text-sm"
+          >
+            <div class="flex items-center gap-1">
+              <Icon name="lucide:shopping-bag" class="h-4 w-4" />
+              <span>{{ product.totalSales }} sales</span>
+            </div>
+            <div class="flex items-center gap-1">
+              <Icon name="lucide:eye" class="h-4 w-4" />
+              <span>{{ productViewCounts[product.id] || 0 }} views</span>
             </div>
           </div>
-          <p v-if="product.isDiscounted" class="text-sm text-muted-foreground">
-            This Product has a discount for its members!
+        </div>
+
+        <!-- Price -->
+        <div class="rounded-lg bg-muted/30 p-4">
+          <div class="flex flex-wrap items-baseline gap-2">
+            <span class="text-xl font-bold text-primary sm:text-2xl">{{ priceRange }}</span>
+            <span v-if="product.isDiscounted" class="text-sm text-muted-foreground">
+              <Icon name="lucide:badge-percent" class="mb-0.5 mr-1 inline h-3.5 w-3.5" />
+              Special discount for members
+            </span>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div v-if="product.description" class="rounded-lg border border-border/40 bg-card p-4">
+          <h2 class="mb-2 text-sm font-medium">Description</h2>
+          <p class="text-sm leading-relaxed text-muted-foreground">
+            {{ product.description }}
           </p>
-          <div class="flex flex-row items-center gap-2 pt-8">
+        </div>
+
+        <!-- Variations -->
+        <div class="rounded-lg border border-border/40 bg-card p-4">
+          <h2 class="mb-3 text-sm font-medium">Variations</h2>
+          <div class="flex flex-wrap gap-2">
+            <div
+              v-for="(vari, i) in variations"
+              :key="i"
+              class="inline-flex rounded-md border border-border/60 bg-background px-3 py-1.5 text-sm"
+            >
+              <span>{{ vari.value }}</span>
+              <span class="ml-1.5 font-semibold text-primary">
+                ₱{{ calculatePriceWithCommission(vari.price).toFixed(2) }}
+              </span>
+              <span v-if="vari.remainingStocks > 0" class="ml-2 text-xs text-muted-foreground">
+                ({{ vari.remainingStocks }} in stock)
+              </span>
+              <span v-else class="ml-2 text-xs text-destructive"> (Out of stock) </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex flex-col gap-4 pt-2">
+          <div class="flex flex-col gap-3 sm:flex-row">
             <!-- Pre-Order -->
             <UiDrawer>
               <UiDrawerTrigger as-child>
-                <UiButton class="w-1/2" size="lg" variant="outline" v-wave @click="handlePreOrder">
-                  <Icon name="lucide:shopping-cart" />
+                <UiButton class="w-full flex-1" size="lg" variant="outline" @click="handlePreOrder">
+                  <Icon name="lucide:clock" class="mr-2 h-4 w-4" />
                   Pre-Order
                 </UiButton>
               </UiDrawerTrigger>
               <UiDrawerContent>
-                <div class="min-w-md mx-auto w-full rounded-t-lg p-4 pb-10">
-                  <UiDrawerTitle class="text-center font-semibold uppercase">
-                    <Icon name="lucide:shopping-cart" />
-                    Pre-Order
+                <div class="mx-auto w-full max-w-md rounded-t-lg p-6">
+                  <UiDrawerTitle
+                    class="flex items-center justify-center gap-2 text-center font-semibold"
+                  >
+                    <Icon name="lucide:clock" class="h-5 w-5 text-amber-500" />
+                    Pre-Order Item
                   </UiDrawerTitle>
-                  <UiDrawerDescription>
-                    <p class="pt-2 text-center text-[12px] sm:text-sm">
-                      Select the variation you want to pre-order. This will be added to your cart as
-                      well.
+                  <UiDrawerDescription class="text-center">
+                    <p class="mt-2 text-sm">
+                      Pre-order this item now and we'll notify you when it's available.
                     </p>
                   </UiDrawerDescription>
-                  <div class="relative">
+
+                  <div class="mt-6 space-y-6">
                     <!-- Variation -->
-                    <span class="text-md my-5 font-semibold sm:pl-5 sm:text-lg"
-                      >Choose Variation</span
-                    >
-                    <UiDivider class="px-5" />
-                    <div
-                      class="flex flex-row flex-wrap justify-center gap-2 px-4 py-4 sm:gap-4 sm:px-16"
-                    >
-                      <div v-for="(vari, i) in variations" :key="i">
+                    <div>
+                      <h3 class="mb-3 font-medium">Choose Variation</h3>
+                      <div class="flex flex-wrap justify-center gap-2">
                         <UiButton
+                          v-for="(vari, i) in variations"
+                          :key="i"
                           @click="selectVariation(vari, 'preOrder')"
                           :disabled="isSubmitting"
-                          class=""
-                          :class="{
-                            'bg-primary text-[12px] text-white sm:text-sm':
-                              selectedVariationPreOrder?.id === vari.id,
-                            'border-2 bg-white text-[12px] text-primary sm:text-sm':
-                              selectedVariationPreOrder?.id !== vari.id,
-                          }"
+                          :variant="
+                            selectedVariationPreOrder?.id === vari.id ? 'default' : 'outline'
+                          "
+                          class="min-w-20"
                         >
-                          <span v-if="vari.value === 'None'">{{ product.name }} </span>
-                          <span v-else> {{ vari.value }} </span>
+                          {{ vari.value === "None" ? product.name : vari.value }}
                         </UiButton>
                       </div>
                     </div>
 
                     <!-- Quantity -->
-                    <div class="flex w-full flex-row items-center justify-center py-4">
-                      <span class="pr-2 text-[12px] sm:text-sm">Quantity:</span>
-                      <form>
-                        <fieldset>
-                          <UiNumberField
-                            :min="1"
-                            :max="1000"
+                    <div>
+                      <h3 class="mb-3 font-medium">Select Quantity</h3>
+                      <div class="flex justify-center">
+                        <UiNumberField
+                          :min="1"
+                          :max="1000"
+                          :disabled="!selectedVariationPreOrder || isSubmitting"
+                          v-model="quantityPreOrder"
+                          class="w-32"
+                        >
+                          <UiNumberFieldInput
                             :disabled="!selectedVariationPreOrder || isSubmitting"
-                            v-model="quantityPreOrder"
-                          >
-                            <UiNumberFieldInput
-                              :disabled="!selectedVariationPreOrder || isSubmitting"
-                              placeholder="0"
-                            />
-                            <UiNumberFieldDecrement class="border-l" />
-                            <UiNumberFieldIncrement class="border-l" />
-                          </UiNumberField>
-                        </fieldset>
-                      </form>
+                            placeholder="0"
+                          />
+                          <UiNumberFieldDecrement class="border-l" />
+                          <UiNumberFieldIncrement class="border-l" />
+                        </UiNumberField>
+                      </div>
                     </div>
 
-                    <!-- Buttons -->
-                    <div class="flex flex-row items-center justify-center gap-4 pb-12 pt-4">
+                    <!-- Actions -->
+                    <div class="flex justify-center gap-3 pt-4">
                       <UiDrawerClose>
-                        <UiButton variant="outline" size="lg" v-wave> Cancel </UiButton>
+                        <UiButton variant="outline" size="lg" :disabled="isSubmitting">
+                          Cancel
+                        </UiButton>
                       </UiDrawerClose>
                       <UiButton
                         size="lg"
                         :disabled="!selectedVariationPreOrder || quantityPreOrder === 0"
                         :loading="loadingButton"
-                        v-wave
                         @click="submitAddToCart(true)"
                       >
+                        <Icon name="lucide:shopping-cart" class="mr-2 h-4 w-4" />
                         Add to Cart
                       </UiButton>
                     </div>
@@ -153,89 +257,104 @@
                 </div>
               </UiDrawerContent>
             </UiDrawer>
+
             <!-- Add to Cart -->
             <UiDrawer>
               <UiDrawerTrigger as-child>
-                <UiButton class="w-1/2" size="lg" v-wave @click="handleAddToCart">
-                  <Icon name="lucide:baggage-claim" />
+                <UiButton class="w-full flex-1" size="lg" @click="handleAddToCart">
+                  <Icon name="lucide:shopping-cart" class="mr-2 h-4 w-4" />
                   Add to Cart
                 </UiButton>
               </UiDrawerTrigger>
               <UiDrawerContent>
-                <div class="min-w-md mx-auto w-full rounded-t-lg p-4 pb-10">
-                  <UiDrawerTitle class="text-center font-semibold uppercase">
-                    <Icon name="lucide:shopping-cart" />
+                <div class="mx-auto w-full max-w-md rounded-t-lg p-6">
+                  <UiDrawerTitle
+                    class="flex items-center justify-center gap-2 text-center font-semibold"
+                  >
+                    <Icon name="lucide:shopping-cart" class="h-5 w-5 text-primary" />
                     Add to Cart
                   </UiDrawerTitle>
-                  <UiDrawerDescription>
-                    <p class="pt-2 text-center text-[12px] sm:text-sm">
-                      Select the variation you want to add to your cart. You can adjust the quantity
-                      in the cart.
+                  <UiDrawerDescription class="text-center">
+                    <p class="mt-2 text-sm">
+                      Select the variation and quantity you'd like to purchase.
                     </p>
                   </UiDrawerDescription>
-                  <div class="relative">
+
+                  <div class="mt-6 space-y-6">
                     <!-- Variation -->
-                    <span class="text-md my-5 font-semibold sm:pl-5 sm:text-lg"
-                      >Choose Variation</span
-                    >
-                    <UiDivider class="px-5" />
-                    <div
-                      class="flex flex-row flex-wrap justify-center gap-2 px-4 py-4 sm:gap-4 sm:px-16"
-                    >
-                      <div v-for="(vari, i) in variations" :key="i">
+                    <div>
+                      <h3 class="mb-3 font-medium">Choose Variation</h3>
+                      <div class="flex flex-wrap justify-center gap-2">
                         <UiButton
+                          v-for="(vari, i) in variations"
+                          :key="i"
                           @click="selectVariation(vari, 'addToCart')"
                           :disabled="vari.remainingStocks === 0 || isSubmitting"
-                          :class="{
-                            'bg-primary text-[12px] text-primary text-white':
-                              selectedVariationAddToCart?.id === vari.id,
-                            'border-2 bg-white text-[12px] text-primary':
-                              selectedVariationAddToCart?.id !== vari.id,
-                          }"
+                          :variant="
+                            selectedVariationAddToCart?.id === vari.id ? 'default' : 'outline'
+                          "
+                          class="min-w-20"
                         >
-                          <span v-if="vari.value === 'None'"
-                            >{{ product.name }} | {{ vari.remainingStocks }}</span
-                          >
-                          <span v-else> {{ vari.value }} | {{ vari.remainingStocks }} </span>
+                          <span class="flex flex-col items-center">
+                            <span>{{ vari.value === "None" ? product.name : vari.value }}</span>
+                            <span class="text-xs text-muted-foreground">
+                              ({{ vari.remainingStocks }} left)
+                            </span>
+                          </span>
                         </UiButton>
                       </div>
                     </div>
 
                     <!-- Quantity -->
-                    <div class="flex w-full flex-row items-center justify-center py-4">
-                      <span class="pr-2 text-[12px] sm:text-sm">Quantity:</span>
-                      <form>
-                        <fieldset>
-                          <UiNumberField
-                            :min="1"
-                            :max="selectedVariationAddToCart?.remainingStocks"
+                    <div>
+                      <h3 class="mb-3 font-medium">Select Quantity</h3>
+                      <div class="flex justify-center">
+                        <UiNumberField
+                          :min="1"
+                          :max="selectedVariationAddToCart?.remainingStocks"
+                          :disabled="!selectedVariationAddToCart || isSubmitting"
+                          v-model="quantityAddToCart"
+                          class="w-32"
+                        >
+                          <UiNumberFieldInput
                             :disabled="!selectedVariationAddToCart || isSubmitting"
-                            v-model="quantityAddToCart"
-                          >
-                            <UiNumberFieldInput
-                              :disabled="!selectedVariationAddToCart || isSubmitting"
-                              placeholder="0"
-                            />
-                            <UiNumberFieldDecrement class="border-l" />
-                            <UiNumberFieldIncrement class="border-l" />
-                          </UiNumberField>
-                        </fieldset>
-                      </form>
+                            placeholder="0"
+                          />
+                          <UiNumberFieldDecrement class="border-l" />
+                          <UiNumberFieldIncrement class="border-l" />
+                        </UiNumberField>
+                      </div>
+
+                      <div
+                        v-if="selectedVariationAddToCart"
+                        class="mt-4 flex items-center justify-center gap-2 rounded-md bg-muted p-2"
+                      >
+                        <span class="text-xs font-medium">Subtotal:</span>
+                        <span class="text-sm font-bold text-primary">
+                          ₱{{
+                            (
+                              calculatePriceWithCommission(selectedVariationAddToCart.price) *
+                              quantityAddToCart
+                            ).toFixed(2)
+                          }}
+                        </span>
+                      </div>
                     </div>
 
-                    <!-- Buttons -->
-                    <div class="flex flex-row items-center justify-center gap-4 pb-12 pt-4">
+                    <!-- Actions -->
+                    <div class="flex justify-center gap-3 pt-4">
                       <UiDrawerClose>
-                        <UiButton variant="outline" size="lg" v-wave> Cancel </UiButton>
+                        <UiButton variant="outline" size="lg" :disabled="isSubmitting">
+                          Cancel
+                        </UiButton>
                       </UiDrawerClose>
                       <UiButton
                         size="lg"
-                        v-wave
                         :disabled="!selectedVariationAddToCart || quantityAddToCart === 0"
                         :loading="loadingButton"
                         @click="submitAddToCart(false)"
                       >
-                        <Icon name="lucide:shopping-cart" />
+                        <Icon name="lucide:shopping-cart" class="mr-2 h-4 w-4" />
                         Add to Cart
                       </UiButton>
                     </div>
@@ -244,47 +363,55 @@
               </UiDrawerContent>
             </UiDrawer>
           </div>
-          <p class="text-center text-[12px] text-muted-foreground">
-            After adding to cart you can process it to checkout.
+
+          <p class="text-center text-xs text-muted-foreground">
+            <Icon name="lucide:info" class="mr-1 inline-block h-3 w-3" />
+            Products will be added to your cart for later checkout
           </p>
         </div>
       </div>
     </div>
-    <div v-else>Loading...</div>
-    <!-- More Products from Organization -->
 
-    <UiDivider class="my-10" />
-    <div v-if="orgProducts.length === 0">No products available</div>
-    <div v-else class="flex h-auto w-full flex-col pb-32">
-      <span class="text-md font-medium sm:text-lg">More Products from this Organization</span>
-      <div class="mt-6 flex flex-row flex-wrap gap-2 sm:gap-6 sm:px-9">
-        <div v-for="(orgProduct, i) in orgProducts" :key="i">
-          <NuxtLink :to="`/product/${orgProduct.id}`" @click="handleProductClick(orgProduct.id)">
-            <div
-              class="flex max-h-[40rem] max-w-[24rem] flex-col rounded-sm border p-2 hover:shadow-lg"
-            >
-              <div class="flex justify-center border-b p-2">
-                <div class="h-32 w-32 overflow-hidden sm:h-52 sm:w-52">
-                  <img
-                    :src="orgProduct.featuredPhotoURL"
-                    :alt="orgProduct.name"
-                    class="h-full w-full transform object-cover transition-transform duration-300 ease-in-out hover:scale-110"
-                  />
-                </div>
-              </div>
-              <div class="flex w-full flex-col items-start pt-1">
-                <span class="text-[12px] text-muted-foreground sm:text-sm"
-                  >₱{{ calculatePriceWithCommission(orgProduct.price).toFixed(2) }}</span
-                >
-                <p class="w-full truncate pt-2 text-[12px] sm:text-sm">
-                  {{ orgProduct.name }}
-                </p>
-                <div
-                  class="flex w-full flex-row justify-between pt-4 text-[10px] opacity-50 sm:text-[12px]"
-                >
-                  <span>{{ productViewCounts[orgProduct.id] || 0 }} views</span>
-                  <span>{{ orgProduct.totalSales }} sales</span>
-                </div>
+    <!-- Related Products Section -->
+    <div v-if="product && orgProducts.length > 0" class="mt-16">
+      <UiDivider />
+
+      <div class="py-8">
+        <h2 class="mb-6 text-xl font-semibold">More From {{ orgName }}</h2>
+
+        <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          <NuxtLink
+            v-for="(orgProduct, i) in orgProducts"
+            :key="i"
+            :to="`/product/${orgProduct.id}`"
+            @click="handleProductClick(orgProduct.id)"
+            class="group overflow-hidden rounded-lg border border-border/40 bg-card transition-all duration-300 hover:border-primary/30 hover:shadow-md"
+          >
+            <div class="aspect-square w-full overflow-hidden bg-muted/30">
+              <img
+                :src="orgProduct.featuredPhotoURL"
+                :alt="orgProduct.name"
+                class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                @error="
+                  (e) => {
+                    if (e.target) (e.target as HTMLImageElement).src = '/placeholder-image.png';
+                  }
+                "
+              />
+            </div>
+
+            <div class="p-3">
+              <p class="line-clamp-2 min-h-[2.5rem] text-sm font-medium group-hover:text-primary">
+                {{ orgProduct.name }}
+              </p>
+
+              <div class="mt-2 flex items-baseline justify-between">
+                <span class="text-sm font-bold text-primary">
+                  ₱{{ calculatePriceWithCommission(orgProduct.price).toFixed(2) }}
+                </span>
+                <span class="text-xs text-muted-foreground">
+                  {{ orgProduct.totalSales }} sold
+                </span>
               </div>
             </div>
           </NuxtLink>
@@ -292,14 +419,14 @@
       </div>
     </div>
 
+    <!-- Loading Overlay -->
     <div
       v-if="loading"
-      class="fixed inset-0 z-50 flex min-h-screen w-full items-center justify-center bg-secondary/40 backdrop-blur"
+      class="fixed inset-0 z-50 flex min-h-screen w-full items-center justify-center bg-background/80 backdrop-blur-sm"
     >
-      <div class="flex flex-col items-center justify-center gap-4">
-        <Icon name="lucide:loader-circle" class="size-16 animate-spin text-primary" />
-        <span class="text-sm font-semibold text-secondary-foreground"> {{ currentMessage }}</span>
-        <!-- Add a GIF here -->
+      <div class="flex flex-col items-center justify-center gap-4 rounded-lg bg-card p-8 shadow-lg">
+        <Icon name="lucide:loader-circle" class="h-12 w-12 animate-spin text-primary" />
+        <span class="text-sm font-medium">{{ currentMessage }}</span>
       </div>
     </div>
   </div>

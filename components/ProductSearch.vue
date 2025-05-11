@@ -1,12 +1,12 @@
-<!-- components/ProductSearch.vue -->
 <template>
-  <div class="relative" ref="searchContainer">
+  <div class="relative w-full" ref="searchContainer">
     <div class="flex items-center justify-center">
       <UiVeeInput
         v-model="searchTerm"
         label="Search for products"
-        class="peer p-6 pe-9"
-        placeholder="Search..."
+        class="w-full"
+        inputClass="p-2.5 sm:p-3.5"
+        placeholder="Search for products..."
         type="search"
         icon="lucide:search"
         @focus="showResults = true"
@@ -14,7 +14,7 @@
         <template #trailingIcon>
           <button
             type="button"
-            class="absolute inset-y-0 end-0 flex h-full w-9 items-center justify-center rounded-e-md border border-transparent text-muted-foreground/80 ring-offset-background transition-shadow hover:text-foreground focus-visible:border-ring focus-visible:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50"
+            class="absolute inset-y-0 end-0 flex h-full w-9 items-center justify-center rounded-e-md border border-transparent text-muted-foreground/80 ring-offset-background transition-shadow hover:text-foreground focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50"
           >
             <Icon name="lucide:arrow-right" class="size-4" />
           </button>
@@ -25,27 +25,27 @@
     <!-- Search Results Overlay -->
     <div
       v-if="showResults && searchTerm"
-      class="absolute left-0 right-0 top-full z-50 mt-2 max-h-96 overflow-y-auto rounded-md border bg-background shadow-lg"
+      class="absolute left-0 right-0 top-full z-50 mt-2 max-h-60 overflow-y-auto rounded-md border bg-background shadow-lg sm:max-h-96"
     >
-      <div v-if="isLoading" class="p-4 text-center text-sm">Searching...</div>
-      <div v-else-if="error" class="p-4 text-sm text-red-500">{{ error }}</div>
-      <div v-else-if="results.length === 0" class="p-4 text-sm text-muted-foreground">
+      <div v-if="isLoading" class="p-3 text-center text-sm">Searching...</div>
+      <div v-else-if="error" class="p-3 text-sm text-red-500">{{ error }}</div>
+      <div v-else-if="results.length === 0" class="p-3 text-sm text-muted-foreground">
         No products found
       </div>
       <div v-else>
         <div
           v-for="product in results"
           :key="product.id"
-          class="flex cursor-pointer items-center gap-4 p-4 transition-colors hover:bg-accent/50"
+          class="flex cursor-pointer items-center gap-3 p-3 transition-colors hover:bg-accent/50 sm:gap-4 sm:p-4"
           @click="selectProduct(product)"
         >
           <img
             :src="product.featuredPhotoURL || '/placeholder-product.jpg'"
-            class="h-12 w-12 rounded-md object-cover"
+            class="h-10 w-10 rounded-md object-cover sm:h-12 sm:w-12"
           />
           <div>
-            <p class="font-medium">{{ product.name }}</p>
-            <p class="text-sm text-muted-foreground">{{ product.category }}</p>
+            <p class="truncate text-sm font-medium sm:text-base">{{ product.name }}</p>
+            <p class="text-xs text-muted-foreground sm:text-sm">{{ product.category }}</p>
           </div>
         </div>
       </div>

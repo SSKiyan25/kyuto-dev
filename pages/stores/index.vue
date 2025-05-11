@@ -1,17 +1,21 @@
 <template>
-  <div class="flex flex-col justify-center space-y-12 px-16 pb-32 pt-16">
-    <div>
+  <div
+    class="flex flex-col justify-center space-y-8 px-4 pb-16 pt-8 sm:px-8 sm:pt-12 md:px-12 md:pt-16 lg:px-16"
+  >
+    <!-- Search section -->
+    <div class="mx-auto w-full max-w-xl px-2 sm:max-w-full">
       <div class="flex items-center justify-center">
         <UiVeeInput
           v-model="searchTerm"
           label="Search for stores"
-          class="peer p-6 pe-9"
-          placeholder="Search..."
+          class="w-full"
+          inputClass="p-2.5 sm:p-8.5"
+          placeholder="Search for organization stores..."
           type="search"
           icon="lucide:search"
           @keyup.enter="handleSearch"
         >
-          <!-- Keep trailing icon button -->
+          <!-- Icon will be handled by the component -->
         </UiVeeInput>
       </div>
       <div class="mt-2 text-center text-xs text-gray-500">
@@ -22,9 +26,10 @@
       </div>
     </div>
 
-    <div class="flex flex-col space-y-4">
-      <div class="flex items-center justify-between border-b-2">
-        <span class="text-lg font-semibold">Organization Stores</span>
+    <!-- Organization listing section -->
+    <div class="flex w-full flex-col space-y-4">
+      <div class="flex items-center justify-between border-b-2 pb-2">
+        <span class="text-base font-semibold sm:text-lg">Organization Stores</span>
         <UiButton :disabled="isRefreshing" @click="refreshOrganizations" class="text-xs">
           <template #default>
             <span v-if="isRefreshing">Refreshing...</span>
@@ -39,29 +44,53 @@
         No organizations found
       </div>
 
-      <div v-else class="flex flex-col space-y-4 pt-4">
+      <div v-else class="flex flex-col space-y-6 pt-2">
         <div
           v-for="store in organizations"
           :key="store.id"
-          class="flex flex-row space-x-8 rounded-md border p-8"
+          class="group flex flex-col space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-all hover:shadow-md sm:flex-row sm:space-x-4 sm:space-y-0 sm:p-6 md:space-x-8 md:p-8"
         >
-          <div class="flex-shrink-0">
-            <img
-              :src="store.logoImageURL || '/logo-verch.webp'"
-              :alt="store.name"
-              class="h-24 w-24 rounded-md"
-            />
-          </div>
-          <div class="flex w-full flex-col space-y-1">
-            <span class="text-lg font-semibold">{{ store.name }}</span>
-            <span class="text-sm">{{ store.description }}</span>
-            <span class="text-sm">{{ store.address }}</span>
+          <!-- Store logo - centered on mobile, left-aligned on larger screens -->
+          <NuxtLink
+            :to="`/stores/${store.id}`"
+            class="flex flex-shrink-0 justify-center sm:justify-start"
+          >
             <div
-              class="flex items-center justify-end space-x-2 hover:text-blue-600 hover:underline"
+              class="relative overflow-hidden rounded-lg transition-transform duration-300 group-hover:scale-[1.02]"
             >
-              <NuxtLink :to="`/stores/${store.id}`" class="flex items-center space-x-2">
+              <img
+                :src="store.logoImageURL || '/logo-verch.webp'"
+                :alt="store.name"
+                class="h-40 w-40 rounded-lg object-cover shadow-sm transition-transform duration-300 sm:h-24 sm:w-24"
+              />
+              <div
+                class="absolute inset-0 bg-primary/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+              ></div>
+            </div>
+          </NuxtLink>
+
+          <!-- Store details - centered on mobile, left-aligned with full width on larger screens -->
+          <div class="flex w-full flex-col space-y-2 text-center sm:text-left">
+            <span class="text-lg font-semibold tracking-tight sm:text-xl">{{ store.name }}</span>
+            <span v-if="store.description" class="text-sm text-gray-600 sm:text-base">{{
+              store.description
+            }}</span>
+            <span
+              v-if="store.address"
+              class="flex items-center justify-center text-xs text-gray-500 sm:justify-start sm:text-sm"
+            >
+              <Icon name="lucide:map-pin" class="mr-1 h-3 w-3 text-gray-400" />
+              {{ store.address }}
+            </span>
+
+            <!-- Visit store link - centered on mobile, right-aligned on larger screens -->
+            <div class="mt-4 flex items-center justify-center sm:mt-auto sm:justify-end">
+              <NuxtLink
+                :to="`/stores/${store.id}`"
+                class="flex items-center space-x-2 rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary transition-colors hover:bg-primary/20 sm:bg-transparent sm:text-blue-600 sm:hover:text-blue-800 sm:hover:underline"
+              >
                 <span>Visit Store</span>
-                <Icon name="lucide:square-arrow-out-up-right" class="size-4" />
+                <Icon name="lucide:arrow-right" class="h-4 w-4" />
               </NuxtLink>
             </div>
           </div>

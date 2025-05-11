@@ -200,16 +200,64 @@
       >
         <UiSidebarTrigger class="-ml-1" icon="lucide:menu" />
         <UiSeparator orientation="vertical" class="mr-2 h-4" />
-        <UiBreadcrumbs v-if="breadcrumbs && breadcrumbs.length" :items="breadcrumbs" />
       </UiNavbar>
       <div class="flex flex-1 flex-col sm:gap-4 sm:p-4">
         <slot />
       </div>
     </UiSidebarInset>
+    <!-- Mobile Footer Navigation - Only visible on mobile -->
+    <footer class="fixed bottom-0 left-0 right-0 border-t bg-white shadow-sm sm:hidden">
+      <div class="flex w-full flex-row items-center justify-between">
+        <UiButton
+          to="/"
+          variant="ghost"
+          class="flex h-16 flex-1 flex-col justify-center py-2 text-sm text-muted-foreground"
+        >
+          <Icon name="lucide:house" class="h-5 w-5" />
+          Home
+        </UiButton>
+
+        <UiButton
+          :to="`/user/profile/${user?.uid}`"
+          variant="ghost"
+          class="flex h-16 flex-1 flex-col justify-center border-l py-2 text-sm text-muted-foreground"
+        >
+          <Icon name="lucide:user" class="h-5 w-5" />
+          Profile
+        </UiButton>
+
+        <UiButton
+          :to="`/user/cart/${user?.uid}`"
+          variant="ghost"
+          class="flex h-16 flex-1 flex-col justify-center border-l py-2 text-sm text-muted-foreground"
+        >
+          <div class="relative">
+            <Icon name="lucide:shopping-cart" class="h-5 w-5" />
+            <span
+              v-if="cartCount > 0"
+              class="absolute -right-2 -top-2 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] text-white"
+            >
+              {{ cartCount }}
+            </span>
+          </div>
+          Cart
+        </UiButton>
+
+        <UiButton
+          :to="`/user/orders/track-orders/${user?.uid}`"
+          variant="ghost"
+          class="flex h-16 flex-1 flex-col justify-center border-l py-2 text-sm text-muted-foreground"
+        >
+          <Icon name="lucide:shopping-basket" class="h-5 w-5" />
+          Orders
+        </UiButton>
+      </div>
+    </footer>
   </UiSidebarProvider>
 </template>
 
 <script lang="ts" setup>
+  import { useFetchUserCart } from "~/composables/user/useFetchUserCart";
   import { signOut } from "firebase/auth";
   import { doc } from "firebase/firestore";
   import type { Crumbs } from "~/components/Ui/Breadcrumbs.vue";
@@ -222,9 +270,33 @@
   const userData = useDocument<Partial<Account>>(userDocRef) as Partial<Account> | undefined;
   console.log("userData", userData);
 
-  const props = defineProps<{
-    breadcrumbs?: Crumbs[];
-  }>();
+  const cartCount = ref(0);
+
+  // Fetch cart count when user is loaded
+  watch(
+    () => user.value,
+    async (newUser) => {
+      if (newUser?.uid) {
+        try {
+          const { userCart, fetchUserCart } = useFetchUserCart(newUser.uid);
+          await fetchUserCart();
+
+          watch(
+            () => userCart.value,
+            (cart) => {
+              cartCount.value = cart?.length || 0;
+            },
+            { immediate: true }
+          );
+        } catch (error) {
+          console.error("Error fetching cart:", error);
+        }
+      } else {
+        cartCount.value = 0;
+      }
+    },
+    { immediate: true }
+  );
 
   const links = computed(() => [
     { label: "Home", url: "/", icon: "lucide:home" },

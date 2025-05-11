@@ -1,9 +1,16 @@
-export default defineNuxtRouteMiddleware((to, from) => {
+export default defineNuxtRouteMiddleware(async (to, from) => {
   // Only run on client-side
   if (import.meta.server) return;
 
   const authStore = useAuthStore();
-  const { user } = storeToRefs(authStore);
+
+  // Make sure auth is initialized
+  if (!authStore.isReady) {
+    await authStore.init();
+  }
+
+  // Get user from store
+  const user = authStore.user;
 
   // Get user ID from route params
   const userId = to.params.userId || to.params.id;
@@ -12,18 +19,16 @@ export default defineNuxtRouteMiddleware((to, from) => {
   if (!userId) return;
 
   // If user is not authenticated, redirect to login
-  if (!user.value) {
+  if (!user) {
     return navigateTo("/login");
   }
 
   // Check if the current user's ID matches the route's user ID
-  // Or if they are an admin (assuming role-based authorization)
-  if (user.value.id !== userId && user.value.role !== "admin") {
-    // User is trying to access another user's page without permission
+  if (user.id !== userId && user.role !== "admin") {
     console.warn("Unauthorized user page access attempt", {
-      currentUserId: user.value.id,
+      currentUserId: user.id,
       attemptedAccessUserId: userId,
-      userRole: user.value.role,
+      userRole: user.role,
     });
 
     // Redirect to home
