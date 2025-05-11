@@ -8,7 +8,7 @@
 
   definePageMeta({
     layout: "no-nav",
-    middleware: ["auth"],
+    middleware: ["org-auth"],
   });
 
   // UI State
@@ -40,7 +40,7 @@
   const { data: product, pending } = useDocument<Partial<Product>>(productRef);
 
   const orgId = ref<string | null>(null);
-  console.log("Organization ID: ", orgId);
+  // console.log("Organization ID: ", orgId);
   const { getOrganizationById, clearCache } = useOrganization();
   const organization = ref<OrganizationWithId | null>(null);
 
@@ -48,12 +48,12 @@
   const crumbs = reactive<Crumbs[]>([
     {
       label: "Dashboard",
-      link: "#", // Default value
+      link: "#",
       icon: "lucide:newspaper",
     },
     {
       label: "All Products",
-      link: "#", // Default value
+      link: "#",
       icon: "lucide:package",
     },
     { label: "Edit Product", icon: "lucide:file-pen-line", disabled: true },
@@ -73,7 +73,7 @@
     },
     { immediate: true }
   );
-  console.log("Organization ID: ", orgId);
+  // console.log("Organization ID: ", orgId);
   // Form data with original values tracking
   const formData = reactive({
     name: "",
@@ -103,7 +103,7 @@
         formData.photos = newProduct.photosURL || [];
         formData.newPhotos = [];
         orgId.value = newProduct.organizationID || "";
-        console.log("Organization ID in watch function: ", orgId.value);
+        // console.log("Organization ID in watch function: ", orgId.value);
 
         // Update original data
         Object.assign(originalData, { ...formData });
@@ -237,7 +237,6 @@
     });
   }
 
-  // Save changes
   const handleSaveChanges = async () => {
     if (!validateFields()) return;
     if (!hasChanges.value) {

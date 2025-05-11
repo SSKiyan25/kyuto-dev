@@ -16,7 +16,7 @@
 
   definePageMeta({
     layout: "organization",
-    middleware: ["auth"],
+    middleware: ["org-auth"],
   });
 
   const toast = useToast();
@@ -24,7 +24,7 @@
   const organizationIDLink = computed(() => route.params.id as string);
   const orgIDLink = route.params.id as string;
 
-  console.log("Organization ID Link:", organizationIDLink);
+  // console.log("Organization ID Link:", organizationIDLink);
   const crumbs: Crumbs[] = [
     {
       label: "Dashboard",

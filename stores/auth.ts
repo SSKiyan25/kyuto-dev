@@ -23,7 +23,7 @@ export const useAuthStore = defineStore("auth", () => {
                   id: firebaseUser.uid,
                   email: firebaseUser.email || "",
                   username: firebaseUser.displayName || "",
-                  role: "user",
+                  role: "",
                   firstname: "",
                   lastname: "",
                   department: "",

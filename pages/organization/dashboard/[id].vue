@@ -3,7 +3,7 @@
 
   definePageMeta({
     layout: "organization",
-    middleware: ["auth"],
+    middleware: ["org-auth"],
   });
 
   const route = useRoute();

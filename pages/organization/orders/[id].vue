@@ -282,7 +282,7 @@
 
   definePageMeta({
     layout: "organization",
-    middleware: ["auth"],
+    middleware: ["org-auth"],
   });
 
   type ExtendedProduct = Product & { id: string };
@@ -302,7 +302,7 @@
     }
     return id;
   });
-  console.log("Organization ID from params:", orgIDparams.value);
+  // console.log("Organization ID from params:", orgIDparams.value);
 
   const { fetchOrganizationProducts, fetchProductOrders, fetchOrganizationOrders, setOrderStatus } =
     useFetchOrders();
@@ -331,7 +331,7 @@
     try {
       fetchCommissionData();
 
-      console.log("Calling trackCommission with orgID:", orgIDparams.value);
+      // console.log("Calling trackCommission with orgID:", orgIDparams.value);
 
       if (!orgIDparams.value) {
         console.error("orgIDparams is undefined or null");
@@ -340,8 +340,8 @@
 
       commissionData.value = await trackCommission(orgIDparams.value);
 
-      console.log("Commission Data:", commissionData.value);
-      console.log("orgIDparams:", orgIDparams.value);
+      // console.log("Commission Data:", commissionData.value);
+      // console.log("orgIDparams:", orgIDparams.value);
     } catch (error) {
       console.error("Error in trackCommission:", error);
     }
@@ -353,13 +353,13 @@
       // Fetch products for the organization using the organization ID from params
       const fetchedProducts = await fetchOrganizationProducts(orgIDparams.value);
       products.value = fetchedProducts;
-      console.log("Fetched Products:", products.value);
+      // console.log("Fetched Products:", products.value);
 
       // Fetch orders for the organization
       loadingFetchingOrgOrdersSummary.value = true;
       const fetchedOrganizationOrders = await fetchOrganizationOrders(orgIDparams.value);
       organizationOrders.value = fetchedOrganizationOrders;
-      console.log("Fetched Organization Orders:", organizationOrders.value);
+      // console.log("Fetched Organization Orders:", organizationOrders.value);
     } catch (error) {
       console.error("Error fetching products or orders:", error);
     } finally {
@@ -377,7 +377,7 @@
       try {
         const fetchedOrders = await fetchProductOrders(selectedProduct.value.id);
         orders.value = fetchedOrders;
-        console.log("Fetched Orders for selected product:", orders.value);
+        // console.log("Fetched Orders for selected product:", orders.value);
       } catch (error) {
         console.error("Error fetching orders for selected product:", error);
       } finally {
@@ -397,7 +397,7 @@
       loadingSetOrderStatus.value = true;
       try {
         await setOrderStatus(selectedProduct.value.id, "preparing");
-        console.log("Set pending orders to preparing");
+        // console.log("Set pending orders to preparing");
       } catch (error) {
         console.error("Error setting orders to preparing:", error);
       } finally {
@@ -411,7 +411,7 @@
       loadingSetOrderStatus.value = true;
       try {
         await setOrderStatus(selectedProduct.value.id, "ready");
-        console.log("Set pending orders to ready");
+        // console.log("Set pending orders to ready");
       } catch (error) {
         console.error("Error setting orders to ready:", error);
       } finally {

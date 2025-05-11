@@ -86,7 +86,7 @@
 
   definePageMeta({
     layout: "organization",
-    middleware: ["auth"],
+    middleware: ["org-auth"],
   });
 
   const search = ref("");
@@ -108,7 +108,7 @@
       maximumFractionDigits: 2,
     })
       .format(value)
-      .replace("PHP", "₱"); // Replace ISO code with ₱ symbol
+      .replace("PHP", "₱");
   };
 
   // Fetch organization data
@@ -125,7 +125,7 @@
   const fetchFinancials = async () => {
     try {
       financials.value = await getOrganizationFinancials(organizationId);
-      console.log("Financial Data:", financials.value);
+      // console.log("Financial Data:", financials.value);
     } catch (error) {
       console.error("Error fetching financial data:", error);
     }

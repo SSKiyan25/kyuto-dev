@@ -19,8 +19,8 @@
   ];
 
   definePageMeta({
-    layout: "no-nav",
-    middleware: ["auth"],
+    layout: "organization",
+    middleware: ["org-auth"],
   });
 </script>
 

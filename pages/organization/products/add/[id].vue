@@ -9,7 +9,7 @@
 
   definePageMeta({
     layout: "no-nav",
-    middleware: ["auth"],
+    middleware: ["org-auth"],
   });
   const router = useRouter();
   const route = useRoute();
@@ -17,7 +17,7 @@
   const organizationID = route.params.id as string;
   const organization = ref<OrganizationWithId | null>(null);
   const { getOrganizationById, clearCache: clearOrgCache } = useOrganization();
-  console.log("Organization ID: ", organizationID);
+  // console.log("Organization ID: ", organizationID);
 
   const crumbs: Crumbs[] = [
     {

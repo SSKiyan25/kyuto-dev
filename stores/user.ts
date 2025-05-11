@@ -4,16 +4,18 @@ import type { Account } from "~/types/models/Account";
 export const useMyUserStore = defineStore(
   "myUserStore",
   () => {
-    const defaultUser: Account = {
+    const defaultUser: Partial<Account> = {
       id: "",
       email: "",
       username: "",
-      avatar: "",
+      avatarURL: "",
       organization: "",
+      organizationId: "",
+      organizationRole: "",
       firstname: "",
       lastname: "",
       department: "",
-      studentId: "",
+      studentID: "",
       phoneNumber: "",
       dateCreated: new Date(),
       role: "",

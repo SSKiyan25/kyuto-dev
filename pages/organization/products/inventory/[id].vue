@@ -8,7 +8,7 @@
 
   definePageMeta({
     layout: "no-nav",
-    middleware: ["auth"],
+    middleware: ["org-auth"],
   });
 
   const route = useRoute();
@@ -384,7 +384,7 @@
     } finally {
       loadingVariation.value = false;
     }
-    console.log("New variation added");
+    // console.log("New variation added");
   };
 
   const orgID = ref<string | null>(null);
@@ -392,12 +392,12 @@
   const crumbs = reactive<Crumbs[]>([
     {
       label: "Dashboard",
-      link: "#", // Default value
+      link: "#",
       icon: "lucide:newspaper",
     },
     {
       label: "All Products",
-      link: "#", // Default value
+      link: "#",
       icon: "lucide:package",
     },
     {
