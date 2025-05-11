@@ -157,7 +157,7 @@
 
   const links = computed(() => [
     { label: "Home", url: "/", icon: "lucide:home" },
-    { label: "Products", url: "/", icon: "lucide:shopping-bag" },
+    { label: "Products", url: "/products", icon: "lucide:shopping-bag" },
   ]);
 
   const props = defineProps<{
