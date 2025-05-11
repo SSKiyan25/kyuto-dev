@@ -291,7 +291,7 @@
   import type { Config, ConfigColumns } from "datatables.net";
 
   definePageMeta({
-    middleware: "auth",
+    middleware: "user-auth",
     layout: "user",
   });
 

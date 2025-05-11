@@ -174,7 +174,7 @@
   import type { Account } from "~/types/models/Account";
 
   definePageMeta({
-    middleware: "auth",
+    middleware: "user-auth",
     layout: "user",
   });
 

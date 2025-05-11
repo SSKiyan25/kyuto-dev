@@ -34,7 +34,7 @@
   import type { ColumnDef, Table } from "@tanstack/vue-table";
 
   definePageMeta({
-    middleware: "auth",
+    middleware: "user-auth",
     layout: "user",
   });
   const route = useRoute();

@@ -308,7 +308,7 @@
   import type { Product, Variation } from "~/types/models/Product";
 
   definePageMeta({
-    middleware: "auth",
+    middleware: "user-auth",
     layout: "user",
   });
   const userCart = ref<(Cart & { id: string })[]>([]);
@@ -365,7 +365,7 @@
     }));
     loading.value = cartLoading.value;
     error.value = cartError.value;
-    console.log("User cart updated:", userCart.value);
+    // console.log("User cart updated:", userCart.value);
   };
 
   watch(
@@ -407,7 +407,7 @@
         const productDoc = await getDoc(productDocRef);
         if (productDoc.exists()) {
           products.value[cartItem.productID] = productDoc.data() as Product;
-          console.log("Fetched product:", products.value[cartItem.productID]);
+          // console.log("Fetched product:", products.value[cartItem.productID]);
         } else {
           console.error("Product not found");
         }
@@ -422,7 +422,7 @@
         const variationDoc = await getDoc(variationDocRef);
         if (variationDoc.exists()) {
           variations.value[cartItem.variationID] = variationDoc.data() as Variation;
-          console.log("Fetched variation:", variations.value[cartItem.variationID]);
+          // console.log("Fetched variation:", variations.value[cartItem.variationID]);
         } else {
           console.error("Variation not found");
         }
@@ -438,7 +438,7 @@
             id: orgDoc.id,
             name: orgDoc.data().name || "Unknown Organization",
           };
-          console.log("Fetched organization:", organizations.value[product.organizationID]);
+          // console.log("Fetched organization:", organizations.value[product.organizationID]);
         } else {
           console.error("Organization not found");
         }
