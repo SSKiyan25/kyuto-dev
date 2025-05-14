@@ -40,13 +40,13 @@
 
       <div v-if="error" class="p-4 text-red-500">Error: {{ error.message }}</div>
 
-      <div v-else-if="!isLoading && organizations.length === 0" class="p-4 text-center">
+      <div v-else-if="!isLoading && publicOrganizations.length === 0" class="p-4 text-center">
         No organizations found
       </div>
 
       <div v-else class="flex flex-col space-y-6 pt-2">
         <div
-          v-for="store in organizations"
+          v-for="store in publicOrganizations"
           :key="store.id"
           class="group flex flex-col space-y-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm transition-all hover:shadow-md sm:flex-row sm:space-x-4 sm:space-y-0 sm:p-6 md:space-x-8 md:p-8"
         >
@@ -114,6 +114,7 @@
       description?: string;
       address?: string;
       logoImageURL?: string;
+      isPublic?: boolean;
     }>
   >([]);
 
@@ -204,11 +205,16 @@
         description: org.description,
         address: org.address,
         logoImageURL: org.logoImageURL,
+        isPublic: org.isPublic,
       }));
     } catch (err) {
       error.value = err as Error;
     } finally {
       isLoading.value = false;
     }
+  });
+
+  const publicOrganizations = computed(() => {
+    return organizations.value.filter((store) => store.isPublic === true);
   });
 </script>
