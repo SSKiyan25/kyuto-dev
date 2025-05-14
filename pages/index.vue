@@ -340,7 +340,7 @@
       <!-- Products Container -->
       <div class="flex-grow">
         <div
-          class="mt-4 flex flex-row flex-wrap justify-center gap-3 sm:mt-6 sm:justify-start sm:gap-6 sm:px-9"
+          class="mt-4 flex flex-row flex-wrap justify-center gap-1 sm:mt-6 sm:justify-start sm:gap-3 sm:px-9"
         >
           <template v-if="loadingProducts">
             <div v-for="i in 5" :key="i" class="flex flex-col items-center space-x-4">
