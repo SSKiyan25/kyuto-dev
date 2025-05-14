@@ -9,6 +9,7 @@ export const useFetchUserCart = (userID: string) => {
 
   const fetchUserCart = async () => {
     // console.log("Fetching user cart...");
+    console.log("Fetching user cart for userID:", userID);
     error.value = null;
     try {
       const userDocRef = doc(db, "accounts", userID);
@@ -23,7 +24,6 @@ export const useFetchUserCart = (userID: string) => {
         id: doc.id,
         ...doc.data(),
       })) as (Cart & { id: string })[];
-      // console.log("User cart in composable: ", userCart.value);
     } catch (err: any) {
       error.value = err.message;
       console.log("Error fetching user cart:", err);

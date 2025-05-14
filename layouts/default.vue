@@ -173,7 +173,7 @@
         </div>
         <div class="hidden items-center gap-3 sm:flex">
           <template v-if="user">
-            <UiButton :to="`/user/cart/${user?.id}`" variant="ghost">
+            <UiButton :to="`/user/cart/${user.id}`" variant="ghost">
               <UiChip
                 :class="cartNum > 0 ? 'bg-red-700 text-white' : ''"
                 size="lg"
@@ -197,7 +197,7 @@
                   </UiNavigationMenuTrigger>
                   <UiNavigationMenuContent>
                     <div class="flex w-[200px] flex-col justify-start px-4 py-4 text-sm">
-                      <div v-if="user.id">
+                      <div v-if="user">
                         <span></span>
                         <!-- User Profile -->
                         <NuxtLink :to="`/user/profile/${user.id}`">
@@ -427,7 +427,7 @@
 
   const user = ref<Account | null>(null);
 
-  onMounted(async () => {
+  onMounted(() => {
     const authStore = useAuthStore();
     user.value = authStore.user;
     console.log("User in layout:", user.value);
@@ -440,7 +440,7 @@
   watch(
     () => user.value,
     (newUser) => {
-      if (newUser) {
+      if (newUser && newUser.id) {
         const { userCart, fetchUserCart } = useFetchUserCart(newUser.id);
         watch(
           () => userCart.value,
