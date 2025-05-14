@@ -142,6 +142,48 @@
       </div>
     </UiSidebarInset>
   </UiSidebarProvider>
+  <!-- Mobile Footer Navigation - Only visible on mobile -->
+  <footer
+    class="fixed bottom-0 left-0 right-0 border-t bg-white shadow-sm dark:border-border dark:bg-card sm:hidden"
+  >
+    <div class="flex w-full flex-row items-center justify-between">
+      <UiButton
+        :to="organizationPath"
+        variant="ghost"
+        class="flex h-16 flex-1 flex-col justify-center py-2 text-sm text-muted-foreground"
+      >
+        <Icon name="lucide:newspaper" class="h-5 w-5" />
+        Organization
+      </UiButton>
+
+      <UiButton
+        :to="`/organization/dashboard/${organizationID}`"
+        variant="ghost"
+        class="flex h-16 flex-1 flex-col justify-center border-l py-2 text-sm text-muted-foreground"
+      >
+        <Icon name="lucide:bar-chart-3" class="h-5 w-5" />
+        Dashboard
+      </UiButton>
+
+      <UiButton
+        :to="`/organization/products/${organizationID}`"
+        variant="ghost"
+        class="flex h-16 flex-1 flex-col justify-center border-l py-2 text-sm text-muted-foreground"
+      >
+        <Icon name="lucide:package" class="h-5 w-5" />
+        Products
+      </UiButton>
+
+      <UiButton
+        :to="`/organization/orders/${organizationID}`"
+        variant="ghost"
+        class="flex h-16 flex-1 flex-col justify-center border-l py-2 text-sm text-muted-foreground"
+      >
+        <Icon name="lucide:list-checks" class="h-5 w-5" />
+        Orders
+      </UiButton>
+    </div>
+  </footer>
 </template>
 
 <script lang="ts" setup>

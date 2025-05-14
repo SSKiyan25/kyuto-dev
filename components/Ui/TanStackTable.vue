@@ -39,22 +39,41 @@
         </UiTableHeader>
 
         <UiTableBody>
-          <UiTableRow
-            v-for="row in table.getRowModel().rows"
-            :key="row.id"
-            :data-state="row.getIsSelected() ? 'selected' : ''"
-          >
-            <UiTableCell v-for="cell in row.getVisibleCells()" :key="cell.id">
-              <FlexRender :render="cell.column.columnDef.cell" :props="cell.getContext()" />
-            </UiTableCell>
-          </UiTableRow>
+          <!-- Loading state handling -->
+          <template v-if="loading">
+            <UiTableRow>
+              <UiTableCell :colspan="table.getAllLeafColumns().length">
+                <ClientOnly>
+                  <slot name="loading">
+                    <div class="flex items-center justify-center py-4">
+                      <Icon name="lucide:loader-circle" class="h-6 w-6 animate-spin" />
+                      <span class="ml-2">Loading...</span>
+                    </div>
+                  </slot>
+                </ClientOnly>
+              </UiTableCell>
+            </UiTableRow>
+          </template>
 
-          <UiTableEmpty
-            v-if="table.getRowModel().rows.length === 0"
-            :colspan="table.getAllLeafColumns().length"
-          >
-            <slot :table="table" name="empty"> No data available. </slot>
-          </UiTableEmpty>
+          <!-- Normal rows when not loading -->
+          <template v-else>
+            <UiTableRow
+              v-for="row in table.getRowModel().rows"
+              :key="row.id"
+              :data-state="row.getIsSelected() ? 'selected' : ''"
+            >
+              <UiTableCell v-for="cell in row.getVisibleCells()" :key="cell.id">
+                <FlexRender :render="cell.column.columnDef.cell" :props="cell.getContext()" />
+              </UiTableCell>
+            </UiTableRow>
+
+            <UiTableEmpty
+              v-if="table.getRowModel().rows.length === 0"
+              :colspan="table.getAllLeafColumns().length"
+            >
+              <slot :table="table" name="empty"> No data available. </slot>
+            </UiTableEmpty>
+          </template>
         </UiTableBody>
       </UiTable>
     </div>
@@ -182,6 +201,7 @@
       showPagination?: boolean;
       showRowsPerPage?: boolean;
       rowsPerPageText?: string;
+      loading?: boolean;
     }>(),
     {
       pageSizes: () => [10, 20, 30, 40, 50, 100],
@@ -195,6 +215,7 @@
       showPagination: true,
       showRowsPerPage: true,
       rowsPerPageText: "Rows per page:",
+      loading: false,
     }
   );
 

@@ -8,7 +8,7 @@
 
   definePageMeta({
     layout: "no-nav",
-    middleware: ["org-auth"],
+    middleware: ["edit-product"],
   });
 
   // UI State
@@ -296,21 +296,26 @@
 </script>
 
 <template>
-  <div class="mb-32 flex h-screen w-full flex-col items-start py-20 pl-20">
-    <div><UiBreadcrumbs class="justify-center" :items="crumbs" /></div>
+  <div class="my-8 flex w-full flex-col p-4 sm:p-6 md:p-8">
+    <div class="overflow-x-auto pb-4">
+      <UiBreadcrumbs class="justify-center" :items="crumbs" />
+    </div>
+
     <form>
-      <div class="w-[86rem]">
+      <div class="w-full">
         <!-- Product Details -->
         <div
-          class="mx-auto mt-12 flex h-auto w-11/12 flex-col items-start rounded-sm bg-muted p-4 shadow"
+          class="mt-4 flex h-auto w-full flex-col items-start rounded-md bg-muted p-4 shadow sm:mt-6 sm:p-6"
         >
           <div class="flex flex-col items-start gap-1">
-            <span class="text-2xl font-semibold">Product Details</span>
-            <p class="text-sm opacity-60">Edit the details of your product and save the changes.</p>
+            <span class="text-lg font-semibold sm:text-xl md:text-2xl">Product Details</span>
+            <p class="text-xs opacity-60 sm:text-sm">
+              Edit the details of your product and save the changes.
+            </p>
           </div>
-          <UiGradientDivider class="mt-4" />
-          <div class="flex w-full flex-col gap-4 pl-4 pt-4">
-            <div class="flex flex-row gap-2">
+          <UiGradientDivider class="mt-3 sm:mt-4" />
+          <div class="flex w-full flex-col gap-4 pt-4">
+            <div class="flex flex-col gap-2 sm:flex-row">
               <span class="font-semibold">Product Name: </span>
               <span class="text-muted-foreground"> {{ product?.name }}</span>
             </div>
@@ -320,16 +325,16 @@
                 name="name"
                 id="name"
                 type="text"
-                class="w-11/12"
+                class="w-full"
                 v-model="formData.name"
                 required
               />
               <div class="flex w-full flex-col gap-2 pt-4">
-                <div class="flex flex-row items-center gap-2">
+                <div class="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
                   <span class="font-semibold text-muted-foreground">Current Category: </span>
                   <span class="font-semibold">{{ product?.category }}</span>
                 </div>
-                <div class="w-4/12">
+                <div class="w-full sm:w-2/3 md:w-1/2 lg:w-4/12">
                   <UiSelect label="Category" name="category" v-model="formData.category">
                     <UiSelectTrigger placeholder="Select Category" />
                     <UiSelectContent>
@@ -348,15 +353,15 @@
                 </div>
               </div>
               <div class="flex w-full flex-col gap-2 pt-4">
-                <div class="flex flex-row items-center gap-2">
+                <div class="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
                   <span class="font-semibold text-muted-foreground">Status:</span>
                   <span class="font-semibold">{{ product?.status }}</span>
                 </div>
-                <div class="w-4/12">
-                  <UiSelect label="Category" name="category" v-model="formData.status">
-                    <UiSelectTrigger placeholder="Select Category" />
+                <div class="w-full sm:w-2/3 md:w-1/2 lg:w-4/12">
+                  <UiSelect label="Status" name="status" v-model="formData.status">
+                    <UiSelectTrigger placeholder="Select Status" />
                     <UiSelectContent>
-                      <UiSelectLabel>Categories</UiSelectLabel>
+                      <UiSelectLabel>Status</UiSelectLabel>
                       <UiSelectSeparator />
                       <UiSelectGroup>
                         <UiSelectItem
@@ -371,33 +376,33 @@
                   </UiSelect>
                 </div>
                 <!-- Reason for disabling Publish -->
-                <p v-if="!organization?.isPublic" class="mt-2 text-sm text-muted-foreground">
-                  The "Publish" option will be disabled if the organization visibility is currently
-                  hidden. Make the organization public to enable publishing.
+                <p
+                  v-if="!organization?.isPublic"
+                  class="mt-2 text-xs text-muted-foreground sm:text-sm"
+                >
+                  The "Publish" option is disabled because the organization is currently hidden.
+                  Make the organization public to enable publishing.
                 </p>
               </div>
-              <div class="flex flex-col gap-2 pt-4">
-                <span class="font-semibold">Product Description: </span>
-                <p class="px-4 text-justify text-[12px] text-muted-foreground">
-                  {{ product?.description }}
-                </p>
-              </div>
-              <UiLabel for="description" class="pt-4">Change Description</UiLabel>
+              <UiLabel for="description" class="pt-4">Product Description</UiLabel>
               <UiTextarea
                 id="description"
                 name="description"
-                class="w-11/12 pt-4"
+                class="w-full"
                 v-model="formData.description"
+                placeholder="Enter product description"
               />
               <!-- Pre Order-->
               <div class="flex flex-col gap-2 pt-4">
                 <span class="font-semibold">Pre-Order settings: </span>
-                <p class="px-4 text-justify text-[12px] text-muted-foreground">
+                <p class="px-2 text-justify text-xs text-muted-foreground sm:px-4 sm:text-sm">
                   {{ formData.canPreOrder ? "Pre-Order is enabled." : "Pre-Order is disabled." }}
                 </p>
               </div>
               <div class="flex flex-row items-center gap-2 pt-2">
-                <span class="text-[12px] text-muted-foreground">Do you want to change it?</span>
+                <span class="text-xs text-muted-foreground sm:text-sm"
+                  >Do you want to change it?</span
+                >
               </div>
 
               <div class="flex flex-row items-center space-x-2 pt-4">
@@ -409,47 +414,55 @@
             </fieldset>
           </div>
         </div>
-        <div class="mx-auto my-8 flex w-11/12 flex-row text-muted-foreground">
+
+        <div
+          class="mx-auto my-4 flex flex-col text-xs text-muted-foreground sm:my-6 sm:flex-row sm:text-sm"
+        >
           <span>Want to change the variations, prices, and stocks?</span>
           <NuxtLink :to="`/organization/products/inventory/${productID}`">
             <span
-              class="ml-2 cursor-pointer text-muted-foreground underline underline-offset-2 hover:text-primary"
+              class="mt-1 cursor-pointer text-muted-foreground underline underline-offset-2 hover:text-primary sm:ml-2 sm:mt-0"
               >Click here</span
             >
           </NuxtLink>
         </div>
+
         <!-- Product Images -->
         <div
-          class="mx-auto my-4 flex h-auto w-11/12 flex-col items-start rounded-sm bg-muted p-4 shadow"
+          class="mt-4 flex h-auto w-full flex-col items-start rounded-md bg-muted p-4 shadow sm:mt-6 sm:p-6"
         >
           <div class="flex flex-col items-start gap-1">
-            <span class="text-2xl font-semibold">Product Images</span>
-            <p class="text-sm opacity-60">
+            <span class="text-lg font-semibold sm:text-xl md:text-2xl">Product Images</span>
+            <p class="text-xs opacity-60 sm:text-sm">
               You can change your product images here. Make sure to upload high-quality images.
             </p>
           </div>
-          <UiGradientDivider class="mt-4" />
-          <div class="flex w-full flex-col gap-4 pl-4 pt-4">
+          <UiGradientDivider class="mt-3 sm:mt-4" />
+          <div class="flex w-full flex-col gap-4 pt-4">
             <fieldset>
               <div class="flex flex-col gap-2">
                 <span class="font-semibold">Current Featured Photo</span>
                 <UiDrawer>
                   <UiDrawerTrigger as-child>
-                    <img
-                      :src="formData.featuredPhoto"
-                      alt="Product Image"
-                      class="h-auto w-64 cursor-pointer hover:opacity-50 hover:shadow"
-                    />
+                    <div
+                      class="w-full cursor-pointer overflow-hidden rounded-md transition-opacity hover:opacity-80 sm:w-64"
+                    >
+                      <img
+                        :src="formData.featuredPhoto"
+                        alt="Product Image"
+                        class="h-auto w-full object-cover"
+                      />
+                    </div>
                   </UiDrawerTrigger>
                   <UiDrawerContent>
                     <div class="mx-auto w-full max-w-screen-md rounded-t-lg p-4 pb-10">
                       <UiDrawerTitle class="mb-1.5"> Current Featured Photo</UiDrawerTitle>
                       <UiDrawerDescription> </UiDrawerDescription>
-                      <div class="min-h-[400px] pt-4">
+                      <div class="min-h-[200px] pt-4 text-center sm:min-h-[400px]">
                         <img
                           :src="formData.featuredPhoto"
                           alt="Product Image"
-                          class="h-1/2 w-2/3"
+                          class="mx-auto max-h-[250px] sm:max-h-[400px]"
                         />
                       </div>
                       <UiDrawerClose class="absolute right-4 top-3 h-7 w-7" asChild>
@@ -475,43 +488,59 @@
                   />
                 </fieldset>
               </div>
-              <UiDivider class="py-4" />
+              <UiDivider class="my-4 sm:my-6" />
               <div class="flex flex-col">
                 <span class="font-semibold">Product Gallery</span>
-                <p class="text-[12px] text-muted-foreground">
+                <p class="text-xs text-muted-foreground sm:text-sm">
                   You can change the product gallery images here. Click the photo if you want to
                   remove.
                 </p>
 
-                <div class="flex flex-row flex-wrap justify-center gap-4 py-8">
+                <div
+                  class="my-4 grid grid-cols-1 gap-4 sm:my-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+                >
                   <div v-for="photo in combinedPhotos" :key="photo">
                     <UiDrawer>
                       <UiDrawerTrigger as-child>
-                        <img
-                          :src="photo"
-                          alt="Product Image"
-                          class="h-auto max-w-64 cursor-pointer rounded-sm hover:opacity-50 hover:shadow"
-                        />
+                        <div
+                          class="cursor-pointer overflow-hidden rounded-md border shadow-sm transition-opacity hover:opacity-80 hover:shadow-md"
+                        >
+                          <img
+                            :src="photo"
+                            alt="Product Image"
+                            class="aspect-square w-full object-cover"
+                          />
+                        </div>
                       </UiDrawerTrigger>
                       <UiDrawerContent>
                         <div class="mx-auto w-full max-w-screen-md rounded-t-lg">
                           <UiDrawerTitle class="mb-1.5 text-center"
                             >Are you sure to remove this photo?</UiDrawerTitle
                           >
-                          <UiDrawerDescription> </UiDrawerDescription>
+                          <UiDrawerDescription class="text-center text-xs sm:text-sm">
+                            This action cannot be undone.
+                          </UiDrawerDescription>
                           <div class="relative min-h-[200px] pt-4">
                             <img
                               :src="photo"
                               alt="Product Image"
-                              class="h-96 w-full object-cover"
+                              class="max-h-[250px] w-full object-contain sm:max-h-[400px]"
                             />
                           </div>
                           <UiDrawerClose as-child>
-                            <div class="flex flex-row items-center justify-center gap-2 py-4">
-                              <UiButton variant="outline" class="opacity-50 hover:opacity-100">
+                            <div
+                              class="flex flex-col items-center justify-center gap-2 p-4 sm:flex-row"
+                            >
+                              <UiButton
+                                variant="outline"
+                                class="w-full opacity-50 hover:opacity-100 sm:w-auto"
+                              >
                                 Cancel
                               </UiButton>
-                              <UiButton @click="handleRemoveImage(photo)" variant="destructive"
+                              <UiButton
+                                @click="handleRemoveImage(photo)"
+                                variant="destructive"
+                                class="w-full sm:w-auto"
                                 >Remove</UiButton
                               >
                             </div>
@@ -521,12 +550,13 @@
                     </UiDrawer>
                   </div>
                 </div>
-                <div class="flex flex-row items-center gap-1 pb-4">
-                  <span class="text-[12px] text-muted-foreground"
+
+                <div class="flex flex-row items-center gap-1 pb-2">
+                  <span class="text-xs text-muted-foreground sm:text-sm"
                     >Add more images? (Limited to 5 total only)</span
                   >
                 </div>
-                <div class="pb-8">
+                <div class="pb-4 sm:pb-6">
                   <fieldset>
                     <UiLabel for="photos">Add More Images</UiLabel>
                     <UiInput
@@ -543,40 +573,52 @@
             </fieldset>
           </div>
         </div>
-        <div class="mb-24 flex w-full flex-row justify-end px-14">
-          <UiButton variant="outline" class="mr-4" :to="`/organization/products/${orgId}`"
-            >Cancel</UiButton
+
+        <div class="my-6 flex flex-col-reverse justify-end gap-3 sm:my-8 sm:flex-row">
+          <UiButton
+            variant="outline"
+            class="w-full sm:w-auto"
+            :to="`/organization/products/${orgId}`"
           >
+            Cancel
+          </UiButton>
           <UiButton
             @click.prevent="handleSaveChanges"
             type="submit"
+            class="w-full sm:w-auto"
             :class="{ 'cursor-not-allowed': !canAddMoreImages }"
             :disabled="!canAddMoreImages"
-            >Save Changes</UiButton
           >
+            Save Changes
+          </UiButton>
         </div>
       </div>
     </form>
   </div>
+
+  <!-- Loading Overlay -->
   <div
     v-if="loading"
     class="fixed inset-0 z-50 flex min-h-screen w-full items-center justify-center bg-secondary/40 backdrop-blur"
   >
-    <div class="flex flex-col items-center justify-center gap-4">
-      <Icon name="lucide:loader-circle" class="size-16 animate-spin text-primary" />
-      <span class="text-sm text-muted-foreground"> {{ currentMessage }}</span>
-      <!-- Add a GIF here -->
+    <div
+      class="flex flex-col items-center justify-center gap-4 rounded-lg bg-background p-6 shadow-lg"
+    >
+      <Icon name="lucide:loader-circle" class="size-12 animate-spin text-primary sm:size-16" />
+      <span class="text-center text-sm"> {{ currentMessage }}</span>
     </div>
   </div>
 
+  <!-- Pending data Overlay -->
   <div
     v-if="pending"
     class="fixed inset-0 z-50 flex min-h-screen w-full items-center justify-center bg-secondary/40 backdrop-blur"
   >
-    <div class="flex flex-col items-center justify-center gap-4">
-      <Icon name="lucide:loader-circle" class="size-16 animate-spin text-primary" />
-      <span class="text-sm text-muted-foreground"> Fetching data... </span>
-      <!-- Add a GIF here -->
+    <div
+      class="flex flex-col items-center justify-center gap-4 rounded-lg bg-background p-6 shadow-lg"
+    >
+      <Icon name="lucide:loader-circle" class="size-12 animate-spin text-primary sm:size-16" />
+      <span class="text-center text-sm"> Fetching data... </span>
     </div>
   </div>
 </template>

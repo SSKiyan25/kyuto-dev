@@ -39,7 +39,7 @@
   import { EditStudentInfoSchema } from "~/utils/validation";
 
   const user = useCurrentUser();
-  console.log("User in composable:", user);
+  // console.log("User in composable:", user);
 
   const studentDialog = ref<boolean>(false);
   const { handleSubmit: handleStudentSubmit, isSubmitting: isSubmittingStudent } = useForm({

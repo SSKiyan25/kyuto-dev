@@ -8,7 +8,7 @@
 
   definePageMeta({
     layout: "no-nav",
-    middleware: ["org-auth"],
+    middleware: ["edit-product"],
   });
 
   const route = useRoute();
@@ -444,290 +444,350 @@
 </script>
 
 <template>
-  <div class="mb-32 flex h-screen w-full flex-col items-start py-20 pl-20">
-    <div><UiBreadcrumbs class="justify-center" :items="crumbs" /></div>
-    <div
-      class="mx-auto mt-12 flex h-auto w-11/12 flex-col items-start rounded-sm bg-muted p-4 px-8 shadow"
-    >
-      <span class="text-2xl font-semibold">Inventory</span>
-      <span class="py-1 text-[12px] text-muted-foreground"
-        >Manage variations, stock levels, and pricing</span
-      >
-      <UiDivider class="my-2" />
-      <span class="pt-4 font-medium">Table of summary</span>
-      <div class="my-2 w-full overflow-x-auto rounded-md border pb-4">
-        <UiTable>
-          <UiTableCaption>List and summary of your product's variations.</UiTableCaption>
-          <UiTableHeader>
-            <UiTableRow>
-              <UiTableHead>Variation Name</UiTableHead>
-              <UiTableHead>Status</UiTableHead>
-              <UiTableHead>Current Price</UiTableHead>
-              <UiTableHead>Total Stocks</UiTableHead>
-              <UiTableHead>Remaining Stocks</UiTableHead>
-              <UiTableHead>Last Modified</UiTableHead>
-            </UiTableRow>
-          </UiTableHeader>
-          <UiTableBody class="last:border-b">
-            <template v-for="variation in variations" :key="variation.id">
-              <UiTableRow>
-                <UiTableCell class="bg-secondary">{{ variation.value }}</UiTableCell>
-                <UiTableCell class="bg-secondary">
-                  <template v-if="variation.remainingStocks > 0">
-                    <UiBadge> Available </UiBadge>
-                  </template>
-                  <template v-else>
-                    <UiBadge variant="destructive">No Stocks</UiBadge>
-                  </template>
-                </UiTableCell>
-                <UiTableCell
-                  >₱{{
-                    calculatePriceWithCommission(Number(variation.price)).toFixed(2)
-                  }}</UiTableCell
-                >
-                <UiTableCell>{{ variation.totalStocks }}</UiTableCell>
-                <UiTableCell>{{ variation.remainingStocks }}</UiTableCell>
-                <UiTableCell>{{ formatDate(variation.lastModified) }}</UiTableCell>
-              </UiTableRow>
-            </template>
-          </UiTableBody>
-        </UiTable>
-      </div>
-      <div class="mx-auto flex flex-col items-center justify-center space-y-2 pt-12">
-        <span></span>
-        <p class="text-[12px] text-muted-foreground">
-          You can only have 10 variations in each product.
-        </p>
-        <UiDialog v-model:open="isAddVariation">
-          <UiDialogTrigger as-child>
-            <UiButton>
-              <Icon name="lucide:plus" class="size-4" />
-              Add New Variation
-            </UiButton>
-          </UiDialogTrigger>
-          <UiDialogContent
-            class="sm:max-w-[625px]"
-            title="Add Variation"
-            description="Add a new variation to your product. You can specify details such its name, price, and the number of stocks."
-          >
-            <template #content>
-              <div class="grid gap-4 py-4">
-                <div class="grid grid-cols-4 items-center gap-4">
-                  <UiLabel for="name" class="text-right"> Name </UiLabel>
-                  <UiInput
-                    v-model="newVariationName"
-                    id="name"
-                    placeholder="Small"
-                    class="col-span-3"
-                  />
-                </div>
-                <div class="grid grid-cols-4 items-center gap-4">
-                  <UiLabel for="price" class="text-right"> Price </UiLabel>
-                  <UiNumberField
-                    v-model="newVariationPrice"
-                    :min="0"
-                    :max="10000"
-                    :decimal-places="2"
-                    class="col-span-3"
-                  >
-                    <UiNumberFieldInput id="price" placeholder="₱0.00" step="0.01" />
-                    <UiNumberFieldDecrement class="border-l" />
-                    <UiNumberFieldIncrement class="border-l" />
-                  </UiNumberField>
-                </div>
-                <div class="grid grid-cols-4 items-center gap-4">
-                  <UiLabel class="text-right"> Price with Commission </UiLabel>
-                  <div class="col-span-3 text-muted-foreground">
-                    <p class="text-sm">
-                      <span
-                        >₱{{
-                          calculatePriceWithCommission(newVariationPrice || 0).toFixed(2)
-                        }}</span
-                      >
-                      <br />
-                      <span class="text-xs">Commission Rate: {{ commissionRate?.rate || 0 }}%</span>
-                    </p>
-                  </div>
-                </div>
-                <div class="grid grid-cols-4 items-center gap-4">
-                  <UiLabel for="stocks" class="text-right"> Stocks </UiLabel>
-                  <UiNumberField
-                    v-model="newVariationStocks"
-                    :min="0"
-                    :max="10000"
-                    class="col-span-3"
-                  >
-                    <UiNumberFieldInput id="stocks" placeholder="0" step="1" />
-                    <UiNumberFieldDecrement class="border-l" />
-                    <UiNumberFieldIncrement class="border-l" />
-                  </UiNumberField>
-                </div>
-              </div>
-            </template>
-            <template #footer>
-              <UiDialogFooter>
-                <UiButton
-                  @click="closeAddDialog(false)"
-                  :disabled="loadingVariation"
-                  variant="outline"
-                  type="button"
-                  class="mt-2 sm:mt-0"
-                  >Cancel
-                  <Icon
-                    v-if="loadingVariation"
-                    name="lucide:loader-circle"
-                    class="ml-2 size-4 animate-spin"
-                /></UiButton>
-                <UiButton @click="handleAddVariation" :disabled="loadingVariation" type="submit"
-                  >Save
-                  <Icon
-                    v-if="loadingVariation"
-                    name="lucide:loader-circle"
-                    class="ml-2 size-4 animate-spin"
-                  />
-                </UiButton>
-              </UiDialogFooter>
-            </template>
-          </UiDialogContent>
-        </UiDialog>
-      </div>
+  <div
+    class="my-8 flex min-h-screen w-full flex-col px-4 py-4 sm:px-6 sm:py-6 md:px-8 md:py-12 lg:py-16 lg:pl-20"
+  >
+    <!-- Breadcrumbs - Mobile friendly -->
+    <div class="mb-6 w-full sm:mb-8">
+      <UiBreadcrumbs :items="crumbs" class="overflow-x-auto pb-1 text-xs sm:text-sm" />
     </div>
-    <div
-      class="mx-auto mt-8 flex h-auto w-11/12 flex-col items-start rounded-sm bg-muted p-4 px-12 shadow"
-    >
-      <span class="pt-6 font-medium text-muted-foreground">
-        Select a variation to view or edit its details
-      </span>
-      <div class="flex flex-row flex-wrap gap-4 pt-2">
-        <template v-for="(variation, i) in variations" :key="variation.id">
-          <UiButton
-            :variant="
-              selectedVariation && selectedVariation.id === variation.id ? 'default' : 'outline'
-            "
-            @click="selectVariation(variation)"
-          >
-            {{ variation.value }}
-          </UiButton>
-        </template>
-      </div>
-      <UiDivider class="my-3" />
-      <div v-if="selectedVariation" class="flex flex-col space-y-2">
-        <span class="text-lg font-medium text-muted-foreground">Variation Details</span>
-        <div class="flex w-full flex-row items-center gap-2 pl-4 pt-2">
-          <!--Variation Name-->
-          <div class="flex flex-row items-center gap-1">
-            <Icon name="lucide:book-a" class="size-4" />
-            <span class="font-medium">Name:</span>
-            <span class="pl-2 text-muted-foreground"> {{ selectedVariation.value }}</span>
-          </div>
-          <UiDivider orientation="vertical" />
-          <!--Status-->
-          <div class="flex flex-row items-center gap-2 text-nowrap">
-            <Icon name="lucide:eye" class="size-4" />
-            <span class="font-medium">Status:</span>
-            <UiBadge
-              v-if="
-                selectedVariation &&
-                selectedVariation.remainingStocks !== undefined &&
-                selectedVariation.remainingStocks > 0
-              "
-              >Available</UiBadge
-            >
-            <UiBadge v-else variant="destructive">No Stocks</UiBadge>
-          </div>
-          <UiDivider orientation="vertical" />
-          <!--Current Price-->
-          <div class="flex flex-row items-center gap-2 text-nowrap">
-            <Icon name="lucide:banknote" class="size-4" />
-            <span class="font-medium">Current Price:</span>
-            <span class="text-muted-foreground"
-              >₱{{ calculatePriceWithCommission(Number(selectedVariation.price)).toFixed(2) }}</span
-            >
-          </div>
 
-          <UiDivider orientation="vertical" />
-          <!--Total Stocks-->
-          <div class="flex flex-row items-center gap-2 text-nowrap">
-            <Icon name="lucide:layers" class="size-4" />
-            <span class="font-medium">Total Stocks:</span>
-            <span class="text-muted-foreground"> {{ selectedVariation.totalStocks }}</span>
-          </div>
-
-          <UiDivider orientation="vertical" />
-          <!--Remaining Stocks-->
-          <div class="flex flex-row items-center gap-2 text-nowrap">
-            <Icon name="lucide:layers-2" class="size-4" />
-            <span class="font-medium">Remaining Stocks:</span>
-            <span class="text-muted-foreground"> {{ selectedVariation.remainingStocks }}</span>
-          </div>
-
-          <UiDivider orientation="vertical" />
-          <!--Last Modified-->
-          <div class="flex flex-row items-center gap-2 text-nowrap">
-            <Icon name="lucide:calendar-clock" class="size-4" />
-            <span class="font-medium">Last Modified:</span>
-            <span class="text-muted-foreground">
-              {{
-                selectedVariation?.lastModified ? formatDate(selectedVariation.lastModified) : "N/A"
-              }}
-            </span>
-          </div>
-        </div>
-        <UiGradientDivider class="my-1" />
-        <div class="flex flex-col py-2">
-          <div class="flex flex-row items-center gap-1">
-            <Icon name="lucide:logs" class="size-4" />
-            <p>Logs</p>
-            <p class="pl-1 pt-1 text-[12px] text-muted-foreground">
-              (These logs show the changes in prices and stocks that were added or modified)
+    <!-- Main Content Container - Responsive width -->
+    <div class="flex w-full flex-col gap-6">
+      <!-- Inventory Summary Section -->
+      <div class="flex w-full flex-col items-start rounded-lg bg-card p-4 shadow sm:p-6">
+        <div class="mb-4 flex w-full flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 class="text-xl font-semibold sm:text-2xl">Inventory</h1>
+            <p class="mt-1 text-xs text-muted-foreground sm:text-sm">
+              Manage variations, stock levels, and pricing
             </p>
           </div>
-          <div class="grid grid-cols-9 items-center justify-center">
-            <div class="col-span-9 mx-16 pt-10">
+
+          <!-- Add New Variation Button - More prominent -->
+          <UiDialog v-model:open="isAddVariation">
+            <UiDialogTrigger as-child>
+              <UiButton class="mt-4 sm:mt-0" size="sm" variant="default">
+                <Icon name="lucide:plus" class="mr-1 size-4" />
+                Add Variation
+              </UiButton>
+            </UiDialogTrigger>
+            <UiDialogContent
+              class="sm:max-w-[625px]"
+              title="Add Variation"
+              description="Add a new variation to your product. You can specify details such its name, price, and the number of stocks."
+            >
+              <template #content>
+                <div class="grid gap-4 py-4">
+                  <div class="grid grid-cols-4 items-center gap-4">
+                    <UiLabel for="name" class="text-right"> Name </UiLabel>
+                    <UiInput
+                      v-model="newVariationName"
+                      id="name"
+                      placeholder="Small"
+                      class="col-span-3"
+                    />
+                  </div>
+                  <div class="grid grid-cols-4 items-center gap-4">
+                    <UiLabel for="price" class="text-right"> Price </UiLabel>
+                    <UiNumberField
+                      v-model="newVariationPrice"
+                      :min="0"
+                      :max="10000"
+                      :decimal-places="2"
+                      class="col-span-3"
+                    >
+                      <UiNumberFieldInput id="price" placeholder="₱0.00" step="0.01" />
+                      <UiNumberFieldDecrement class="border-l" />
+                      <UiNumberFieldIncrement class="border-l" />
+                    </UiNumberField>
+                  </div>
+                  <div class="grid grid-cols-4 items-center gap-4">
+                    <UiLabel class="text-right"> Price with Commission </UiLabel>
+                    <div class="col-span-3 text-muted-foreground">
+                      <p class="text-sm">
+                        <span
+                          >₱{{
+                            calculatePriceWithCommission(newVariationPrice || 0).toFixed(2)
+                          }}</span
+                        >
+                        <br />
+                        <span class="text-xs"
+                          >Commission Rate: {{ commissionRate?.rate || 0 }}%</span
+                        >
+                      </p>
+                    </div>
+                  </div>
+                  <div class="grid grid-cols-4 items-center gap-4">
+                    <UiLabel for="stocks" class="text-right"> Stocks </UiLabel>
+                    <UiNumberField
+                      v-model="newVariationStocks"
+                      :min="0"
+                      :max="10000"
+                      class="col-span-3"
+                    >
+                      <UiNumberFieldInput id="stocks" placeholder="0" step="1" />
+                      <UiNumberFieldDecrement class="border-l" />
+                      <UiNumberFieldIncrement class="border-l" />
+                    </UiNumberField>
+                  </div>
+                </div>
+              </template>
+              <template #footer>
+                <UiDialogFooter>
+                  <UiButton
+                    @click="closeAddDialog(false)"
+                    :disabled="loadingVariation"
+                    variant="outline"
+                    type="button"
+                    class="mt-2 sm:mt-0"
+                    >Cancel
+                    <Icon
+                      v-if="loadingVariation"
+                      name="lucide:loader-circle"
+                      class="ml-2 size-4 animate-spin"
+                  /></UiButton>
+                  <UiButton @click="handleAddVariation" :disabled="loadingVariation" type="submit"
+                    >Save
+                    <Icon
+                      v-if="loadingVariation"
+                      name="lucide:loader-circle"
+                      class="ml-2 size-4 animate-spin"
+                    />
+                  </UiButton>
+                </UiDialogFooter>
+              </template>
+            </UiDialogContent>
+          </UiDialog>
+        </div>
+
+        <UiDivider />
+
+        <!-- Summary Table Section - Responsive -->
+        <div class="mt-4 w-full">
+          <h2 class="mb-3 text-sm font-medium">Table of Summary</h2>
+          <div class="w-full overflow-x-auto rounded-md border">
+            <UiTable>
+              <UiTableCaption class="text-xs">
+                List and summary of your product's variations.
+              </UiTableCaption>
+              <UiTableHeader>
+                <UiTableRow>
+                  <UiTableHead class="whitespace-nowrap">Variation</UiTableHead>
+                  <UiTableHead class="whitespace-nowrap">Status</UiTableHead>
+                  <UiTableHead class="whitespace-nowrap">Price</UiTableHead>
+                  <UiTableHead class="hidden whitespace-nowrap sm:table-cell"
+                    >Total Stocks</UiTableHead
+                  >
+                  <UiTableHead class="whitespace-nowrap">Remaining</UiTableHead>
+                  <UiTableHead class="hidden whitespace-nowrap md:table-cell"
+                    >Last Modified</UiTableHead
+                  >
+                </UiTableRow>
+              </UiTableHeader>
+              <UiTableBody>
+                <template v-for="variation in variations" :key="variation.id">
+                  <UiTableRow
+                    :class="
+                      selectedVariation && selectedVariation.id === variation.id
+                        ? 'bg-primary/5'
+                        : ''
+                    "
+                    class="cursor-pointer transition-colors hover:bg-muted/50"
+                    @click="selectVariation(variation)"
+                  >
+                    <UiTableCell class="font-medium">{{ variation.value }}</UiTableCell>
+                    <UiTableCell>
+                      <UiBadge
+                        :variant="variation.remainingStocks > 0 ? 'default' : 'destructive'"
+                        class="whitespace-nowrap text-xs"
+                      >
+                        {{ variation.remainingStocks > 0 ? "Available" : "No Stock" }}
+                      </UiBadge>
+                    </UiTableCell>
+                    <UiTableCell class="whitespace-nowrap">
+                      ₱{{ calculatePriceWithCommission(Number(variation.price)).toFixed(2) }}
+                    </UiTableCell>
+                    <UiTableCell class="hidden sm:table-cell">{{
+                      variation.totalStocks
+                    }}</UiTableCell>
+                    <UiTableCell>{{ variation.remainingStocks }}</UiTableCell>
+                    <UiTableCell class="hidden whitespace-nowrap md:table-cell">
+                      {{ formatDate(variation.lastModified) }}
+                    </UiTableCell>
+                  </UiTableRow>
+                </template>
+              </UiTableBody>
+            </UiTable>
+          </div>
+          <p class="mt-2 text-center text-xs text-muted-foreground">
+            You can only have 10 variations per product. Click on a row to edit details.
+          </p>
+        </div>
+      </div>
+
+      <!-- Variation Details Section - Mobile optimized -->
+      <div class="flex w-full flex-col items-start rounded-lg bg-card p-4 shadow sm:p-6">
+        <h2 class="mb-4 text-base font-medium">Variation Details</h2>
+
+        <!-- Variation Selector - Horizontal scrollable on mobile -->
+        <div class="hide-scrollbar mb-4 w-full overflow-x-auto pb-2">
+          <div class="flex space-x-2">
+            <template v-for="variation in variations" :key="variation.id">
+              <UiButton
+                size="sm"
+                class="flex-shrink-0"
+                :variant="
+                  selectedVariation && selectedVariation.id === variation.id ? 'default' : 'outline'
+                "
+                @click="selectVariation(variation)"
+              >
+                {{ variation.value }}
+              </UiButton>
+            </template>
+          </div>
+        </div>
+
+        <UiDivider />
+
+        <!-- Selected Variation Details -->
+        <div v-if="selectedVariation" class="mt-4 w-full">
+          <!-- Variation Details Cards - Better mobile layout -->
+          <div class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+            <!-- Name card -->
+            <div class="flex items-center gap-2 rounded-lg bg-muted/30 p-3">
+              <Icon name="lucide:book-a" class="size-5 text-primary" />
+              <div>
+                <div class="text-xs text-muted-foreground">Name</div>
+                <div class="font-medium">{{ selectedVariation.value }}</div>
+              </div>
+            </div>
+
+            <!-- Status card -->
+            <div class="flex items-center gap-2 rounded-lg bg-muted/30 p-3">
+              <Icon name="lucide:eye" class="size-5 text-primary" />
+              <div>
+                <div class="text-xs text-muted-foreground">Status</div>
+                <UiBadge
+                  :variant="selectedVariation.remainingStocks > 0 ? 'default' : 'destructive'"
+                  class="mt-1"
+                >
+                  {{ selectedVariation.remainingStocks > 0 ? "Available" : "No Stock" }}
+                </UiBadge>
+              </div>
+            </div>
+
+            <!-- Price card -->
+            <div class="flex items-center gap-2 rounded-lg bg-muted/30 p-3">
+              <Icon name="lucide:banknote" class="size-5 text-primary" />
+              <div>
+                <div class="text-xs text-muted-foreground">Current Price</div>
+                <div class="font-medium">
+                  ₱{{ calculatePriceWithCommission(Number(selectedVariation.price)).toFixed(2) }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Total Stocks card -->
+            <div class="flex items-center gap-2 rounded-lg bg-muted/30 p-3">
+              <Icon name="lucide:layers" class="size-5 text-primary" />
+              <div>
+                <div class="text-xs text-muted-foreground">Total Stocks</div>
+                <div class="font-medium">{{ selectedVariation.totalStocks }}</div>
+              </div>
+            </div>
+
+            <!-- Remaining Stocks card -->
+            <div class="flex items-center gap-2 rounded-lg bg-muted/30 p-3">
+              <Icon name="lucide:layers-2" class="size-5 text-primary" />
+              <div>
+                <div class="text-xs text-muted-foreground">Remaining Stocks</div>
+                <div class="font-medium">{{ selectedVariation.remainingStocks }}</div>
+              </div>
+            </div>
+
+            <!-- Last Modified card -->
+            <div class="flex items-center gap-2 rounded-lg bg-muted/30 p-3">
+              <Icon name="lucide:calendar-clock" class="size-5 text-primary" />
+              <div>
+                <div class="text-xs text-muted-foreground">Last Modified</div>
+                <div class="font-medium">
+                  {{
+                    selectedVariation?.lastModified
+                      ? formatDate(selectedVariation.lastModified)
+                      : "N/A"
+                  }}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Logs Section - Responsive -->
+          <div class="mt-6">
+            <div class="mb-3 flex items-center gap-2">
+              <Icon name="lucide:logs" class="size-5" />
+              <h3 class="font-medium">Stock Logs</h3>
+            </div>
+            <p class="mb-4 text-xs text-muted-foreground">
+              These logs show the changes in prices and stocks that were added or modified
+            </p>
+
+            <div class="w-full overflow-x-auto">
               <OrganizationStocksHistory :tableData="formattedStockLogs" />
             </div>
           </div>
-        </div>
-        <UiDivider class="mb-2" />
-        <div class="flex flex-col py-4 pl-4">
-          <div class="flex flex-row items-center">
-            <Icon name="lucide:square-mouse-pointer" class="size-4" />
-            <span class="pl-1 font-medium">Actions</span>
-          </div>
-          <p class="text-[12px] text-muted-foreground">
-            (Use these actions to edit, delete, or add new variations, prices, or stock levels)
-          </p>
-          <div class="grid grid-cols-10 py-4">
-            <div class="col-span-1 flex flex-col justify-center space-y-4">
+
+          <!-- Actions Section - Responsive tabs for mobile -->
+          <div class="mt-8">
+            <div class="mb-3 flex items-center gap-2">
+              <Icon name="lucide:square-mouse-pointer" class="size-5" />
+              <h3 class="font-medium">Actions</h3>
+            </div>
+
+            <!-- Mobile-friendly action layout -->
+            <div class="mb-4 flex flex-wrap gap-2">
               <UiButton
+                size="sm"
                 :variant="isEditName ? 'default' : 'outline'"
                 @click="isEditName = !isEditName"
-                class="p-1"
               >
+                <Icon name="lucide:edit-2" class="mr-1 size-3.5" />
                 Edit Name
               </UiButton>
+
               <UiButton
+                size="sm"
                 :variant="isAddStocks ? 'default' : 'outline'"
                 @click="isAddStocks = !isAddStocks"
               >
+                <Icon name="lucide:plus-circle" class="mr-1 size-3.5" />
                 Add Stocks
               </UiButton>
+
               <UiButton
+                size="sm"
                 :variant="isRemoveStocks ? 'default' : 'outline'"
                 @click="isRemoveStocks = !isRemoveStocks"
               >
+                <Icon name="lucide:minus-circle" class="mr-1 size-3.5" />
                 Remove Stocks
               </UiButton>
+
               <UiButton
+                size="sm"
                 :variant="isChangePrice ? 'default' : 'outline'"
                 @click="isChangePrice = !isChangePrice"
               >
+                <Icon name="lucide:philippine-peso" class="mr-1 size-3.5" />
                 Change Price
               </UiButton>
-              <!-- Delete Button Variation-->
+
               <UiDialog v-model:open="isDelete">
                 <UiAlertDialogTrigger as-child>
-                  <UiButton variant="destructive" :disabled="isDeleteDisabled">Delete</UiButton>
+                  <UiButton size="sm" variant="destructive" :disabled="isDeleteDisabled">
+                    <Icon name="lucide:trash-2" class="mr-1 size-3.5" />
+                    Delete
+                  </UiButton>
                 </UiAlertDialogTrigger>
                 <UiAlertDialogContent @escape-key-down="isDeleteShowMessage('Escape key pressed')">
                   <UiAlertDialogHeader>
@@ -744,110 +804,229 @@
                 </UiAlertDialogContent>
               </UiDialog>
             </div>
-            <UiDivider orientation="vertical" class="col-span-1" />
-            <div class="col-span-8 flex flex-col justify-start space-y-4">
+
+            <!-- Action Input Fields - Responsive layout -->
+            <div class="mt-4 space-y-4 rounded-lg bg-muted/20 p-4">
               <!-- Edit Name-->
-              <div class="flex flex-row items-center">
-                <UiInput
-                  :disabled="!isEditName || loading"
-                  label="Variation Name"
-                  :placeholder="selectedVariation.value"
-                  v-model="changedVariationValue"
-                />
-                <template v-if="isEditName && !loading">
-                  <UiButton variant="ghost" title="Save Changes" @click="handleSaveName">
-                    <Icon name="lucide:check" class="size-4" />
-                  </UiButton>
-                  <UiButton variant="ghost" title="Cancel" @click="handleCancelName">
-                    <Icon name="lucide:x" class="size-4" />
-                  </UiButton>
-                </template>
-                <template v-if="loading">
-                  <Icon name="lucide:loader-circle" class="ml-2 size-4 animate-spin" />
-                </template>
+              <div v-if="isEditName" class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <label class="text-sm font-medium">New Name:</label>
+                <div class="flex flex-1 items-center">
+                  <UiInput
+                    :disabled="loading"
+                    :placeholder="selectedVariation.value"
+                    v-model="changedVariationValue"
+                    class="flex-1"
+                  />
+                  <div class="ml-2 flex">
+                    <UiButton
+                      variant="ghost"
+                      size="sm"
+                      title="Save"
+                      @click="handleSaveName"
+                      :disabled="loading"
+                    >
+                      <Icon name="lucide:check" class="size-4" />
+                    </UiButton>
+                    <UiButton
+                      variant="ghost"
+                      size="sm"
+                      title="Cancel"
+                      @click="handleCancelName"
+                      :disabled="loading"
+                    >
+                      <Icon name="lucide:x" class="size-4" />
+                    </UiButton>
+                  </div>
+                  <Icon
+                    v-if="loading"
+                    name="lucide:loader-circle"
+                    class="ml-2 size-4 animate-spin"
+                  />
+                </div>
               </div>
 
-              <!-- Add Stocks-->
-              <div class="flex w-1/3 flex-row items-center">
-                <UiNumberField
-                  :disabled="!isAddStocks || loading"
-                  :min="0"
-                  :max="10000"
-                  v-model="changedVariationAddedStocks"
-                >
-                  <UiNumberFieldInput placeholder="0" step="1" />
-                  <UiNumberFieldDecrement class="border-l" />
-                  <UiNumberFieldIncrement class="border-l" />
-                </UiNumberField>
-                <template v-if="isAddStocks && !loading">
-                  <UiButton variant="ghost" title="Save Changes" @click="handleSaveAddedStocks">
-                    <Icon name="lucide:check" class="size-4" />
-                  </UiButton>
-                  <UiButton variant="ghost" title="Cancel" @click="handleCancelAddedStocks">
-                    <Icon name="lucide:x" class="size-4" />
-                  </UiButton>
-                </template>
-                <template v-if="loading">
-                  <Icon name="lucide:loader-circle" class="ml-2 size-4 animate-spin" />
-                </template>
+              <!-- Add Stocks -->
+              <div v-if="isAddStocks" class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <label class="text-sm font-medium">Add Stocks:</label>
+                <div class="flex flex-1 items-center">
+                  <UiNumberField
+                    :disabled="loading"
+                    :min="0"
+                    :max="10000"
+                    v-model="changedVariationAddedStocks"
+                    class="flex-1"
+                  >
+                    <UiNumberFieldInput placeholder="0" step="1" />
+                    <UiNumberFieldDecrement class="border-l" />
+                    <UiNumberFieldIncrement class="border-l" />
+                  </UiNumberField>
+                  <div class="ml-2 flex">
+                    <UiButton
+                      variant="ghost"
+                      size="sm"
+                      title="Save"
+                      @click="handleSaveAddedStocks"
+                      :disabled="loading"
+                    >
+                      <Icon name="lucide:check" class="size-4" />
+                    </UiButton>
+                    <UiButton
+                      variant="ghost"
+                      size="sm"
+                      title="Cancel"
+                      @click="handleCancelAddedStocks"
+                      :disabled="loading"
+                    >
+                      <Icon name="lucide:x" class="size-4" />
+                    </UiButton>
+                  </div>
+                  <Icon
+                    v-if="loading"
+                    name="lucide:loader-circle"
+                    class="ml-2 size-4 animate-spin"
+                  />
+                </div>
               </div>
-              <!-- Remove Stocks-->
-              <div class="flex w-1/3 flex-row items-center">
-                <UiNumberField
-                  :disabled="!isRemoveStocks || loading"
-                  :min="0"
-                  :max="10000"
-                  v-model="changedVariationRemovedStocks"
-                >
-                  <UiNumberFieldInput placeholder="0" step="1" />
-                  <UiNumberFieldDecrement class="border-l" />
-                  <UiNumberFieldIncrement class="border-l" />
-                </UiNumberField>
-                <template v-if="isRemoveStocks && !loading">
-                  <UiButton variant="ghost" title="Save Changes" @click="handleSaveRemovedStocks">
-                    <Icon name="lucide:check" class="size-4" />
-                  </UiButton>
-                  <UiButton variant="ghost" title="Cancel" @click="handleCancelRemovedStocks">
-                    <Icon name="lucide:x" class="size-4" />
-                  </UiButton>
-                </template>
-                <template v-if="loading">
-                  <Icon name="lucide:loader-circle" class="ml-2 size-4 animate-spin" />
-                </template>
+
+              <!-- Remove Stocks -->
+              <div v-if="isRemoveStocks" class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <label class="text-sm font-medium">Remove Stocks:</label>
+                <div class="flex flex-1 items-center">
+                  <UiNumberField
+                    :disabled="loading"
+                    :min="0"
+                    :max="selectedVariation.remainingStocks"
+                    v-model="changedVariationRemovedStocks"
+                    class="flex-1"
+                  >
+                    <UiNumberFieldInput placeholder="0" step="1" />
+                    <UiNumberFieldDecrement class="border-l" />
+                    <UiNumberFieldIncrement class="border-l" />
+                  </UiNumberField>
+                  <div class="ml-2 flex">
+                    <UiButton
+                      variant="ghost"
+                      size="sm"
+                      title="Save"
+                      @click="handleSaveRemovedStocks"
+                      :disabled="loading"
+                    >
+                      <Icon name="lucide:check" class="size-4" />
+                    </UiButton>
+                    <UiButton
+                      variant="ghost"
+                      size="sm"
+                      title="Cancel"
+                      @click="handleCancelRemovedStocks"
+                      :disabled="loading"
+                    >
+                      <Icon name="lucide:x" class="size-4" />
+                    </UiButton>
+                  </div>
+                  <Icon
+                    v-if="loading"
+                    name="lucide:loader-circle"
+                    class="ml-2 size-4 animate-spin"
+                  />
+                </div>
               </div>
-              <!-- Price Change-->
-              <div class="flex w-1/3 flex-row items-center">
-                <UiNumberField
-                  :disabled="!isChangePrice || loading"
-                  :min="0"
-                  :max="10000"
-                  :decimal-places="2"
-                  v-model="changedVariationPrice"
+
+              <!-- Change Price -->
+              <div v-if="isChangePrice" class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <label class="text-sm font-medium">New Price:</label>
+                <div class="flex flex-1 items-center">
+                  <UiNumberField
+                    :disabled="loading"
+                    :min="0"
+                    :max="10000"
+                    :decimal-places="2"
+                    v-model="changedVariationPrice"
+                    class="flex-1"
+                  >
+                    <UiNumberFieldInput :placeholder="selectedVariation.price" step="0.01" />
+                    <UiNumberFieldDecrement class="border-l" />
+                    <UiNumberFieldIncrement class="border-l" />
+                  </UiNumberField>
+                  <div class="ml-2 flex">
+                    <UiButton
+                      variant="ghost"
+                      size="sm"
+                      title="Save"
+                      @click="handleSavePrice"
+                      :disabled="loading"
+                    >
+                      <Icon name="lucide:check" class="size-4" />
+                    </UiButton>
+                    <UiButton
+                      variant="ghost"
+                      size="sm"
+                      title="Cancel"
+                      @click="handleCancelPrice"
+                      :disabled="loading"
+                    >
+                      <Icon name="lucide:x" class="size-4" />
+                    </UiButton>
+                  </div>
+                  <Icon
+                    v-if="loading"
+                    name="lucide:loader-circle"
+                    class="ml-2 size-4 animate-spin"
+                  />
+                </div>
+
+                <!-- Price Preview -->
+                <div
+                  v-if="changedVariationPrice"
+                  class="mt-2 text-xs text-muted-foreground sm:mt-0"
                 >
-                  <UiNumberFieldInput :placeholder="selectedVariation.price" step="0.01" />
-                  <UiNumberFieldDecrement class="border-l" />
-                  <UiNumberFieldIncrement class="border-l" />
-                </UiNumberField>
-                <template v-if="isChangePrice && !loading">
-                  <UiButton variant="ghost" title="Save Changes" @click="handleSavePrice">
-                    <Icon name="lucide:check" class="size-4" />
-                  </UiButton>
-                  <UiButton variant="ghost" title="Cancel" @click="handleCancelPrice">
-                    <Icon name="lucide:x" class="size-4" />
-                  </UiButton>
-                </template>
-                <template v-if="loading">
-                  <Icon name="lucide:loader-circle" class="ml-2 size-4 animate-spin" />
-                </template>
+                  With commission: ₱{{
+                    calculatePriceWithCommission(changedVariationPrice).toFixed(2)
+                  }}
+                </div>
               </div>
             </div>
           </div>
         </div>
-        <UiDivider class="mb-2" />
+
+        <!-- No variation selected state -->
+        <div v-else class="w-full py-8 text-center">
+          <Icon name="lucide:box" class="mx-auto mb-3 size-12 text-muted-foreground/50" />
+          <p class="text-muted-foreground">
+            Select a variation from above to view and edit details
+          </p>
+        </div>
       </div>
     </div>
-    <div class="min-h-64 text-secondary">.</div>
   </div>
 </template>
 
-<style></style>
+<style scoped>
+  /* Hide scrollbars but keep functionality */
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Fix responsive tables */
+  :deep(table) {
+    width: 100%;
+    min-width: 500px;
+  }
+
+  /* Responsive cards adjustments */
+  @media (max-width: 640px) {
+    :deep(.ui-table-cell) {
+      padding: 0.5rem;
+    }
+
+    :deep(.ui-badge) {
+      font-size: 0.65rem;
+      padding-left: 0.5rem;
+      padding-right: 0.5rem;
+    }
+  }
+</style>

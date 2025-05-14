@@ -1,3 +1,242 @@
+<template>
+  <div class="max-w-full space-y-6 overflow-hidden">
+    <!-- Loading State -->
+    <div v-if="status === 'pending'" class="space-y-4">
+      <div class="flex flex-col justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
+        <h1 class="text-xl font-bold sm:text-2xl">Sales Analytics</h1>
+        <UiButton
+          variant="outline"
+          :disabled="isRefreshing"
+          @click.prevent="refresh"
+          class="w-full sm:w-auto"
+        >
+          <Icon
+            name="lucide:refresh-cw"
+            class="mr-2 h-4 w-4"
+            :class="{ 'animate-spin': isRefreshing }"
+          />
+          Refresh
+        </UiButton>
+      </div>
+
+      <UiSkeleton class="h-8 w-1/3" />
+      <UiSkeleton class="h-8 w-full" />
+      <UiSkeleton class="h-8 w-full" />
+      <UiSkeleton class="h-8 w-full" />
+      <div class="text-center text-lg font-semibold">Fetching data...</div>
+    </div>
+
+    <!-- Error State -->
+    <div v-else-if="status === 'error'" class="rounded-lg bg-muted/20 p-4 text-center sm:p-6">
+      <div class="flex flex-col items-center justify-center gap-2">
+        <Icon name="lucide:alert-circle" class="size-10 text-destructive/70" />
+        <h3 class="text-base font-semibold">Unable to Load Analytics</h3>
+        <p class="max-w-md text-sm text-muted-foreground">
+          There was a problem loading your analytics data. Please try refreshing the page.
+        </p>
+        <UiButton variant="outline" class="mt-4" @click="refresh">
+          <Icon name="lucide:refresh-cw" class="mr-2 h-4 w-4" />
+          Try Again
+        </UiButton>
+      </div>
+    </div>
+
+    <!-- Data Loaded -->
+    <template v-else-if="analytics">
+      <div class="flex flex-col justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
+        <h1 class="text-xl font-bold sm:text-2xl">Sales Analytics</h1>
+        <UiButton
+          variant="outline"
+          :disabled="isRefreshing"
+          @click="refresh"
+          class="w-full sm:w-auto"
+        >
+          <Icon
+            name="lucide:refresh-cw"
+            class="mr-2 h-4 w-4"
+            :class="{ 'animate-spin': isRefreshing }"
+          />
+          Refresh
+        </UiButton>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
+        <UiCard class="min-w-0">
+          <UiCardHeader class="pb-2">
+            <UiCardTitle class="text-sm font-medium">Total Revenue</UiCardTitle>
+          </UiCardHeader>
+          <UiCardContent>
+            <div class="break-words text-xl font-bold sm:text-2xl">
+              {{ formatCurrency(analytics.totalRevenue) }}
+            </div>
+          </UiCardContent>
+        </UiCard>
+        <UiCard class="min-w-0">
+          <UiCardHeader class="pb-2">
+            <UiCardTitle class="text-sm font-medium">Total Orders</UiCardTitle>
+          </UiCardHeader>
+          <UiCardContent>
+            <div class="text-xl font-bold sm:text-2xl">
+              {{ analytics.totalOrders.toLocaleString() }}
+            </div>
+          </UiCardContent>
+        </UiCard>
+        <UiCard class="min-w-0 sm:col-span-2 md:col-span-1">
+          <UiCardHeader class="pb-2">
+            <UiCardTitle class="text-sm font-medium">Total Product Views</UiCardTitle>
+          </UiCardHeader>
+          <UiCardContent>
+            <div class="text-xl font-bold sm:text-2xl">
+              {{ analytics.totalProductsViewed.toLocaleString() }}
+            </div>
+          </UiCardContent>
+        </UiCard>
+      </div>
+
+      <!-- Sales Chart -->
+      <div class="w-full overflow-x-auto">
+        <UiCard class="min-w-0">
+          <UiCardHeader>
+            <div class="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+              <UiCardTitle class="text-md font-medium">Sales Trend</UiCardTitle>
+              <div class="flex items-center space-x-2">
+                <label for="timeRange" class="whitespace-nowrap text-sm font-medium"
+                  >Time Range:</label
+                >
+                <select
+                  v-model="selectedTimeRange"
+                  id="timeRange"
+                  class="w-full rounded border px-2 py-1 text-sm sm:w-auto"
+                >
+                  <option value="30days">Last 30 Days</option>
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
+                  <option value="quarter">This Quarter</option>
+                  <option value="year">This Year</option>
+                </select>
+              </div>
+            </div>
+          </UiCardHeader>
+          <UiCardContent class="overflow-x-auto">
+            <div v-if="chartData.length > 0" class="min-w-[300px]">
+              <UiChartBar
+                :data="chartData"
+                index="date"
+                :categories="['Revenue', 'Orders']"
+                :y-formatter="(tick) => (typeof tick === 'number' ? formatCurrency(tick) : '')"
+                :showLegend="true"
+              />
+            </div>
+            <div v-else class="flex flex-col items-center justify-center py-8 text-center">
+              <Icon name="lucide:bar-chart" class="mb-3 h-12 w-12 text-muted-foreground/50" />
+              <h3 class="text-base font-medium">No Sales Data Available</h3>
+              <p class="mt-2 max-w-md text-sm text-muted-foreground">
+                There are no sales recorded for the selected time period. Try selecting a different
+                time range or check back later.
+              </p>
+            </div>
+          </UiCardContent>
+        </UiCard>
+      </div>
+
+      <!-- Order Type Comparison -->
+      <div class="w-full space-y-4 pt-4">
+        <!-- Chart Title -->
+        <h2 class="px-2 text-center text-lg font-bold sm:text-xl">
+          Comparison of Pre-Orders and Direct Order Items
+        </h2>
+
+        <!-- Chart -->
+        <div v-if="comparisonData.length > 0 && hasOrderData" class="flex justify-center">
+          <UiChartDonut
+            index="name"
+            :category="'Total'"
+            :data="comparisonData"
+            type="pie"
+            class="h-64 w-64 sm:h-80 sm:w-80 md:h-96 md:w-96"
+          />
+        </div>
+
+        <!-- No Data State -->
+        <div v-else class="flex flex-col items-center justify-center px-4 py-8 text-center">
+          <Icon name="lucide:pie-chart" class="mb-3 h-12 w-12 text-muted-foreground/50" />
+          <h3 class="text-base font-medium">No Order Data Available</h3>
+          <p class="mt-2 max-w-md text-sm text-muted-foreground">
+            There are no orders to compare. Start selling products to see the comparison between
+            pre-orders and direct orders.
+          </p>
+        </div>
+
+        <!-- Description -->
+        <p class="px-4 text-center text-sm text-gray-500">
+          This chart compares the total number of pre-orders and direct order items for your
+          organization.
+        </p>
+      </div>
+
+      <!-- Top Products Table -->
+      <div class="w-full overflow-hidden">
+        <UiCard>
+          <UiCardHeader>
+            <UiCardTitle class="text-sm font-medium">Top Performing Products</UiCardTitle>
+          </UiCardHeader>
+          <UiCardContent>
+            <div
+              v-if="analytics.popularProducts && analytics.popularProducts.length > 0"
+              class="-mx-4 overflow-x-auto sm:mx-0"
+            >
+              <div class="min-w-full px-4 sm:px-0">
+                <UiTable>
+                  <UiTableHeader>
+                    <UiTableRow>
+                      <UiTableHead class="w-1/3">Product Name</UiTableHead>
+                      <UiTableHead class="text-right">Views</UiTableHead>
+                      <UiTableHead class="text-right">Orders</UiTableHead>
+                      <UiTableHead class="text-right">Quantity</UiTableHead>
+                      <UiTableHead class="text-right">Revenue</UiTableHead>
+                    </UiTableRow>
+                  </UiTableHeader>
+                  <UiTableBody>
+                    <UiTableRow
+                      v-for="product in analytics.popularProducts"
+                      :key="product.productID"
+                    >
+                      <UiTableCell class="max-w-[150px] truncate font-medium sm:max-w-[250px]">{{
+                        product.name
+                      }}</UiTableCell>
+                      <UiTableCell class="text-right">{{
+                        product.viewCount.toLocaleString()
+                      }}</UiTableCell>
+                      <UiTableCell class="text-right">{{
+                        product.orderCount.toLocaleString()
+                      }}</UiTableCell>
+                      <UiTableCell class="text-right">{{
+                        product.totalQuantitySold.toLocaleString()
+                      }}</UiTableCell>
+                      <UiTableCell class="text-right">{{
+                        formatCurrency(product.totalRevenue)
+                      }}</UiTableCell>
+                    </UiTableRow>
+                  </UiTableBody>
+                </UiTable>
+              </div>
+            </div>
+            <div v-else class="flex flex-col items-center justify-center py-8 text-center">
+              <Icon name="lucide:package" class="mb-3 h-12 w-12 text-muted-foreground/50" />
+              <h3 class="text-base font-medium">No Product Data Available</h3>
+              <p class="mt-2 max-w-md text-sm text-muted-foreground">
+                There are no products with sales data to display yet. As your products start
+                generating views and sales, they will appear here.
+              </p>
+            </div>
+          </UiCardContent>
+        </UiCard>
+      </div>
+    </template>
+  </div>
+</template>
+
 <script setup lang="ts">
   import { useOrganizationAnalytics } from "~/composables/organization/useAnalytics";
 
@@ -40,13 +279,19 @@
   const isRefreshing = ref(false);
   const selectedTimeRange = ref("30days");
 
+  // Check if comparison data has any orders
+  const hasOrderData = computed(() => {
+    if (!comparisonData.value || comparisonData.value.length === 0) return false;
+    const totalOrders = comparisonData.value.reduce((sum, item) => sum + item.Total, 0);
+    return totalOrders > 0;
+  });
+
   const fetchAnalytics = async () => {
     try {
       // Check if data is already cached
       const cachedData = await getOrganizationAnalytics(props.organizationID);
       if (cachedData) {
         analytics.value = cachedData as AnalyticsData;
-        // console.log("Using cached analytics data:", analytics.value);
         status.value = "success";
         return;
       }
@@ -54,7 +299,6 @@
       // If no cached data, fetch from the server
       status.value = "pending";
       analytics.value = (await getOrganizationAnalytics(props.organizationID)) as AnalyticsData;
-      // console.log("Fetched analytics data:", analytics.value);
       status.value = "success";
     } catch (error) {
       console.error("Failed to fetch analytics data:", error);
@@ -165,173 +409,6 @@
     }).format(value);
   };
 </script>
-
-<template>
-  <div class="space-y-6">
-    <!-- Loading State -->
-    <div v-if="status === 'pending'" class="space-y-4">
-      <div class="flex items-center justify-between">
-        <h1 class="text-2xl font-bold">Sales Analytics</h1>
-        <UiButton variant="outline" :disabled="isRefreshing" @click.prevent="refresh">
-          <Icon
-            name="lucide:refresh-cw"
-            class="mr-2 h-4 w-4"
-            :class="{ 'animate-spin': isRefreshing }"
-          />
-          Refresh
-        </UiButton>
-      </div>
-
-      <UiSkeleton class="h-8 w-1/3" />
-      <UiSkeleton class="h-8 w-full" />
-      <UiSkeleton class="h-8 w-full" />
-      <UiSkeleton class="h-8 w-full" />
-      <div class="text-center text-lg font-semibold">Fetching data...</div>
-    </div>
-
-    <!-- Data Loaded -->
-    <template v-else-if="analytics">
-      <div class="flex items-center justify-between">
-        <h1 class="text-2xl font-bold">Sales Analytics</h1>
-        <UiButton variant="outline" :disabled="isRefreshing" @click="refresh">
-          <Icon
-            name="lucide:refresh-cw"
-            class="mr-2 h-4 w-4"
-            :class="{ 'animate-spin': isRefreshing }"
-          />
-          Refresh
-        </UiButton>
-      </div>
-
-      <!-- Summary Cards -->
-      <div class="grid gap-4 md:grid-cols-3">
-        <UiCard>
-          <UiCardHeader>
-            <UiCardTitle class="text-sm font-medium">Total Revenue</UiCardTitle>
-          </UiCardHeader>
-          <UiCardContent>
-            <div class="text-2xl font-bold">
-              {{ formatCurrency(analytics.totalRevenue) }}
-            </div>
-          </UiCardContent>
-        </UiCard>
-        <UiCard>
-          <UiCardHeader>
-            <UiCardTitle class="text-sm font-medium">Total Orders</UiCardTitle>
-          </UiCardHeader>
-          <UiCardContent>
-            <div class="text-2xl font-bold">
-              {{ analytics.totalOrders.toLocaleString() }}
-            </div>
-          </UiCardContent>
-        </UiCard>
-        <UiCard>
-          <UiCardHeader>
-            <UiCardTitle class="text-sm font-medium">Total Product Views</UiCardTitle>
-          </UiCardHeader>
-          <UiCardContent>
-            <div class="text-2xl font-bold">
-              {{ analytics.totalProductsViewed.toLocaleString() }}
-            </div>
-          </UiCardContent>
-        </UiCard>
-      </div>
-
-      <!-- Sales Chart -->
-      <div>
-        <UiCard>
-          <UiCardHeader>
-            <UiCardTitle class="text-md font-medium">Sales Trend</UiCardTitle>
-            <div class="mb-4 flex items-center justify-end">
-              <label for="timeRange" class="mr-2 text-sm font-medium">Time Range:</label>
-              <select
-                v-model="selectedTimeRange"
-                id="timeRange"
-                class="rounded border px-2 py-1 text-sm"
-              >
-                <option value="30days">Last 30 Days</option>
-                <option value="week">This Week</option>
-                <option value="month">This Month</option>
-                <option value="quarter">This Quarter</option>
-                <option value="year">This Year</option>
-              </select>
-            </div>
-          </UiCardHeader>
-          <UiCardContent>
-            <UiChartBar
-              :data="chartData"
-              index="date"
-              :categories="['Revenue', 'Orders']"
-              :y-formatter="(tick) => (typeof tick === 'number' ? formatCurrency(tick) : '')"
-              :showLegend="true"
-            />
-          </UiCardContent>
-        </UiCard>
-      </div>
-
-      <div class="space-y-6 pt-4">
-        <!-- Chart Title -->
-        <h2 class="text-center text-xl font-bold">
-          Comparison of Pre-Orders and Direct Order Items
-        </h2>
-
-        <!-- Chart -->
-        <div class="flex justify-center">
-          <UiChartDonut
-            index="name"
-            :category="'Total'"
-            :data="comparisonData"
-            type="pie"
-            class="h-96 w-96"
-          />
-        </div>
-
-        <!-- Description -->
-        <p class="text-center text-sm text-gray-500">
-          This chart compares the total number of pre-orders and direct order items for your
-          organization.
-        </p>
-      </div>
-
-      <!-- Top Products Table -->
-      <UiCard>
-        <UiCardHeader>
-          <UiCardTitle class="text-sm font-medium">Top Performing Products</UiCardTitle>
-        </UiCardHeader>
-        <UiCardContent>
-          <UiTable>
-            <UiTableHeader>
-              <UiTableRow>
-                <UiTableHead>Product Name</UiTableHead>
-                <UiTableHead class="text-right">Views</UiTableHead>
-                <UiTableHead class="text-right">Total Orders</UiTableHead>
-                <UiTableHead class="text-right">Quantity Sold</UiTableHead>
-                <UiTableHead class="text-right">Revenue</UiTableHead>
-              </UiTableRow>
-            </UiTableHeader>
-            <UiTableBody>
-              <UiTableRow v-for="product in analytics.popularProducts" :key="product.productID">
-                <UiTableCell class="font-medium">{{ product.name }}</UiTableCell>
-                <UiTableCell class="text-right">{{
-                  product.viewCount.toLocaleString()
-                }}</UiTableCell>
-                <UiTableCell class="text-right">{{
-                  product.orderCount.toLocaleString()
-                }}</UiTableCell>
-                <UiTableCell class="text-right">{{
-                  product.totalQuantitySold.toLocaleString()
-                }}</UiTableCell>
-                <UiTableCell class="text-right">{{
-                  formatCurrency(product.totalRevenue)
-                }}</UiTableCell>
-              </UiTableRow>
-            </UiTableBody>
-          </UiTable>
-        </UiCardContent>
-      </UiCard>
-    </template>
-  </div>
-</template>
 
 <style scoped>
   .chart-container {

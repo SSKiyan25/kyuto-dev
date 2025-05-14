@@ -1,4 +1,18 @@
 <template>
+  <Transition name="fade">
+    <div
+      v-if="isPageLoading"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm"
+    >
+      <div class="flex flex-col items-center gap-4 rounded-lg bg-card p-6 shadow-lg">
+        <Icon name="lucide:loader-circle" class="h-12 w-12 animate-spin text-primary" />
+        <div class="text-center">
+          <h3 class="text-lg font-medium">Loading Your Orders</h3>
+          <p class="text-sm text-muted-foreground">Please wait while we fetch your order data...</p>
+        </div>
+      </div>
+    </div>
+  </Transition>
   <div class="flex h-screen w-full flex-col px-4 py-4 sm:px-8">
     <!-- Order Insights Banner -->
     <div class="mb-6 w-full">
@@ -189,50 +203,80 @@
         </template>
       </div>
       <div class="mb-24 flex flex-col py-8">
-        <div class="flex w-[300px] flex-row overflow-x-auto opacity-70 sm:w-full">
-          <template v-for="(status, i) in statuses" :key="i">
-            <UiButton
-              :variant="statusVariant(status.value)"
-              @click="filterOrders(status.value)"
-              class="text-[12px] sm:text-sm"
-              >{{ status.status }}</UiButton
-            >
-          </template>
+        <div class="mb-4 w-full">
+          <div class="relative">
+            <div class="hide-scrollbar flex overflow-x-auto pb-2">
+              <div class="flex space-x-2">
+                <template v-for="(status, i) in statuses" :key="i">
+                  <UiButton
+                    :variant="statusVariant(status.value)"
+                    @click="filterOrders(status.value)"
+                    class="flex-shrink-0 whitespace-nowrap text-[11px] sm:text-sm"
+                  >
+                    <span>{{ status.status }}</span>
+                    <Icon
+                      v-if="selectedStatus === status.value"
+                      name="lucide:check"
+                      class="ml-1 h-3 w-3"
+                    />
+                  </UiButton>
+                </template>
+              </div>
+            </div>
+            <!-- Scroll indicators -->
+            <div
+              class="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-background to-transparent sm:hidden"
+            ></div>
+          </div>
         </div>
         <UiDivider />
         <div class="flex w-full flex-row items-center justify-between pt-3"></div>
-        <div class="w-[300px] overflow-x-auto sm:w-full">
-          <UiDatatable
-            :options="options"
-            :columns="columns"
-            :data="filteredOrders"
-            class="text-[12px] sm:text-sm"
-          >
-            <template #actions="{ cellData }: { cellData: Order & { id: string } }">
-              <UiDropdownMenu>
-                <UiDropdownMenuTrigger as-child>
-                  <UiButton class="h-6 text-[10px] sm:h-7 sm:text-xs"> Actions </UiButton>
-                </UiDropdownMenuTrigger>
-                <UiDropdownMenuContent class="w-32">
-                  <UiDropdownMenuItem @click="openViewOrderDialog(cellData.id)">
-                    <Icon name="lucide:view" class="mr-2" />
-                    View Order
-                  </UiDropdownMenuItem>
-                  <UiDropdownMenuItem
-                    @click="
-                      selectedOrderID = cellData.id;
-                      cancelOrderDialog = true;
-                    "
-                  >
-                    <Icon name="lucide:file-x" class="mr-2" />
-                    Cancel Order
-                  </UiDropdownMenuItem>
-                </UiDropdownMenuContent>
-              </UiDropdownMenu>
+        <div class="w-full overflow-x-auto sm:w-full">
+          <Suspense>
+            <template #default>
+              <UiDatatable
+                :options="options"
+                :columns="columns"
+                :data="filteredOrders"
+                class="text-[12px] sm:text-sm"
+              >
+                <template #actions="{ cellData }: { cellData: Order & { id: string } }">
+                  <UiDropdownMenu>
+                    <UiDropdownMenuTrigger as-child>
+                      <UiButton class="h-6 text-[10px] sm:h-7 sm:text-xs"> Actions </UiButton>
+                    </UiDropdownMenuTrigger>
+                    <UiDropdownMenuContent class="w-32">
+                      <UiDropdownMenuItem @click="openViewOrderDialog(cellData.id)">
+                        <Icon name="lucide:view" class="mr-2" />
+                        View Order
+                      </UiDropdownMenuItem>
+                      <UiDropdownMenuItem
+                        @click="
+                          selectedOrderID = cellData.id;
+                          cancelOrderDialog = true;
+                        "
+                      >
+                        <Icon name="lucide:file-x" class="mr-2" />
+                        Cancel Order
+                      </UiDropdownMenuItem>
+                    </UiDropdownMenuContent>
+                  </UiDropdownMenu>
+                </template>
+              </UiDatatable>
             </template>
-          </UiDatatable>
+            <template #fallback>
+              <div class="flex w-full items-center justify-center py-8">
+                <div class="flex flex-col items-center gap-3">
+                  <Icon
+                    name="lucide:loader-circle"
+                    class="h-8 w-8 animate-spin text-primary sm:h-10 sm:w-10"
+                  />
+                  <span class="text-sm text-muted-foreground">Loading orders data...</span>
+                </div>
+              </div>
+            </template>
+          </Suspense>
         </div>
-        <!-- <MockOrderTable /> -->
       </div>
       <div class="min-h-24"></div>
     </div>
@@ -270,83 +314,172 @@
   </UiAlertDialog>
 
   <UiDialog v-model:open="viewOrderDialog">
-    <UiDialogContent
-      class="sm:max-w-[800px]"
-      title="Order Details"
-      description="Your order details"
-    >
-      <template #content>
-        <div class="max-h-128 space-y-4 overflow-y-auto px-8 py-2">
+    <UiDialogContent class="overflow-hidden p-0 sm:max-w-[800px]">
+      <div class="border-b bg-primary/10 px-6 py-4">
+        <UiDialogTitle class="text-xl font-bold">Order Details</UiDialogTitle>
+        <UiDialogDescription class="text-sm opacity-80">
+          View your complete order information
+        </UiDialogDescription>
+      </div>
+
+      <div class="max-h-[calc(80vh-120px)] overflow-y-auto px-4 py-4 sm:px-6">
+        <!-- Order Header with Status -->
+        <div
+          class="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center"
+        >
           <div>
-            <h3 class="text-lg font-semibold">Order Reference Number</h3>
-            <p class="text-sm">{{ selectedOrder?.uniqRefNumber }}</p>
+            <div class="text-xs uppercase tracking-wide text-muted-foreground">Reference</div>
+            <div class="font-mono text-base font-medium">{{ selectedOrder?.uniqRefNumber }}</div>
           </div>
-          <div>
-            <h3 class="text-md font-semibold">Total Price</h3>
-            <p class="text-sm text-muted-foreground">₱{{ selectedOrder?.totalPrice.toFixed(2) }}</p>
-          </div>
-          <div>
-            <h3 class="text-md font-semibold">Organization Name</h3>
-            <p class="text-sm text-muted-foreground">{{ selectedOrder?.organizationName }}</p>
-          </div>
-          <div>
-            <h3 class="text-md font-semibold">Order Status</h3>
-            <p class="text-sm capitalize text-muted-foreground">{{ selectedOrder?.orderStatus }}</p>
-          </div>
-          <div>
-            <h3 class="text-md font-semibold">Payment Status</h3>
-            <p class="text-sm capitalize text-muted-foreground">
-              {{ selectedOrder?.paymentStatus }}
-            </p>
-          </div>
-          <UiDivider class="my-2" />
-          <div>
-            <h3 class="text-lg font-semibold">Order Items</h3>
+
+          <div class="flex items-center gap-3">
             <div
-              v-for="item in selectedOrder?.orderItems"
-              :key="item.productID"
-              class="mt-4 flex flex-row justify-between space-x-4 text-sm"
+              class="rounded-full px-3 py-1.5 text-xs font-medium"
+              :class="{
+                'bg-yellow-100 text-yellow-800': selectedOrder?.orderStatus === 'pending',
+                'bg-blue-100 text-blue-800': selectedOrder?.orderStatus === 'preparing',
+                'bg-amber-100 text-amber-800': selectedOrder?.orderStatus === 'ready',
+                'bg-green-100 text-green-800': selectedOrder?.orderStatus === 'completed',
+                'bg-red-100 text-red-800': selectedOrder?.orderStatus === 'cancelled',
+              }"
             >
-              <div class="flex flex-row space-x-4">
-                <img
-                  :src="item.productDetails?.featuredPhotoURL || '/placeholder-img.jpg'"
-                  alt="Product Image"
-                  class="h-12 w-12 object-cover"
-                />
-                <div class="flex flex-col">
-                  <p class="font-semibold text-muted-foreground">
-                    Product Name:
-                    <span class="text-secondary-foreground">{{ item.productDetails?.name }}</span>
-                  </p>
-                  <p class="font-semibold text-muted-foreground">
-                    Variation:
-                    <span class="text-secondary-foreground">{{
-                      item.variationDetails?.value
-                    }}</span>
-                  </p>
-                  <p v-if="item.isPreOrder" class="font-semibold">Pre-Ordered</p>
-                </div>
-              </div>
-              <div class="flex flex-col">
-                <p class="font-semibold text-muted-foreground">
-                  Quantity: <span class="text-secondary-foreground">{{ item.quantity }}</span>
-                </p>
-                <p class="font-semibold text-muted-foreground">
-                  Price:
-                  <span class="text-secondary-foreground"
-                    >₱{{ item.priceWithCommission.toFixed(2) }}</span
-                  >
-                </p>
+              <span class="capitalize">{{ selectedOrder?.orderStatus }}</span>
+            </div>
+
+            <div
+              class="rounded-full px-3 py-1.5 text-xs font-medium"
+              :class="{
+                'bg-red-100 text-red-800': selectedOrder?.paymentStatus === 'not_paid',
+                'bg-green-100 text-green-800': selectedOrder?.paymentStatus === 'paid',
+                'bg-gray-100 text-gray-800': !selectedOrder?.paymentStatus,
+              }"
+            >
+              <span class="capitalize">{{ selectedOrder?.paymentStatus }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Organization -->
+        <div class="mb-6 rounded-lg bg-secondary/30 p-4">
+          <div class="flex items-center gap-2">
+            <Icon name="lucide:store" class="h-4 w-4 text-primary" />
+            <span class="text-sm font-medium">{{ selectedOrder?.organizationName }}</span>
+          </div>
+
+          <div class="mt-3 flex flex-col justify-between sm:flex-row">
+            <div>
+              <div class="text-xs text-muted-foreground">Order Date</div>
+              <div class="text-sm">{{ formatDate(selectedOrder?.dateOrdered) }}</div>
+            </div>
+
+            <div>
+              <div class="text-xs text-muted-foreground">Total Amount</div>
+              <div class="text-lg font-bold text-primary">
+                ₱{{ selectedOrder?.totalPrice.toFixed(2) }}
               </div>
             </div>
           </div>
         </div>
-      </template>
-      <template #footer>
-        <div class="flex justify-end">
-          <UiButton variant="destructive" @click="closeViewOrderDialog">Close</UiButton>
+
+        <!-- Items List -->
+        <div>
+          <h3 class="mb-4 flex items-center gap-2 text-lg font-semibold">
+            <Icon name="lucide:shopping-cart" class="h-5 w-5" />
+            Order Items
+          </h3>
+
+          <div class="space-y-4">
+            <div
+              v-for="item in selectedOrder?.orderItems"
+              :key="item.productID"
+              class="overflow-hidden rounded-lg border transition-shadow hover:shadow-sm"
+            >
+              <div class="flex items-center gap-3 p-3">
+                <div class="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-muted/50">
+                  <img
+                    :src="item.productDetails?.featuredPhotoURL || '/placeholder-img.jpg'"
+                    alt="Product Image"
+                    class="h-full w-full object-cover"
+                  />
+                </div>
+
+                <div class="min-w-0 flex-1">
+                  <div class="truncate text-sm font-medium">
+                    {{ item.productDetails?.name }}
+                  </div>
+
+                  <div class="mt-1 text-xs text-muted-foreground">
+                    <span class="inline-flex items-center gap-1">
+                      <span>Variation:</span>
+                      <span class="font-medium">{{ item.variationDetails?.value }}</span>
+                    </span>
+
+                    <span
+                      v-if="item.isPreOrder"
+                      class="ml-2 inline-flex items-center gap-1 rounded-sm bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-800"
+                    >
+                      <Icon name="lucide:clock" class="h-3 w-3" />
+                      Pre-Order
+                    </span>
+                  </div>
+                </div>
+
+                <div class="text-right">
+                  <div class="text-sm font-semibold">
+                    ₱{{ item.priceWithCommission.toFixed(2) }}
+                  </div>
+                  <div class="text-xs text-muted-foreground">Qty: {{ item.quantity }}</div>
+                  <div class="text-xs font-medium text-primary">
+                    ₱{{ (item.priceWithCommission * item.quantity).toFixed(2) }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      </template>
+
+        <!-- Order Summary -->
+        <div class="mt-8 border-t pt-4">
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-muted-foreground">Subtotal</span>
+            <span class="text-sm">₱{{ selectedOrder?.totalPrice.toFixed(2) }}</span>
+          </div>
+          <div class="mt-2 flex items-center justify-between">
+            <span class="text-sm text-muted-foreground">Delivery Fee</span>
+            <span class="text-sm">₱0.00</span>
+          </div>
+          <div class="mt-4 flex items-center justify-between border-t pt-2">
+            <span class="font-medium">Total</span>
+            <span class="text-lg font-bold">₱{{ selectedOrder?.totalPrice.toFixed(2) }}</span>
+          </div>
+        </div>
+
+        <!-- Remarks if available -->
+        <div v-if="selectedOrder?.remarks" class="mt-6 rounded-md bg-muted/30 p-3">
+          <div class="mb-1 text-xs font-medium text-muted-foreground">Remarks</div>
+          <p class="text-sm">{{ selectedOrder.remarks }}</p>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 border-t bg-secondary/30 p-4">
+        <UiButton variant="outline" @click="closeViewOrderDialog">
+          <Icon name="lucide:x" class="mr-2 h-4 w-4" />
+          Close
+        </UiButton>
+
+        <UiButton
+          variant="default"
+          v-if="selectedOrder?.orderStatus === 'pending'"
+          @click="
+            selectedOrderID = selectedOrder?.id;
+            cancelOrderDialog = true;
+            closeViewOrderDialog();
+          "
+        >
+          <Icon name="lucide:file-x" class="mr-2 h-4 w-4" />
+          Cancel Order
+        </UiButton>
+      </div>
     </UiDialogContent>
   </UiDialog>
 </template>
@@ -362,7 +495,7 @@
     middleware: "user-auth",
     layout: "user",
   });
-
+  const isPageLoading = ref(false);
   const recentOrder = ref<
     (Order & { id: string; orderItems: ExtendedOrderItem[]; organizationName: string }) | null
   >(null);
@@ -379,25 +512,35 @@
     isMobile.value = window.innerWidth < 640;
   };
 
-  onMounted(() => {
-    // Fetch and log user orders
-    fetchUserOrders(userID.value).then((userOrders) => {
-      // console.log("User Orders:", userOrders);
+  onMounted(async () => {
+    try {
+      isPageLoading.value = true;
+
+      // Use Promise.all to fetch data in parallel
+      const [userOrders, allOrders] = await Promise.all([
+        fetchUserOrders(userID.value),
+        fetchOrders(userID.value, "all", ""),
+      ]);
+
       orders.value = userOrders;
       filterOrders(selectedStatus.value);
-    });
 
-    refreshLatestOrder();
+      await refreshLatestOrder();
 
-    // Fetch and log all orders with filters
-    fetchOrders(userID.value, "all", "").then((allOrders) => {
-      // console.log("All Orders:", allOrders);
-      orders.value = allOrders;
-      filterOrders(selectedStatus.value);
-    });
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
+      handleResize();
+      window.addEventListener("resize", handleResize);
+    } catch (error) {
+      console.error("Error loading order data:", error);
+      useToast().toast({
+        title: "Error",
+        description: "Failed to load order data. Please try again.",
+        duration: 5000,
+        icon: "lucide:x",
+      });
+    } finally {
+      // Always hide the loading overlay when done
+      isPageLoading.value = false;
+    }
   });
 
   onUnmounted(() => {
@@ -550,35 +693,42 @@
   });
 
   const confirmCancelOrder = async () => {
-    if (selectedOrderID.value) {
-      try {
-        console.log("Cancelling order:", selectedOrderID.value);
-        console.log("Remarks:", cancelRemarks.value);
-
-        await cancelOrder(selectedOrderID.value, cancelRemarks.value);
-        useToast().toast({
-          title: "Order Cancelled",
-          description: "The order has been cancelled successfully.",
-          duration: 5000,
-          icon: "lucide:check",
-        });
-        // Refresh orders after cancellation
-        fetchUserOrders(userID.value).then((userOrders) => {
-          orders.value = userOrders;
-          filterOrders(selectedStatus.value);
-        });
-        cancelRemarks.value = "";
-      } catch (error) {
-        console.error("Error cancelling order: ", error);
-        useToast().toast({
-          title: "Error",
-          description: "There was an error cancelling the order.",
-          duration: 5000,
-          icon: "lucide:x",
-        });
-      }
+    if (!selectedOrderID.value) {
+      cancelOrderDialog.value = false;
+      return;
     }
-    cancelOrderDialog.value = false;
+
+    try {
+      await cancelOrder(selectedOrderID.value, cancelRemarks.value);
+
+      useToast().toast({
+        title: "Order Cancelled",
+        description: "The order has been cancelled successfully.",
+        duration: 5000,
+        icon: "lucide:check",
+      });
+
+      // Refresh orders after cancellation
+      try {
+        const userOrders = await fetchUserOrders(userID.value);
+        orders.value = userOrders;
+        filterOrders(selectedStatus.value);
+      } catch (error) {
+        console.error("Error refreshing orders:", error);
+      }
+
+      cancelRemarks.value = "";
+    } catch (error) {
+      console.error("Error cancelling order:", error);
+      useToast().toast({
+        title: "Error",
+        description: "There was an error cancelling the order.",
+        duration: 5000,
+        icon: "lucide:x",
+      });
+    } finally {
+      cancelOrderDialog.value = false;
+    }
   };
 
   const viewOrderDialog = ref(false);
@@ -587,18 +737,47 @@
   >(null);
 
   const openViewOrderDialog = async (orderID: string) => {
-    const order = orders.value.find((order) => order.id === orderID);
-    if (order) {
-      const orderItems = await fetchOrderItems(orderID);
+    try {
+      // Find the order in the current orders array
+      const order = orders.value.find((order) => order.id === orderID);
 
-      // Extract the organization name from the first order item (assuming all items belong to the same organization)
+      if (!order) {
+        console.error("Order not found:", orderID);
+        useToast().toast({
+          title: "Error",
+          description: "Order not found.",
+          duration: 5000,
+          icon: "lucide:x",
+        });
+        return;
+      }
+
+      // Fetch order items with error handling
+      let orderItems: ExtendedOrderItem[] = [];
+      try {
+        orderItems = await fetchOrderItems(orderID);
+      } catch (error) {
+        console.error("Error fetching order items:", error);
+        orderItems = []; // Fallback to empty array
+      }
+
+      // Extract the organization name from the first order item
       const organizationName =
         orderItems.length > 0
           ? orderItems[0].organizationName || "Unknown Organization"
           : "Unknown Organization";
 
+      // Set the selected order
       selectedOrder.value = { ...order, orderItems, organizationName };
       viewOrderDialog.value = true;
+    } catch (error) {
+      console.error("Error opening view order dialog:", error);
+      useToast().toast({
+        title: "Error",
+        description: "Failed to load order details.",
+        duration: 5000,
+        icon: "lucide:x",
+      });
     }
   };
 
@@ -639,7 +818,7 @@
       title: "<span class='text-[10px] sm:text-sm'>Payment Status</span>",
       data: "paymentStatus",
       responsivePriority: 2,
-      // className: "hidden sm:table-cell",
+      className: "hidden sm:table-cell",
       render: (data: string) => {
         let colorClass = "bg-gray-200 text-gray-800";
         if (data === "not_paid") {
@@ -689,10 +868,59 @@
       details: {
         type: "column",
         target: "tr",
+        renderer: function (api: any, rowIdx: number, columns: any): false | HTMLElement {
+          // Convert columns to array if it's not already
+          const columnsArray = Array.isArray(columns) ? columns : Array.from(columns);
+
+          // Filter hidden columns
+          const hiddenColumns = columnsArray.filter((column: any) => column.hidden);
+
+          if (hiddenColumns.length === 0) {
+            return false;
+          }
+
+          // Create HTML elements to return a proper Node instead of string
+          const container = document.createElement("div");
+          container.className = "p-3 bg-muted/50";
+
+          // Create content for each hidden column
+          hiddenColumns.forEach((column: any) => {
+            const row = document.createElement("div");
+            row.className = "flex justify-between py-2 border-b";
+
+            const title = document.createElement("span");
+            title.className = "font-medium mr-2";
+            title.textContent = column.title.replace(/<[^>]*>/g, "") + ":";
+
+            const data = document.createElement("span");
+            data.innerHTML = column.data || "";
+
+            row.appendChild(title);
+            row.appendChild(data);
+            container.appendChild(row);
+          });
+
+          return container;
+        },
       },
     },
-    autoWidth: true,
+    autoWidth: false,
     select: true,
+    // Define responsive priorities for columns
+    columnDefs: [
+      { responsivePriority: 1, targets: [0, 5] }, // Reference Number and Actions - always show
+      { responsivePriority: 2, targets: [1] }, // Order Status - show if space allows
+      { responsivePriority: 3, targets: [2, 3, 4] }, // Payment, Date, Total - hide first on small screens
+    ],
+    // Set language options for better mobile display
+    language: {
+      paginate: {
+        previous: "←",
+        next: "→",
+      },
+      search: "",
+      searchPlaceholder: "Search...",
+    },
     buttons: [
       {
         extend: "colvis",
@@ -730,7 +958,134 @@
 
   // Utility function to format date
   const formatDate = (timestamp: any): string => {
-    const date = new Date(timestamp.seconds * 1000 + timestamp.nanoseconds / 1000000);
-    return date.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    if (!timestamp || typeof timestamp !== "object" || !timestamp.seconds) {
+      return "N/A";
+    }
+
+    try {
+      const date = new Date(timestamp.seconds * 1000 + (timestamp.nanoseconds || 0) / 1000000);
+      return date.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Invalid date";
+    }
   };
 </script>
+
+<style scoped>
+  /* Custom styles for responsive table */
+  :deep(.dataTable) {
+    width: 100% !important;
+    font-size: 12px;
+  }
+
+  @media (min-width: 640px) {
+    :deep(.dataTable) {
+      font-size: 14px;
+    }
+  }
+
+  /* Improved mobile action buttons */
+  :deep(.buttons-collection) {
+    min-width: auto !important;
+    padding: 0.25rem 0.5rem !important;
+    font-size: 0.75rem !important;
+  }
+
+  /* Better styling for responsive details rows */
+  :deep(.dtr-details) {
+    width: 100%;
+    padding: 0.75rem !important;
+    background-color: rgba(var(--color-muted), 0.5) !important;
+  }
+
+  :deep(.dtr-title) {
+    font-weight: 500;
+    min-width: 120px;
+    color: rgba(var(--color-muted-foreground), 0.9) !important;
+  }
+
+  :deep(.dtr-data) {
+    text-align: right;
+    font-weight: 400;
+  }
+
+  /* Mobile pagination and search controls */
+  @media (max-width: 640px) {
+    :deep(.dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter) {
+      float: none;
+      text-align: left;
+      margin-bottom: 0.5rem;
+    }
+
+    :deep(.dataTables_wrapper .dataTables_filter input) {
+      width: 100%;
+      margin-left: 0;
+      margin-top: 0.25rem;
+    }
+
+    :deep(.dataTables_info) {
+      padding-top: 0.5em;
+      font-size: 0.75rem;
+    }
+
+    :deep(.dataTables_paginate .paginate_button) {
+      padding: 0.25em 0.5em !important;
+      font-size: 0.75rem;
+    }
+
+    /* Make sure the actions dropdown doesn't get cut off */
+    :deep(.dropdown-menu-content) {
+      z-index: 100;
+    }
+
+    /* Improve table cell spacing */
+    :deep(table.dataTable tbody td) {
+      padding: 0.5rem 0.75rem !important;
+    }
+  }
+
+  /* Better DOM structure styling */
+  :deep(.dt-buttons) {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+  }
+
+  :deep(.dt-button) {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    background-color: rgb(var(--color-secondary)) !important;
+    border: 1px solid rgb(var(--color-border)) !important;
+    color: rgb(var(--color-secondary-foreground)) !important;
+  }
+
+  :deep(.dt-button:hover) {
+    background-color: rgb(var(--color-secondary-foreground) / 0.1) !important;
+  }
+
+  /* Hide scrollbars but keep functionality */
+  .hide-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+
+  /* Additional responsive improvements */
+  @media (max-width: 640px) {
+    :deep(.dataTables_wrapper) {
+      padding: 0 !important;
+    }
+
+    /* Smaller action buttons on mobile */
+    :deep(.dropdown-menu-trigger) {
+      padding-left: 0.5rem !important;
+      padding-right: 0.5rem !important;
+    }
+  }
+</style>

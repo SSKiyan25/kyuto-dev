@@ -35,11 +35,11 @@
 </script>
 
 <template>
-  <div class="flex w-full flex-col space-y-6 p-12">
+  <div class="flex w-full flex-col space-y-6 p-4 sm:p-6 md:p-8 lg:p-12">
     <!-- Page Title -->
     <div>
-      <span class="text-2xl font-bold">Dashboard</span>
-      <p class="text-sm text-gray-500">View your organization&apos;s performance and analytics.</p>
+      <span class="text-xl font-bold sm:text-2xl">Dashboard</span>
+      <p class="text-sm text-gray-500">View your organization's performance and analytics.</p>
     </div>
 
     <!-- Analytics Component -->
