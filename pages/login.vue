@@ -137,7 +137,8 @@
         </div>
       </NuxtLink>
       <div class="relative hidden h-full flex-col bg-muted p-10 text-white dark:border-r lg:flex">
-        <div class="absolute inset-0 bg-[#17321A]"></div>
+        <!-- <div class="absolute inset-0 bg-[#17321A]"></div> -->
+        <div class="absolute inset-0 bg-primary"></div>
         <NuxtLink to="/">
           <div class="relative z-20 flex items-center text-lg font-medium">
             <img src="/logo-verch-2.png" alt="logo" class="h-auto w-8" />

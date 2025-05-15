@@ -35,7 +35,7 @@
 </script>
 
 <template>
-  <div class="flex w-full flex-col space-y-6 p-4 sm:p-6 md:p-8 lg:p-12">
+  <div class="mb-12 flex w-full flex-col space-y-6 p-4 sm:p-6 md:p-8 lg:p-12">
     <!-- Page Title -->
     <div>
       <span class="text-xl font-bold sm:text-2xl">Dashboard</span>

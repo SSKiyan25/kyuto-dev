@@ -1,27 +1,35 @@
 <template>
-  <div class="space-y-6 p-6">
-    <!-- Organization Header -->
-    <div class="mb-8 flex items-center justify-between">
-      <div class="flex items-center gap-4">
+  <div class="mb-12 space-y-6 p-4 sm:p-6">
+    <!-- Organization Header - Made responsive -->
+    <div class="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
+      <div class="flex items-center gap-3 sm:gap-4">
         <img
           :src="organization?.logoImageURL || '/placeholder-img.jpg'"
-          class="h-16 w-16 rounded-md object-cover"
+          class="h-12 w-12 shrink-0 rounded-md object-cover sm:h-16 sm:w-16"
         />
         <div>
-          <h1 class="text-2xl font-bold">{{ organization?.name }}</h1>
-          <p class="text-sm text-gray-500">{{ organization?.contactEmail }}</p>
+          <h1 class="text-xl font-bold sm:text-2xl">{{ organization?.name }}</h1>
+          <p class="text-xs text-gray-500 sm:text-sm">{{ organization?.contactEmail }}</p>
         </div>
       </div>
-      <div class="flex flex-row space-x-2">
-        <UiButton @click="refreshData" :disabled="isRefreshing" class="flex items-center p-4">
-          <Icon name="lucide:refresh-cw" class="mr-2" :class="{ 'animate-spin': isRefreshing }" />
-          Refresh
+      <div class="mt-2 flex justify-end sm:mt-0">
+        <UiButton
+          @click="refreshData"
+          :disabled="isRefreshing"
+          class="flex items-center px-3 py-2 sm:p-4"
+        >
+          <Icon
+            name="lucide:refresh-cw"
+            class="mr-1 h-4 w-4 sm:mr-2"
+            :class="{ 'animate-spin': isRefreshing }"
+          />
+          <span class="text-sm">Refresh</span>
         </UiButton>
       </div>
     </div>
 
-    <!-- Commission Summary -->
-    <div v-if="financials" class="grid grid-cols-2 gap-4 md:grid-cols-4">
+    <!-- Commission Summary - Improved mobile layout -->
+    <div v-if="financials" class="xs:grid-cols-2 grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-4">
       <AdminCommissionStatCard
         title="Total Commission"
         :value="financials.totalDue + financials.totalPaid"
@@ -48,12 +56,13 @@
     </div>
     <div v-else class="text-center text-gray-500">Loading financial data...</div>
 
-    <!-- Commission History Table -->
+    <!-- Commission History -->
     <UiCard>
       <UiCardHeader>
         <UiCardTitle>Payment History</UiCardTitle>
       </UiCardHeader>
       <UiCardContent>
+        <!-- Search Box -->
         <div class="mb-6 flex items-center">
           <div class="w-full md:max-w-sm">
             <UiVeeInput
@@ -64,8 +73,57 @@
             />
           </div>
         </div>
-        <UiDatatable :data="filteredCommission" :options="options" />
-        <div v-if="commissionHistory?.length" class="border-t pt-4">
+
+        <!-- Desktop Table View (hidden on mobile) -->
+        <div class="hidden md:block">
+          <UiDatatable :data="filteredCommission" :options="options" />
+        </div>
+
+        <!-- Mobile Card View (visible only on mobile) -->
+        <div class="space-y-4 md:hidden">
+          <div
+            v-for="(payment, index) in filteredCommission"
+            :key="index"
+            class="rounded-lg border bg-card/50 p-3"
+          >
+            <div class="mb-2 flex items-start justify-between">
+              <div class="font-medium">
+                {{ useDateFormat(payment.dateCreated, "MMM DD, YYYY").value }}
+              </div>
+              <div class="font-bold text-primary">{{ formatCurrency(payment.amount) }}</div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-y-2 text-sm">
+              <div class="flex items-center gap-1 text-muted-foreground">
+                <Icon name="lucide:credit-card" class="h-3.5 w-3.5" />
+                <span>Method:</span>
+              </div>
+              <div class="text-right font-medium capitalize">
+                {{ payment.method }}
+              </div>
+
+              <div class="flex items-center gap-1 text-muted-foreground">
+                <Icon name="lucide:hash" class="h-3.5 w-3.5" />
+                <span>Reference:</span>
+              </div>
+              <div class="max-w-[140px] truncate text-right font-medium">
+                {{ payment.reference }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Empty State for Mobile -->
+          <div
+            v-if="filteredCommission.length === 0"
+            class="py-4 text-center text-muted-foreground"
+          >
+            <Icon name="lucide:x-circle" class="mx-auto mb-2 h-8 w-8" />
+            <p>No payment records found</p>
+          </div>
+        </div>
+
+        <!-- Total section (shown on both mobile and desktop) -->
+        <div v-if="commissionHistory?.length" class="mt-4 border-t pt-4">
           <div class="flex items-center justify-between">
             <p class="font-medium">Total Paid:</p>
             <p class="font-medium">
@@ -209,3 +267,16 @@
     },
   };
 </script>
+
+<style scoped>
+  @media (max-width: 640px) {
+    :deep(.ui-card-header) {
+      padding-top: 0.75rem;
+      padding-bottom: 0.75rem;
+    }
+
+    :deep(.ui-card-content) {
+      padding: 0.75rem;
+    }
+  }
+</style>

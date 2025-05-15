@@ -15,12 +15,12 @@ export const useAddToCart = () => {
   ) => {
     error.value = null;
 
-    console.log("Adding to cart...");
-    console.log("accountID:", accountID);
-    console.log("productID:", productID);
-    console.log("variationID:", variationID);
-    console.log("quantity:", quantity);
-    console.log("isPreOrder:", isPreOrder);
+    // console.log("Adding to cart...");
+    // console.log("accountID:", accountID);
+    // console.log("productID:", productID);
+    // console.log("variationID:", variationID);
+    // console.log("quantity:", quantity);
+    // console.log("isPreOrder:", isPreOrder);
     try {
       const cartCollection = collection(db, "accounts", accountID, "cart");
       const cartQuery = query(

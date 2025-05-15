@@ -166,14 +166,6 @@ export const useFetchOrders = () => {
     }
 
     const querySnapshot = await getDocs(q);
-    // console.log("querySnapshot size:", querySnapshot.size);
-    if (querySnapshot.empty) {
-      console.log("No matching documents.");
-    } else {
-      querySnapshot.forEach((doc) => {
-        console.log(doc.id, " => ", doc.data());
-      });
-    }
 
     const orders: (Order & { id: string; orderItems: OrderItem[] })[] = [];
     for (const doc of querySnapshot.docs) {

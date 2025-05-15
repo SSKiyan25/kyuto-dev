@@ -109,21 +109,34 @@
 
   const updateWindowWidth = () => {
     windowWidth.value = window.innerWidth;
+    console.log("Window width:", windowWidth.value);
+    forceRefresh.value++;
   };
 
   // REPLACE your visibleColumns computed property with this implementation
   const visibleColumns = computed(() => {
+    console.log(
+      "Current window width:",
+      windowWidth.value,
+      "Is desktop?",
+      windowWidth.value >= 768
+    );
+    const _ = forceRefresh.value;
     if (windowWidth.value >= 768) {
       // FORCE ALL COLUMNS TO BE VISIBLE ON DESKTOP
+      console.log("Returning all columns for desktop:", columns.length);
       return columns;
     } else {
       // FORCE ONLY NAME, PRICE AND ACTIONS TO BE VISIBLE ON MOBILE
-      return columns.filter((column) => {
+      const mobileColumns = columns.filter((column) => {
         const key = "accessorKey" in column ? column.accessorKey : "";
         return key === "name" || key === "price" || key === "actions";
       });
+      return mobileColumns;
     }
   });
+
+  const forceRefresh = ref(0);
 
   const data = ref<Partial<Product>[]>([]);
   const lastVisible = ref<QueryDocumentSnapshot<DocumentData> | null>(null);
@@ -132,12 +145,15 @@
     {
       accessorKey: "name",
       header: "Name",
-      enableHiding: true,
+      enableHiding: false,
       cell: ({ row }) => {
         // Truncate long names on mobile
         const isSmallScreen = windowWidth.value < 768;
         const name = row.original.name || "";
         return isSmallScreen && name.length > 15 ? `${name.substring(0, 15)}...` : name;
+      },
+      meta: {
+        responsive: true,
       },
     },
     {
@@ -160,11 +176,23 @@
         return h(resolveComponent("UiBadge"), { variant, class: badgeClass }, () => [status]);
       },
       enableHiding: true,
+      meta: {
+        responsive: true,
+      },
     },
     {
       accessorKey: "category",
       header: "Category",
       enableHiding: true,
+      cell: ({ row }) => {
+        const category = row.original.category;
+        // Use a smaller text on mobile screens
+        const isSmallScreen = windowWidth.value < 768;
+        return isSmallScreen ? h("span", { class: "text-xs" }, category) : category;
+      },
+      meta: {
+        responsive: true,
+      },
     },
     {
       accessorKey: "price",
@@ -176,16 +204,37 @@
         const isSmallScreen = windowWidth.value < 768;
         return isSmallScreen ? h("span", { class: "text-xs" }, formattedPrice) : formattedPrice;
       },
+      meta: {
+        responsive: true,
+      },
     },
     {
       accessorKey: "stock",
       header: "Remaining Stocks",
       enableHiding: true,
+      cell: ({ row }) => {
+        const stock = row.original.stock;
+        // Use a smaller text on mobile screens
+        const isSmallScreen = windowWidth.value < 768;
+        return isSmallScreen ? h("span", { class: "text-xs" }, stock) : stock;
+      },
+      meta: {
+        responsive: true,
+      },
     },
     {
       accessorKey: "date",
       header: "Date",
       enableHiding: true,
+      cell: ({ row }) => {
+        const date = row.original.date;
+        // Use a smaller text on mobile screens
+        const isSmallScreen = windowWidth.value < 768;
+        return isSmallScreen ? h("span", { class: "text-xs" }, date) : date;
+      },
+      meta: {
+        responsive: true,
+      },
     },
     {
       accessorKey: "actions",
@@ -541,6 +590,7 @@
         <div class="-mx-2 overflow-x-hidden px-2 sm:mx-0 sm:px-0">
           <UiTanStackTable
             @ready="table = $event"
+            :key="windowWidth >= 768 ? 'desktop' : 'mobile'"
             ref="tableRef"
             :search="search"
             :data="data"
@@ -595,7 +645,7 @@
         </div>
       </div>
 
-      <!-- Product Detail Dialog - Fixed to be more mobile friendly -->
+      <!-- Product Detail Dialog - mobile friendly -->
       <UiDialog v-model:open="showDetailDialog">
         <UiDialogContent
           class="max-h-[95vh] w-[95vw] max-w-[350px] overflow-y-auto sm:max-w-[450px]"

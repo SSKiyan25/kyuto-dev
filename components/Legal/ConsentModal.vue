@@ -1,144 +1,175 @@
 <template>
   <UiDialog :open="isOpen" @update:open="">
-    <UiDialogContent
-      class="max-h-[80vh] max-w-[85vh] overflow-y-auto rounded-lg bg-white p-6 shadow-lg dark:bg-gray-800"
-    >
-      <UiDialogHeader class="mb-2">
-        <UiDialogTitle class="text-2xl font-bold text-gray-900 dark:text-gray-100">
+    <UiDialogContent class="max-h-[90vh] w-full max-w-md overflow-y-auto sm:max-w-lg md:max-w-xl">
+      <UiDialogHeader class="space-y-1.5 text-center sm:text-left">
+        <UiDialogTitle class="text-xl font-bold sm:text-2xl">
           Terms & Privacy Agreement
         </UiDialogTitle>
+        <UiDialogDescription>
+          Please review and accept our terms before continuing
+        </UiDialogDescription>
       </UiDialogHeader>
 
-      <LegalContent>
+      <div class="legal-container mt-4 max-h-[50vh] overflow-y-auto rounded-md border p-4">
         <!-- Terms Section -->
-        <h2 class="mb-2 mt-2 text-xl font-semibold text-gray-800 dark:text-gray-200">
-          Terms of Service
-        </h2>
-        <p class="mb-4 text-gray-700 dark:text-gray-300">
-          <strong>Academic Purpose:</strong><br />
-          - This platform is a Computer Science thesis project at Visayas State University<br />
-          - Not for commercial use
-        </p>
+        <div class="mb-6 rounded-lg border bg-card/40 p-4">
+          <div class="flex items-center gap-3 border-b pb-3">
+            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+              <Icon name="lucide:file-text" class="h-4 w-4 text-primary" />
+            </div>
+            <h2 class="text-lg font-semibold">Terms of Service</h2>
+          </div>
 
-        <p class="mb-4 text-gray-700 dark:text-gray-300">
-          <strong>User Obligations:</strong><br />
-          - Provide accurate academic information<br />
-          - No fraudulent orders
-        </p>
+          <div class="mt-3 space-y-3 text-sm">
+            <div class="space-y-1">
+              <p class="font-medium">Academic Purpose:</p>
+              <p class="flex gap-2">
+                <Icon name="lucide:check" class="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+                <span
+                  >This platform is a Computer Science thesis project at Visayas State
+                  University</span
+                >
+              </p>
+              <p class="flex gap-2">
+                <Icon name="lucide:check" class="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+                <span>Not for commercial use</span>
+              </p>
+            </div>
 
-        <p class="mb-4 text-gray-700 dark:text-gray-300">
-          <strong>Liability:</strong><br />
-          - No warranty for system downtime<br />
-        </p>
+            <div class="space-y-1">
+              <p class="font-medium">User Obligations:</p>
+              <p class="flex gap-2">
+                <Icon name="lucide:check" class="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+                <span>Provide accurate academic information</span>
+              </p>
+              <p class="flex gap-2">
+                <Icon name="lucide:check" class="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+                <span>No fraudulent orders</span>
+              </p>
+            </div>
 
-        <p class="mb-4 text-gray-700 dark:text-gray-300">
-          <strong>Governing Law:</strong><br />
-          - Republic Act 10173 (Philippine Data Privacy Act)
-        </p>
+            <div class="space-y-1">
+              <p class="font-medium">Liability:</p>
+              <p class="flex gap-2">
+                <Icon name="lucide:check" class="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+                <span>No warranty for system downtime</span>
+              </p>
+            </div>
 
-        <p class="mb-6 text-gray-700 dark:text-gray-300">
-          We do not use tracking cookies. Session data is stored locally for login purposes only.
-        </p>
+            <div class="space-y-1">
+              <p class="font-medium">Governing Law:</p>
+              <p class="flex gap-2">
+                <Icon name="lucide:check" class="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+                <span>Republic Act 10173 (Philippine Data Privacy Act)</span>
+              </p>
+            </div>
+          </div>
+        </div>
 
         <!-- Privacy Section -->
-        <h2 class="mb-2 mt-6 text-xl font-semibold text-gray-800 dark:text-gray-200">
-          Privacy Policy
-        </h2>
-        <p class="mb-4 text-gray-700 dark:text-gray-300">
-          <strong>Controller:</strong><br />
-          Joshua A. Sosmeña<br />
-          Computer Science Thesis Project<br />
-          Visayas State University<br />
-          Contact: 20-1-01709@vsu.edu.ph
-        </p>
+        <div class="mb-6 rounded-lg border bg-card/40 p-4">
+          <div class="flex items-center gap-3 border-b pb-3">
+            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+              <Icon name="lucide:shield" class="h-4 w-4 text-primary" />
+            </div>
+            <h2 class="text-lg font-semibold">Privacy Policy</h2>
+          </div>
 
-        <p class="mb-4 text-gray-700 dark:text-gray-300">
-          <strong>Data Collected:</strong><br />
-          - Name, Email, Phone Number<br />
-          - Student ID (optional), Course (e.g., BSCS), Faculty (e.g., Faculty of Engineering)
-        </p>
+          <div class="mt-3 space-y-3 text-sm">
+            <div class="space-y-1">
+              <p class="font-medium">Controller:</p>
+              <p>
+                Joshua A. Sosmeña<br />Computer Science Thesis Project<br />
+                Visayas State University<br />Contact: 20-1-01709@vsu.edu.ph
+              </p>
+            </div>
 
-        <p class="mb-4 text-gray-700 dark:text-gray-300">
-          <strong>Purpose:</strong><br />
-          - Order fulfillment and delivery coordination<br />
-          - Account authentication via Google
-        </p>
+            <div class="space-y-1">
+              <p class="font-medium">Data Collected:</p>
+              <p class="flex gap-2">
+                <Icon name="lucide:check" class="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+                <span>Name, Email, Phone Number</span>
+              </p>
+              <p class="flex gap-2">
+                <Icon name="lucide:check" class="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+                <span>Student ID (optional), Course (e.g., BSCS), Faculty</span>
+              </p>
+            </div>
 
-        <p class="mb-4 text-gray-700 dark:text-gray-300">
-          <strong>Third Parties:</strong><br />
-          - Google Authentication (only for sign-in)<br />
-          - No payment processors used (manual GCash receipts only)
-        </p>
-
-        <p class="mb-4 text-gray-700 dark:text-gray-300">
-          <strong>Security:</strong><br />
-          - HTTPS encryption<br />
-          - Role-based access controls<br />
-          - Regular security audits (ISO 25010 aligned)
-        </p>
-
-        <p class="mb-4 text-gray-700 dark:text-gray-300">
-          <strong>Your Rights:</strong><br />
-          - Request data access/correction via 20-1-01709@vsu.edu.ph (15-day response)<br />
-          - Delete account permanently
-        </p>
-
-        <p class="mb-6 text-gray-700 dark:text-gray-300">
-          <strong>Breach Protocol:</strong><br />
-          - Immediate notification via email if data is compromised
-        </p>
+            <div class="space-y-1">
+              <p class="font-medium">Security:</p>
+              <p class="flex gap-2">
+                <Icon name="lucide:check" class="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+                <span>HTTPS encryption, Role-based access controls</span>
+              </p>
+              <p class="flex gap-2">
+                <Icon name="lucide:check" class="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+                <span>Regular security audits (ISO 25010 aligned)</span>
+              </p>
+            </div>
+          </div>
+        </div>
 
         <!-- Incident Response Section -->
-        <h2 class="mb-2 mt-6 text-xl font-semibold text-gray-800 dark:text-gray-200">
-          Incident Response
-        </h2>
-        <ol class="mb-6 list-inside list-decimal text-gray-700 dark:text-gray-300">
-          <li>Immediately disable compromised accounts</li>
-          <li>Notify affected users via email within 72 hours</li>
-          <li>Document details for thesis defense reporting</li>
-        </ol>
+        <div class="rounded-lg border bg-card/40 p-4">
+          <div class="flex items-center gap-3 border-b pb-3">
+            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+              <Icon name="lucide:alert-triangle" class="h-4 w-4 text-primary" />
+            </div>
+            <h2 class="text-lg font-semibold">Incident Response</h2>
+          </div>
 
-        <p class="italic text-gray-600 dark:text-gray-400">Last Updated: April 20, 2025</p>
-      </LegalContent>
+          <div class="mt-3 space-y-2 text-sm">
+            <p class="flex gap-2">
+              <span
+                class="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary"
+                >1</span
+              >
+              <span>Immediately disable compromised accounts</span>
+            </p>
+            <p class="flex gap-2">
+              <span
+                class="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary"
+                >2</span
+              >
+              <span>Notify affected users via email within 72 hours</span>
+            </p>
+            <p class="flex gap-2">
+              <span
+                class="flex h-5 w-5 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary"
+                >3</span
+              >
+              <span>Document details for thesis defense reporting</span>
+            </p>
+          </div>
+        </div>
+
+        <p class="mt-4 text-center text-xs text-muted-foreground">Last Updated: April 20, 2025</p>
+      </div>
 
       <!-- Checkboxes -->
-      <div class="mt-6 space-y-4">
-        <label class="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            v-model="consentTerms"
-            required
-            class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-          />
-          <span class="text-gray-700 dark:text-gray-300">I agree to the Terms of Service</span>
+      <div class="mt-6 space-y-3">
+        <label class="flex cursor-pointer items-start gap-2">
+          <UiCheckbox v-model:checked="consentTerms" required />
+          <span class="text-sm"
+            >I have read and agree to the
+            <span class="font-medium text-primary">Terms of Service</span></span
+          >
         </label>
 
-        <label class="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            v-model="consentPrivacy"
-            required
-            class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-          />
-          <span class="text-gray-700 dark:text-gray-300">I accept the Privacy Policy</span>
+        <label class="flex cursor-pointer items-start gap-2">
+          <UiCheckbox v-model:checked="consentPrivacy" required />
+          <span class="text-sm"
+            >I understand and accept the
+            <span class="font-medium text-primary">Privacy Policy</span></span
+          >
         </label>
       </div>
 
       <!-- Footer Buttons -->
-      <UiDialogFooter class="mt-6 flex justify-end space-x-4">
-        <UiButton
-          @click="$emit('accept')"
-          :disabled="!isValid"
-          class="rounded-md bg-blue-500 px-4 py-2 text-white hover:bg-blue-600 disabled:opacity-50"
-        >
-          Continue
-        </UiButton>
-        <UiButton
-          @click="$emit('cancel')"
-          class="rounded-md bg-gray-300 px-4 py-2 text-gray-800 hover:bg-gray-400"
-        >
-          Cancel
-        </UiButton>
+      <UiDialogFooter class="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <UiButton variant="outline" @click="$emit('cancel')"> Cancel </UiButton>
+        <UiButton @click="$emit('accept')" :disabled="!isValid"> Continue </UiButton>
       </UiDialogFooter>
     </UiDialogContent>
   </UiDialog>
@@ -151,3 +182,23 @@
 
   const isValid = computed(() => consentTerms.value && consentPrivacy.value);
 </script>
+
+<style scoped>
+  .legal-container {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(155, 155, 155, 0.5) transparent;
+  }
+
+  .legal-container::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .legal-container::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .legal-container::-webkit-scrollbar-thumb {
+    background-color: rgba(155, 155, 155, 0.5);
+    border-radius: 20px;
+  }
+</style>

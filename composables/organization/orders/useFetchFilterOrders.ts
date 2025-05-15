@@ -96,7 +96,7 @@ export const useFetchFilterOrders = () => {
     organizationID: string,
     orderStatus: string = "all"
   ): Promise<ExtendedOrder[]> => {
-    console.log("Fetching filtered orders for organization: ", organizationID);
+    // console.log("Fetching filtered orders for organization: ", organizationID);
     const orders: ExtendedOrder[] = [];
     try {
       const ordersRef = collection(db, "orders");
@@ -111,7 +111,7 @@ export const useFetchFilterOrders = () => {
       }
 
       const querySnapshot = await getDocs(q);
-      console.log("Total orders fetched: ", querySnapshot.docs.length);
+      // console.log("Total orders fetched: ", querySnapshot.docs.length);
       for (const doc of querySnapshot.docs) {
         const order = doc.data() as Order;
         // console.log("Processing order: ", order);

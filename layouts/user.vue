@@ -268,7 +268,7 @@
   const auth = useFirebaseAuth();
   const userDocRef = computed(() => (user.value ? doc(db, "accounts", user.value.uid) : null));
   const userData = useDocument<Partial<Account>>(userDocRef) as Partial<Account> | undefined;
-  console.log("userData", userData);
+  // console.log("userData", userData);
 
   const cartCount = ref(0);
 

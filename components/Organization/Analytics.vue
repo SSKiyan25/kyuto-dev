@@ -1,5 +1,5 @@
 <template>
-  <div class="max-w-full space-y-6 overflow-hidden">
+  <div class="mb-12 max-w-full space-y-6 overflow-hidden">
     <!-- Loading State -->
     <div v-if="status === 'pending'" class="space-y-4">
       <div class="flex flex-col justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
@@ -175,53 +175,99 @@
         </p>
       </div>
 
-      <!-- Top Products Table -->
+      <!-- Top Products Table - Mobile Friendly Version -->
       <div class="w-full overflow-hidden">
         <UiCard>
           <UiCardHeader>
             <UiCardTitle class="text-sm font-medium">Top Performing Products</UiCardTitle>
           </UiCardHeader>
           <UiCardContent>
-            <div
-              v-if="analytics.popularProducts && analytics.popularProducts.length > 0"
-              class="-mx-4 overflow-x-auto sm:mx-0"
-            >
-              <div class="min-w-full px-4 sm:px-0">
-                <UiTable>
-                  <UiTableHeader>
-                    <UiTableRow>
-                      <UiTableHead class="w-1/3">Product Name</UiTableHead>
-                      <UiTableHead class="text-right">Views</UiTableHead>
-                      <UiTableHead class="text-right">Orders</UiTableHead>
-                      <UiTableHead class="text-right">Quantity</UiTableHead>
-                      <UiTableHead class="text-right">Revenue</UiTableHead>
-                    </UiTableRow>
-                  </UiTableHeader>
-                  <UiTableBody>
-                    <UiTableRow
-                      v-for="product in analytics.popularProducts"
-                      :key="product.productID"
-                    >
-                      <UiTableCell class="max-w-[150px] truncate font-medium sm:max-w-[250px]">{{
-                        product.name
-                      }}</UiTableCell>
-                      <UiTableCell class="text-right">{{
-                        product.viewCount.toLocaleString()
-                      }}</UiTableCell>
-                      <UiTableCell class="text-right">{{
-                        product.orderCount.toLocaleString()
-                      }}</UiTableCell>
-                      <UiTableCell class="text-right">{{
-                        product.totalQuantitySold.toLocaleString()
-                      }}</UiTableCell>
-                      <UiTableCell class="text-right">{{
-                        formatCurrency(product.totalRevenue)
-                      }}</UiTableCell>
-                    </UiTableRow>
-                  </UiTableBody>
-                </UiTable>
+            <div v-if="analytics.popularProducts && analytics.popularProducts.length > 0">
+              <!-- Desktop Table View (hidden on mobile) -->
+              <div class="-mx-4 hidden overflow-x-auto sm:mx-0 sm:block">
+                <div class="min-w-full px-4 sm:px-0">
+                  <UiTable>
+                    <UiTableHeader>
+                      <UiTableRow>
+                        <UiTableHead class="w-1/3">Product Name</UiTableHead>
+                        <UiTableHead class="text-right">Views</UiTableHead>
+                        <UiTableHead class="text-right">Orders</UiTableHead>
+                        <UiTableHead class="text-right">Quantity</UiTableHead>
+                        <UiTableHead class="text-right">Revenue</UiTableHead>
+                      </UiTableRow>
+                    </UiTableHeader>
+                    <UiTableBody>
+                      <UiTableRow
+                        v-for="product in analytics.popularProducts"
+                        :key="product.productID"
+                      >
+                        <UiTableCell class="max-w-[150px] truncate font-medium sm:max-w-[250px]">
+                          {{ product.name }}
+                        </UiTableCell>
+                        <UiTableCell class="text-right">
+                          {{ product.viewCount.toLocaleString() }}
+                        </UiTableCell>
+                        <UiTableCell class="text-right">
+                          {{ product.orderCount.toLocaleString() }}
+                        </UiTableCell>
+                        <UiTableCell class="text-right">
+                          {{ product.totalQuantitySold.toLocaleString() }}
+                        </UiTableCell>
+                        <UiTableCell class="text-right">
+                          {{ formatCurrency(product.totalRevenue) }}
+                        </UiTableCell>
+                      </UiTableRow>
+                    </UiTableBody>
+                  </UiTable>
+                </div>
+              </div>
+
+              <!-- Mobile Card View (visible only on mobile) -->
+              <div class="space-y-3 sm:hidden">
+                <div
+                  v-for="product in analytics.popularProducts"
+                  :key="product.productID"
+                  class="rounded-lg border bg-card/50 p-3"
+                >
+                  <h3 class="mb-2 truncate text-sm font-medium">{{ product.name }}</h3>
+                  <div class="grid grid-cols-2 gap-y-2 text-xs">
+                    <div class="flex items-center gap-1">
+                      <Icon name="lucide:eye" class="h-3.5 w-3.5 text-muted-foreground" />
+                      <span class="text-muted-foreground">Views:</span>
+                    </div>
+                    <div class="text-right font-medium">
+                      {{ product.viewCount.toLocaleString() }}
+                    </div>
+
+                    <div class="flex items-center gap-1">
+                      <Icon name="lucide:shopping-cart" class="h-3.5 w-3.5 text-muted-foreground" />
+                      <span class="text-muted-foreground">Orders:</span>
+                    </div>
+                    <div class="text-right font-medium">
+                      {{ product.orderCount.toLocaleString() }}
+                    </div>
+
+                    <div class="flex items-center gap-1">
+                      <Icon name="lucide:package" class="h-3.5 w-3.5 text-muted-foreground" />
+                      <span class="text-muted-foreground">Quantity:</span>
+                    </div>
+                    <div class="text-right font-medium">
+                      {{ product.totalQuantitySold.toLocaleString() }}
+                    </div>
+
+                    <div class="flex items-center gap-1">
+                      <Icon name="lucide:banknote" class="h-3.5 w-3.5 text-muted-foreground" />
+                      <span class="text-muted-foreground">Revenue:</span>
+                    </div>
+                    <div class="text-right font-medium text-primary">
+                      {{ formatCurrency(product.totalRevenue) }}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
+
+            <!-- No Data State (remains unchanged) -->
             <div v-else class="flex flex-col items-center justify-center py-8 text-center">
               <Icon name="lucide:package" class="mb-3 h-12 w-12 text-muted-foreground/50" />
               <h3 class="text-base font-medium">No Product Data Available</h3>

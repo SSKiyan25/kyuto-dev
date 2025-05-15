@@ -244,7 +244,7 @@
     fetchOrganizationData();
   });
 
-  console.log("Organization id:", organizationIdParams);
+  // console.log("Organization id:", organizationIdParams);
   const organizationPath = `/organization/${organizationIdParams}`;
   const organizationID = organizationIdParams;
 

@@ -263,7 +263,7 @@
   const { editProfile } = useEditProfile();
 
   const submitProfile = handleProfileSubmit(async (values) => {
-    console.log("Profile Form Submitted:", values);
+    // console.log("Profile Form Submitted:", values);
     await editProfile(userID.value, values);
     closeProfileDialog(true);
   });

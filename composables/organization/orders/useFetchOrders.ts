@@ -86,7 +86,7 @@ export const useFetchOrders = () => {
 
   // Fetch orders for a chosen product
   const fetchProductOrders = async (productID: string): Promise<ExtendedOrder[]> => {
-    console.log("Fetching orders for product: ", productID);
+    // console.log("Fetching orders for product: ", productID);
     const orders: ExtendedOrder[] = [];
     try {
       const ordersRef = collection(db, "orders");
@@ -129,7 +129,7 @@ export const useFetchOrders = () => {
     } catch (error) {
       console.error("Error fetching organization orders:", error);
     }
-    console.log("Fetched Orders:", orders);
+    // console.log("Fetched Orders:", orders);
     return orders;
   };
 
@@ -147,7 +147,7 @@ export const useFetchOrders = () => {
 
         if (currentStatus !== "claimed" && currentStatus !== "cancelled") {
           await updateDoc(orderRef, { orderStatus });
-          console.log(`Order ${order.id} status set to ${orderStatus}`);
+          // console.log(`Order ${order.id} status set to ${orderStatus}`);
         } else {
           console.log(`Order ${order.id} status is ${currentStatus}, not updating`);
         }

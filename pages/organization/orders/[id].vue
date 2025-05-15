@@ -1,17 +1,17 @@
 <template>
   <div class="mb-24 flex h-screen w-full flex-col p-2">
-    <div class="flex h-auto w-full flex-col items-start p-4">
-      <div class="flex w-full flex-row items-center justify-between gap-1">
+    <div class="flex h-auto flex-col items-start p-2 sm:p-4">
+      <div class="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex flex-col space-y-2">
-          <span class="text-2xl font-semibold">Orders</span>
-          <span class="text-sm text-muted-foreground">
+          <span class="text-xl font-semibold sm:text-2xl">Orders</span>
+          <span class="text-xs text-muted-foreground sm:text-sm">
             View and manage all orders associated with your products.
           </span>
         </div>
 
         <UiDialog v-model:open="productsDialog">
           <UiDialogTrigger as-child>
-            <UiButton>Choose a Product</UiButton>
+            <UiButton class="mt-2 sm:mt-0">Choose a Product</UiButton>
           </UiDialogTrigger>
           <UiDialogContent
             class="overflow-y-auto sm:max-h-[600px] sm:max-w-[800px]"
@@ -86,20 +86,22 @@
       </div>
       <div v-if="orders.length > 0 && selectedProduct" class="w-full">
         <div class="my-4 flex w-full flex-col justify-center">
-          <span class="text-lg font-medium">{{ selectedProduct?.name }}</span>
+          <span class="text-sm font-medium sm:text-lg">{{ selectedProduct?.name }}</span>
           <UiDivider class="my-2" />
-          <div>
+
+          <!-- Desktop table (hidden on mobile) -->
+          <div class="hidden overflow-x-auto pb-2 md:block">
             <UiTable>
               <UiTableCaption>List of your product's variations order summary</UiTableCaption>
               <UiTableHeader>
                 <UiTableRow>
-                  <UiTableHead>Variation Name</UiTableHead>
-                  <UiTableHead>Price</UiTableHead>
-                  <UiTableHead>Remaining Stocks</UiTableHead>
-                  <UiTableHead>Reserved Orders</UiTableHead>
-                  <UiTableHead>Pre-Ordered Stocks</UiTableHead>
-                  <UiTableHead>Fulfilled Orders</UiTableHead>
-                  <UiTableHead>Cancelled Orders</UiTableHead>
+                  <UiTableHead class="whitespace-nowrap">Variation Name</UiTableHead>
+                  <UiTableHead class="whitespace-nowrap">Price</UiTableHead>
+                  <UiTableHead class="whitespace-nowrap">Stocks</UiTableHead>
+                  <UiTableHead class="whitespace-nowrap">Reserved</UiTableHead>
+                  <UiTableHead class="whitespace-nowrap">Pre-Ordered</UiTableHead>
+                  <UiTableHead class="whitespace-nowrap">Fulfilled</UiTableHead>
+                  <UiTableHead class="whitespace-nowrap">Cancelled</UiTableHead>
                 </UiTableRow>
               </UiTableHeader>
               <UiTableBody class="last:border-b">
@@ -136,80 +138,177 @@
               </UiTableFooter>
             </UiTable>
           </div>
+
+          <!-- Mobile cards (visible only on mobile) -->
+          <div class="block space-y-4 md:hidden">
+            <p class="mb-2 text-center text-sm text-muted-foreground">Variations order summary</p>
+
+            <!-- Variation cards -->
+            <div
+              v-for="summary in variationSummaries"
+              :key="summary.variationName"
+              class="rounded-lg border p-3 shadow-sm"
+            >
+              <h3 class="mb-2 border-b pb-2 text-base font-medium">{{ summary.variationName }}</h3>
+
+              <div class="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span class="text-muted-foreground">Price:</span>
+                  <span class="font-medium">₱ {{ summary.price }}</span>
+                </div>
+
+                <div>
+                  <span class="text-muted-foreground">Stocks:</span>
+                  <span class="font-medium">{{ summary.remainingStocks }}</span>
+                </div>
+
+                <div>
+                  <span class="text-muted-foreground">Reserved:</span>
+                  <span class="font-medium">{{ summary.reservedStocks }}</span>
+                </div>
+
+                <div>
+                  <span class="text-muted-foreground">Pre-Ordered:</span>
+                  <span class="font-medium">{{ summary.preOrderStocks }}</span>
+                </div>
+
+                <div>
+                  <span class="text-muted-foreground">Fulfilled:</span>
+                  <span class="font-medium">{{ summary.completedOrders }}</span>
+                </div>
+
+                <div>
+                  <span class="text-muted-foreground">Cancelled:</span>
+                  <span class="font-medium">{{ summary.cancelledOrders }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Totals card -->
+            <div class="rounded-lg border bg-secondary/20 p-3 shadow-sm">
+              <h3 class="mb-2 border-b pb-2 text-base font-medium">Totals</h3>
+
+              <div class="grid grid-cols-2 gap-2 text-sm">
+                <div>
+                  <span class="text-muted-foreground">Stocks:</span>
+                  <span class="font-medium">
+                    {{
+                      variationSummaries.reduce((acc, summary) => acc + summary.remainingStocks, 0)
+                    }}
+                  </span>
+                </div>
+
+                <div>
+                  <span class="text-muted-foreground">Reserved:</span>
+                  <span class="font-medium">
+                    {{
+                      variationSummaries.reduce((acc, summary) => acc + summary.reservedStocks, 0)
+                    }}
+                  </span>
+                </div>
+
+                <div>
+                  <span class="text-muted-foreground">Pre-Ordered:</span>
+                  <span class="font-medium">
+                    {{
+                      variationSummaries.reduce((acc, summary) => acc + summary.preOrderStocks, 0)
+                    }}
+                  </span>
+                </div>
+
+                <div>
+                  <span class="text-muted-foreground">Fulfilled:</span>
+                  <span class="font-medium">
+                    {{
+                      variationSummaries.reduce((acc, summary) => acc + summary.completedOrders, 0)
+                    }}
+                  </span>
+                </div>
+
+                <div>
+                  <span class="text-muted-foreground">Cancelled:</span>
+                  <span class="font-medium">
+                    {{
+                      variationSummaries.reduce((acc, summary) => acc + summary.cancelledOrders, 0)
+                    }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="space-x-4">
-          <UiButton variant="outline" @click="setPendingOrdersToPreparing"
-            >Set Pending Orders to Preparing</UiButton
-          >
-          <UiButton class="bg-blue-400" @click="setPendingOrdersToReady"
-            >Set Pending Orders to Ready</UiButton
-          >
+        <div class="mt-4 flex flex-col space-y-2 sm:flex-row sm:space-x-4 sm:space-y-0">
+          <UiButton variant="outline" class="w-full sm:w-auto" @click="setPendingOrdersToPreparing">
+            Set Pending Orders to Preparing
+          </UiButton>
+          <UiButton class="w-full bg-blue-400 sm:w-auto" @click="setPendingOrdersToReady">
+            Set Pending Orders to Ready
+          </UiButton>
         </div>
       </div>
       <UiDivider class="my-4" />
+
       <!-- Display the overall order summary for the organization -->
-      <div
-        class="flex h-auto w-full flex-row flex-wrap gap-4 rounded-md bg-secondary p-4 shadow-md"
-      >
-        <div class="flex w-2/12 flex-row items-center space-x-2">
-          <Icon name="lucide:briefcase" class="h-6 w-6 text-muted-foreground" />
-          <span class="text-sm text-muted-foreground">Orders Summary</span>
+      <div class="my-4 w-full">
+        <div class="mb-2 flex items-center space-x-2">
+          <Icon name="lucide:briefcase" class="h-5 w-5 text-muted-foreground" />
+          <span class="text-sm font-medium md:text-base">Orders Summary</span>
         </div>
-        <div class="h-12">
-          <UiDivider orientation="vertical" class="bg-black" />
-        </div>
-        <div class="flex w-2/12 flex-col justify-center">
-          <span class="text-[12px] text-muted-foreground">Total Orders</span>
-          <span v-if="!loadingFetchingOrgOrdersSummary" class="text-sm font-semibold">{{
-            organizationOrderSummary.totalOrders
-          }}</span>
-          <Icon
-            v-if="loadingFetchingOrgOrdersSummary"
-            name="lucide:loader-circle"
-            class="h-4 w-4 animate-spin text-primary"
-          />
-        </div>
-        <div class="h-12">
-          <UiDivider orientation="vertical" class="bg-black" />
-        </div>
-        <div class="flex w-2/12 flex-col justify-center">
-          <span class="text-[12px] text-muted-foreground">Pending Orders</span>
-          <span v-if="!loadingFetchingOrgOrdersSummary" class="text-sm font-semibold">{{
-            organizationOrderSummary.pendingOrders
-          }}</span>
-          <Icon
-            v-if="loadingFetchingOrgOrdersSummary"
-            name="lucide:loader-circle"
-            class="h-4 w-4 animate-spin text-primary"
-          />
-        </div>
-        <div class="h-12">
-          <UiDivider orientation="vertical" class="bg-black" />
-        </div>
-        <div class="flex w-2/12 flex-col justify-center">
-          <span class="text-[12px] text-muted-foreground">Fulfilled Orders</span>
-          <span v-if="!loadingFetchingOrgOrdersSummary" class="text-sm font-semibold">{{
-            organizationOrderSummary.completedOrders
-          }}</span>
-          <Icon
-            v-if="loadingFetchingOrgOrdersSummary"
-            name="lucide:loader-circle"
-            class="h-4 w-4 animate-spin text-primary"
-          />
-        </div>
-        <div class="h-12">
-          <UiDivider orientation="vertical" class="bg-black" />
-        </div>
-        <div class="flex w-2/12 flex-col justify-center">
-          <span class="text-[12px] text-muted-foreground">Cancelled Orders</span>
-          <span v-if="!loadingFetchingOrgOrdersSummary" class="text-sm font-semibold">{{
-            organizationOrderSummary.cancelledOrders
-          }}</span>
-          <Icon
-            v-if="loadingFetchingOrgOrdersSummary"
-            name="lucide:loader-circle"
-            class="h-4 w-4 animate-spin text-primary"
-          />
+
+        <div
+          class="grid grid-cols-2 gap-3 rounded-md bg-secondary p-4 shadow-md sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4"
+        >
+          <!-- Total Orders -->
+          <div class="flex flex-col space-y-1 rounded-md bg-white/50 p-2">
+            <span class="text-xs text-muted-foreground">Total Orders</span>
+            <span v-if="!loadingFetchingOrgOrdersSummary" class="text-sm font-semibold">
+              {{ organizationOrderSummary.totalOrders }}
+            </span>
+            <Icon
+              v-if="loadingFetchingOrgOrdersSummary"
+              name="lucide:loader-circle"
+              class="h-4 w-4 animate-spin text-primary"
+            />
+          </div>
+
+          <!-- Pending Orders -->
+          <div class="flex flex-col space-y-1 rounded-md bg-white/50 p-2">
+            <span class="text-xs text-muted-foreground">Pending Orders</span>
+            <span v-if="!loadingFetchingOrgOrdersSummary" class="text-sm font-semibold">
+              {{ organizationOrderSummary.pendingOrders }}
+            </span>
+            <Icon
+              v-if="loadingFetchingOrgOrdersSummary"
+              name="lucide:loader-circle"
+              class="h-4 w-4 animate-spin text-primary"
+            />
+          </div>
+
+          <!-- Fulfilled Orders -->
+          <div class="flex flex-col space-y-1 rounded-md bg-white/50 p-2">
+            <span class="text-xs text-muted-foreground">Fulfilled Orders</span>
+            <span v-if="!loadingFetchingOrgOrdersSummary" class="text-sm font-semibold">
+              {{ organizationOrderSummary.completedOrders }}
+            </span>
+            <Icon
+              v-if="loadingFetchingOrgOrdersSummary"
+              name="lucide:loader-circle"
+              class="h-4 w-4 animate-spin text-primary"
+            />
+          </div>
+
+          <!-- Cancelled Orders -->
+          <div class="flex flex-col space-y-1 rounded-md bg-white/50 p-2">
+            <span class="text-xs text-muted-foreground">Cancelled Orders</span>
+            <span v-if="!loadingFetchingOrgOrdersSummary" class="text-sm font-semibold">
+              {{ organizationOrderSummary.cancelledOrders }}
+            </span>
+            <Icon
+              v-if="loadingFetchingOrgOrdersSummary"
+              name="lucide:loader-circle"
+              class="h-4 w-4 animate-spin text-primary"
+            />
+          </div>
         </div>
       </div>
       <UiDivider />
@@ -218,7 +317,7 @@
       </div>
       <div class="flex w-full flex-col gap-2 p-4">
         <!-- Paid and Total Commission -->
-        <div class="flex justify-between text-xs">
+        <div class="flex justify-between text-xs sm:text-sm">
           <span>
             ₱{{ commissionData.paidCommission.toLocaleString() }} / ₱{{
               totalCommission.toLocaleString()
@@ -234,16 +333,26 @@
         </div>
 
         <!-- Unpaid Commission -->
-        <div class="flex justify-between text-xs text-gray-500">
+        <div class="flex justify-between text-xs text-gray-500 sm:text-sm">
           <span>Unpaid</span>
           <span>₱{{ commissionData.unpaidCommission.toLocaleString() }}</span>
         </div>
       </div>
-      <OrganizationOrdersData
-        v-if="orgIDparams"
-        :organizationID="orgIDparams"
-        @update-commission="fetchCommissionData"
-      />
+      <div class="hidden w-full md:block">
+        <OrganizationOrdersData
+          v-if="orgIDparams"
+          :organizationID="orgIDparams"
+          @update-commission="fetchCommissionData"
+        />
+      </div>
+
+      <div class="block md:hidden">
+        <OrganizationMobileOrdersData
+          v-if="orgIDparams"
+          :organizationID="orgIDparams"
+          @update-commission="fetchCommissionData"
+        />
+      </div>
     </div>
 
     <div
@@ -277,7 +386,10 @@
 <script lang="ts" setup>
   import { useFetchOrders } from "~/composables/organization/orders/useFetchOrders";
   import { useTrackCommission } from "~/composables/organization/useTrackCommission";
-  import type { ExtendedOrder } from "~/composables/organization/orders/useFetchOrders";
+  import type {
+    ExtendedOrder,
+    ExtendedOrderItem,
+  } from "~/composables/organization/orders/useFetchFilterOrders";
   import type { Product, Variation } from "~/types/models/Product";
 
   definePageMeta({

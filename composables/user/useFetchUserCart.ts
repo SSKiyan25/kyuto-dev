@@ -9,7 +9,7 @@ export const useFetchUserCart = (userID: string) => {
 
   const fetchUserCart = async () => {
     // console.log("Fetching user cart...");
-    console.log("Fetching user cart for userID:", userID);
+    // console.log("Fetching user cart for userID:", userID);
     error.value = null;
     try {
       const userDocRef = doc(db, "accounts", userID);

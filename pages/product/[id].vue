@@ -176,10 +176,17 @@
             <!-- Pre-Order -->
             <UiDrawer>
               <UiDrawerTrigger as-child>
-                <UiButton class="w-full flex-1" size="lg" variant="outline" @click="handlePreOrder">
-                  <Icon name="lucide:clock" class="mr-2 h-4 w-4" />
-                  Pre-Order
-                </UiButton>
+                <UiDrawerTrigger as-child>
+                  <UiButton
+                    class="h-12 w-full flex-1 p-2 text-base sm:h-auto sm:p-4"
+                    size="lg"
+                    variant="outline"
+                    @click="handlePreOrder"
+                  >
+                    <Icon name="lucide:clock" class="mr-2 h-5 w-5" />
+                    Pre-Order
+                  </UiButton>
+                </UiDrawerTrigger>
               </UiDrawerTrigger>
               <UiDrawerContent>
                 <div class="mx-auto w-full max-w-md rounded-t-lg p-6">
@@ -248,6 +255,7 @@
                         :disabled="!selectedVariationPreOrder || quantityPreOrder === 0"
                         :loading="loadingButton"
                         @click="submitAddToCart(true)"
+                        class="h-12 text-base sm:h-auto"
                       >
                         <Icon name="lucide:shopping-cart" class="mr-2 h-4 w-4" />
                         Add to Cart
@@ -261,7 +269,11 @@
             <!-- Add to Cart -->
             <UiDrawer>
               <UiDrawerTrigger as-child>
-                <UiButton class="w-full flex-1" size="lg" @click="handleAddToCart">
+                <UiButton
+                  class="h-12 w-full flex-1 p-2 text-base sm:h-auto sm:p-4"
+                  size="lg"
+                  @click="handleAddToCart"
+                >
                   <Icon name="lucide:shopping-cart" class="mr-2 h-4 w-4" />
                   Add to Cart
                 </UiButton>
@@ -353,6 +365,7 @@
                         :disabled="!selectedVariationAddToCart || quantityAddToCart === 0"
                         :loading="loadingButton"
                         @click="submitAddToCart(false)"
+                        class="h-12 text-base sm:h-auto"
                       >
                         <Icon name="lucide:shopping-cart" class="mr-2 h-4 w-4" />
                         Add to Cart
@@ -489,7 +502,7 @@
     productID.value ? doc(collection(db, "products"), productID.value as string) : null
   );
   const { data: product, pending } = useDocument<Partial<Product>>(productRef);
-  console.log("Data: ", product);
+  // console.log("Data: ", product);
   const allPhotos = computed(() => {
     const prod = unref(product);
     return prod ? [prod.featuredPhotoURL, ...(prod.photosURL ?? [])] : [];

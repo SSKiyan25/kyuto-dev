@@ -1,13 +1,13 @@
 <template>
   <UiCard>
-    <UiCardHeader class="flex flex-row items-center justify-between space-y-0 pb-2">
-      <UiCardTitle class="text-sm font-medium">
+    <UiCardHeader class="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2">
+      <UiCardTitle class="text-xs font-medium sm:text-sm">
         {{ title }}
       </UiCardTitle>
       <Icon :name="icon" class="h-4 w-4 text-muted-foreground" />
     </UiCardHeader>
     <UiCardContent>
-      <div class="text-2xl font-bold">
+      <div class="text-lg font-bold sm:text-2xl">
         <template v-if="typeof value === 'number'"> ₱{{ value.toLocaleString() }} </template>
         <template v-else>
           {{ value }}

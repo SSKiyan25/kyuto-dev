@@ -60,7 +60,7 @@
 
   const { editProfile } = useEditProfile();
   const submitStudent = handleStudentSubmit(async (values) => {
-    console.log("Student Form Submitted:", values);
+    // console.log("Student Form Submitted:", values);
     await editProfile(props.userID as string, values);
     closeStudentDialog(true);
   });

@@ -1,10 +1,14 @@
 <template>
   <UiDivider class="my-4" />
-  <div class="flex flex-row pt-8 opacity-70">
+  <div class="flex flex-row flex-wrap gap-2 pt-8 opacity-70">
     <template v-for="status in statuses" :key="status.value">
-      <UiButton :variant="statusVariant(status.value)" @click="fetchOrders(status.value)">{{
-        status.status
-      }}</UiButton>
+      <UiButton
+        :variant="statusVariant(status.value)"
+        @click="fetchOrders(status.value)"
+        class="mb-2 text-xs sm:text-sm"
+      >
+        {{ status.status }}
+      </UiButton>
     </template>
   </div>
   <UiDivider />
@@ -32,158 +36,232 @@
       <span class="text-lg text-gray-600">Loading orders...</span>
     </div>
   </div>
+  <!-- Desktop version dialog -->
   <UiDialog v-model:open="viewOrderDialog">
     <UiDialogContent
-      class="overflow-y-auto bg-secondary sm:max-h-[750px] sm:max-w-[750px]"
-      title="View Reference Number Order Details"
-      description="Testing if it works"
-      :hideClose="hideClose"
+      class="overflow-y-auto bg-card sm:max-h-[750px] sm:max-w-[750px]"
+      :title="`Order: ${selectedOrder?.uniqRefNumber || ''}`"
+      :hideClose="statusLoading"
     >
       <template #content>
+        <!-- Loading overlay -->
         <div
           v-if="statusLoading"
-          class="absolute flex h-full w-full flex-col items-center justify-center bg-secondary-foreground/10 px-12"
+          class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-secondary-foreground/10 backdrop-blur-sm"
         >
-          <Icon name="lucide:loader-circle" class="h-24 w-24 animate-spin text-primary" />
-          <p>Updating Status...</p>
+          <Icon name="lucide:loader-circle" class="h-20 w-20 animate-spin text-primary" />
+          <p class="mt-4 font-medium">Updating order status...</p>
         </div>
-        <div class="flex flex-col gap-2 p-4">
-          <div class="flex flex-row items-center gap-1">
-            <span class="text-sm text-muted-foreground">Order ID:</span>
-            <span class="text-lg font-semibold">{{ selectedOrder?.uniqRefNumber }}</span>
-          </div>
-          <div class="flex flex-row items-center justify-between gap-1">
-            <div class="flex flex-row items-center gap-1">
-              <span class="text-sm text-muted-foreground">Order Date:</span>
-              <span class="text-md font-semibold">{{
-                formatDate(selectedOrder?.dateOrdered)
-              }}</span>
+
+        <!-- Order details -->
+        <div class="flex flex-col gap-4">
+          <!-- Status badges -->
+          <div class="flex flex-wrap items-center gap-2">
+            <div :class="getStatusClass(selectedOrder?.orderStatus || '')">
+              <Icon name="lucide:box" class="mr-1 h-3 w-3" />
+              {{ selectedOrder?.orderStatus }}
             </div>
-            <div class="flex flex-row items-center gap-1">
-              <span class="text-sm text-muted-foreground">Order Status:</span>
-              <span class="text-md font-semibold capitalize">{{ selectedOrder?.orderStatus }}</span>
+            <div :class="getPaymentClass(selectedOrder?.paymentStatus || '')">
+              <Icon name="lucide:credit-card" class="mr-1 h-3 w-3" />
+              {{
+                selectedOrder?.paymentStatus === "not_paid"
+                  ? "Unpaid"
+                  : selectedOrder?.paymentStatus
+              }}
+            </div>
+            <div class="rounded bg-secondary px-2 py-1 text-xs text-secondary-foreground">
+              <Icon name="lucide:calendar" class="mr-1 h-3 w-3" />
+              {{ formatDate(selectedOrder?.dateOrdered) }}
             </div>
           </div>
-          <hr />
-          <div class="flex flex-col gap-2">
-            <span class="text-md font-semibold">Order Details</span>
-            <div class="flex flex-col gap-2 px-8">
+
+          <!-- Customer info -->
+          <div class="rounded-lg border bg-card/50 p-3">
+            <h3 class="mb-2 flex items-center gap-2 font-medium">
+              <Icon name="lucide:user" class="h-4 w-4 text-muted-foreground" />
+              Customer Information
+            </h3>
+            <div class="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+              <div class="flex justify-between sm:block">
+                <span class="text-muted-foreground">Name:</span>
+                <span>{{
+                  [
+                    selectedOrder?.buyerAccountDetails?.firstname,
+                    selectedOrder?.buyerAccountDetails?.lastname,
+                  ]
+                    .filter(Boolean)
+                    .join(" ") || "N/A"
+                }}</span>
+              </div>
+              <div class="flex justify-between sm:block">
+                <span class="text-muted-foreground">Email:</span>
+                <span>{{ selectedOrder?.buyerAccountDetails?.email || "N/A" }}</span>
+              </div>
+              <div class="flex justify-between sm:block">
+                <span class="text-muted-foreground">Phone:</span>
+                <span>{{ selectedOrder?.buyerAccountDetails?.phoneNumber || "N/A" }}</span>
+              </div>
+              <div class="flex justify-between sm:block">
+                <span class="text-muted-foreground">Student ID:</span>
+                <span>{{ selectedOrder?.buyerAccountDetails?.studentID || "N/A" }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Order items -->
+          <div class="rounded-lg border bg-card/50 p-3">
+            <h3 class="mb-2 flex items-center gap-2 font-medium">
+              <Icon name="lucide:shopping-cart" class="h-4 w-4 text-muted-foreground" />
+              Order Items
+            </h3>
+            <div class="space-y-3">
               <div
                 v-for="item in selectedOrder?.orderItems"
                 :key="item.productID"
-                class="flex flex-row items-center justify-between"
+                class="flex items-start justify-between gap-2 border-b pb-2 text-sm"
               >
-                <span class="text-sm">
-                  {{ item.productDetails?.name }}
-                  <span v-if="item.variationDetails?.value"
-                    >({{ item.variationDetails.value }})</span
-                  >
-                  <span v-if="item.isPreOrder">: Pre-Order</span>
-                  x {{ item.quantity }}
+                <div class="flex-1">
+                  <p class="font-medium">{{ item.productDetails?.name || "Unknown Product" }}</p>
+                  <div class="flex gap-2 text-xs text-muted-foreground">
+                    <span v-if="item.variationDetails?.value">{{
+                      item.variationDetails.value
+                    }}</span>
+                    <span
+                      v-if="item.isPreOrder"
+                      class="rounded-sm bg-primary px-1 text-primary-foreground"
+                      >Pre-Order</span
+                    >
+                    <span>× {{ item.quantity }}</span>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <p>₱{{ (item.priceWithCommission * item.quantity).toFixed(2) }}</p>
+                  <p class="text-xs text-muted-foreground">₱{{ item.priceWithCommission }} each</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Order summary -->
+            <div class="mt-3 space-y-2 border-t pt-2">
+              <div class="flex justify-between text-sm">
+                <span class="text-muted-foreground">Subtotal:</span>
+                <span>₱{{ Number(computeSubtotal(selectedOrder?.orderItems)).toFixed(2) }}</span>
+              </div>
+              <div v-if="selectedOrder?.discountValue" class="flex justify-between text-sm">
+                <span class="text-muted-foreground">Discount:</span>
+                <span>₱{{ selectedOrder?.discountValue }}</span>
+              </div>
+              <div class="flex justify-between text-sm font-bold">
+                <span>Total:</span>
+                <span>₱{{ Number(selectedOrder?.totalPrice).toFixed(2) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Payment info -->
+          <div class="rounded-lg border bg-card/50 p-3">
+            <h3 class="mb-2 flex items-center gap-2 font-medium">
+              <Icon name="lucide:credit-card" class="h-4 w-4 text-muted-foreground" />
+              Payment Information
+            </h3>
+            <div class="grid grid-cols-1 gap-2 text-sm">
+              <div class="flex justify-between">
+                <span class="text-muted-foreground">Method:</span>
+                <span class="capitalize">{{ selectedOrder?.paymentMethod || "N/A" }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-muted-foreground">Status:</span>
+                <span :class="getPaymentTextClass(selectedOrder?.paymentStatus || '')">
+                  {{
+                    selectedOrder?.paymentStatus === "not_paid"
+                      ? "Unpaid"
+                      : selectedOrder?.paymentStatus
+                  }}
                 </span>
-                <span class="text-sm">₱{{ item.priceWithCommission }}</span>
-              </div>
-              <div class="flex flex-row items-center justify-end gap-2">
-                <span class="text-sm text-muted-foreground">Subtotal: </span>
-                <span class="text-sm font-medium"
-                  >₱{{ Number(computeSubtotal(selectedOrder?.orderItems)).toFixed(2) }}</span
-                >
               </div>
             </div>
-            <UiDivider />
-            <div class="flex flex-row items-center justify-between gap-2 px-8">
-              <span class="text-sm text-muted-foreground">Discount: </span>
-              <span class="text-sm">₱{{ selectedOrder?.discountValue }}</span>
+          </div>
+
+          <!-- Remarks -->
+          <div v-if="selectedOrder?.remarks" class="rounded-lg border bg-card/50 p-3">
+            <h3 class="mb-2 flex items-center gap-2 font-medium">
+              <Icon name="lucide:message-square" class="h-4 w-4 text-muted-foreground" />
+              Order Remarks
+            </h3>
+            <p class="text-sm text-muted-foreground">{{ selectedOrder?.remarks }}</p>
+          </div>
+
+          <!-- Status change actions -->
+          <div class="rounded-lg border bg-card/50 p-3">
+            <h3 class="mb-3 flex items-center gap-2 font-medium">
+              <Icon name="lucide:settings" class="h-4 w-4 text-muted-foreground" />
+              Order Actions
+            </h3>
+
+            <div v-if="selectedOrder?.orderStatus === 'cancelled'" class="text-sm text-red-500">
+              This order has been cancelled and cannot be modified.
             </div>
-            <div class="flex flex-row items-center justify-between gap-2 px-8">
-              <span class="text-sm text-muted-foreground">Total Payment: </span>
-              <span class="text-sm font-bold"
-                >₱{{ Number(selectedOrder?.totalPrice).toFixed(2) }}</span
+
+            <div v-else class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <!-- Ready button -->
+              <UiButton
+                v-if="selectedOrder?.orderStatus === 'pending'"
+                variant="outline"
+                class="w-full justify-start"
+                size="sm"
+                @click="handleMarkAsReady"
               >
-            </div>
-          </div>
-          <hr />
-          <div class="flex flex-col gap-2">
-            <span class="text-lg font-semibold">Customer Information</span>
-            <div class="flex flex-col gap-2 px-8">
-              <div class="flex flex-row items-center justify-between">
-                <span class="text-sm text-muted-foreground">Customer</span>
-                <span class="text-sm"
-                  >{{ selectedOrder?.buyerAccountDetails?.firstname }}
-                  {{ selectedOrder?.buyerAccountDetails?.lastname }}</span
-                >
-              </div>
-              <div class="flex flex-row items-center justify-between">
-                <span class="text-sm text-muted-foreground">Email</span>
-                <span class="text-sm">{{ selectedOrder?.buyerAccountDetails?.email }}</span>
-              </div>
-              <div class="flex flex-row items-center justify-between">
-                <span class="text-sm text-muted-foreground">Phone</span>
-                <span class="text-sm">{{ selectedOrder?.buyerAccountDetails?.phoneNumber }}</span>
-              </div>
-              <div class="flex flex-row items-center justify-between">
-                <span class="text-sm text-muted-foreground">Student ID</span>
-                <span class="text-sm font-semibold">{{
-                  selectedOrder?.buyerAccountDetails?.studentID
-                }}</span>
-              </div>
-            </div>
-          </div>
-          <hr />
-          <div class="flex flex-col gap-2">
-            <span class="text-lg font-semibold">Payment Information</span>
-            <div class="flex flex-col gap-2 px-8">
-              <span class="text-sm text-muted-foreground">{{ selectedOrder?.paymentMethod }}</span>
-              <span class="text-sm text-muted-foreground">{{ selectedOrder?.paymentStatus }}</span>
-            </div>
-          </div>
-          <UiDivider />
-          <div v-if="selectedOrder?.remarks !== ''" class="flex flex-col gap-2">
-            <span class="text-lg font-semibold">Order Remarks</span>
-            <p class="text-sm text-gray-600">{{ selectedOrder?.remarks }}</p>
-          </div>
-          <UiDivider />
-          <div class="flex flex-col gap-2">
-            <span class="text-lg font-semibold">Actions</span>
-            <div class="flex flex-col gap-2">
-              <div v-if="selectedOrder?.orderStatus === 'cancelled'" class="text-red-500">
-                Order has already been cancelled.
-              </div>
-              <div v-else>
-                <div class="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    :checked="selectedOrder?.orderStatus === 'ready'"
-                    @change="handleMarkAsReady"
-                    :disabled="selectedOrder?.orderStatus === 'cancelled'"
-                  />
-                  <span>Mark as Ready to Get</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    :checked="selectedOrder?.paymentStatus === 'paid'"
-                    @change="handleMarkAsPaid"
-                    :disabled="selectedOrder?.orderStatus === 'cancelled'"
-                  />
-                  <span>Mark as Paid Order</span>
-                </div>
-                <div class="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    :checked="selectedOrder?.orderStatus === 'completed'"
-                    @change="handleMarkAsClaimed"
-                    :disabled="selectedOrder?.orderStatus === 'cancelled'"
-                  />
-                  <span>Mark as Claimed Order</span>
-                </div>
-              </div>
+                <Icon name="lucide:package-check" class="mr-2 h-4 w-4" />
+                Mark as Ready
+              </UiButton>
+
+              <!-- Claimed button -->
+              <UiButton
+                v-if="selectedOrder?.orderStatus === 'ready'"
+                variant="outline"
+                class="w-full justify-start"
+                size="sm"
+                @click="handleMarkAsClaimed"
+              >
+                <Icon name="lucide:check-circle" class="mr-2 h-4 w-4" />
+                Mark as Claimed
+              </UiButton>
+
+              <!-- Paid button -->
+              <UiButton
+                v-if="
+                  selectedOrder?.paymentStatus !== 'paid' &&
+                  selectedOrder?.orderStatus !== 'cancelled'
+                "
+                variant="outline"
+                class="w-full justify-start"
+                size="sm"
+                @click="handleMarkAsPaid"
+              >
+                <Icon name="lucide:credit-card" class="mr-2 h-4 w-4" />
+                Mark as Paid
+              </UiButton>
+
+              <!-- Cancel button -->
+              <UiButton
+                v-if="
+                  selectedOrder?.orderStatus !== 'cancelled' &&
+                  selectedOrder?.orderStatus !== 'completed'
+                "
+                variant="destructive"
+                class="w-full justify-start"
+                size="sm"
+                @click="viewCancelOrder(selectedOrder as ExtendedOrder)"
+              >
+                <Icon name="lucide:x-circle" class="mr-2 h-4 w-4" />
+                Cancel Order
+              </UiButton>
             </div>
           </div>
         </div>
       </template>
       <template #footer>
-        <UiButton @click="closeDialog" :disabled="isCheckboxMarked">Close</UiButton>
+        <UiButton @click="closeDialog" :disabled="statusLoading">Close</UiButton>
       </template>
     </UiDialogContent>
   </UiDialog>
@@ -546,5 +624,31 @@
     responsive: true,
     autoWidth: true,
     select: true,
+  };
+
+  // Add these styling helper methods
+  const getStatusClass = (status: string) => {
+    let baseClass = "flex items-center rounded px-2 py-1 text-xs capitalize";
+    if (status === "pending") return `${baseClass} bg-yellow-200 text-yellow-800`;
+    if (status === "cancelled") return `${baseClass} bg-red-200 text-red-800`;
+    if (status === "completed") return `${baseClass} bg-green-200 text-green-800`;
+    if (status === "ready") return `${baseClass} bg-blue-200 text-blue-800`;
+    if (status === "preparing") return `${baseClass} bg-purple-200 text-purple-800`;
+    return `${baseClass} bg-gray-200 text-gray-800`;
+  };
+
+  const getPaymentClass = (status: string) => {
+    let baseClass = "flex items-center rounded px-2 py-1 text-xs capitalize";
+    if (status === "paid") return `${baseClass} bg-green-200 text-green-800`;
+    if (status === "not_paid") return `${baseClass} bg-red-200 text-red-800`;
+    if (status === "partial") return `${baseClass} bg-yellow-200 text-yellow-800`;
+    return `${baseClass} bg-gray-200 text-gray-800`;
+  };
+
+  const getPaymentTextClass = (status: string) => {
+    if (status === "paid") return "text-green-600";
+    if (status === "not_paid") return "text-red-600";
+    if (status === "partial") return "text-amber-600";
+    return "";
   };
 </script>
