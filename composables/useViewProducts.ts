@@ -1,3 +1,4 @@
+import { useAddProductViews } from "~/composables/useAddProductViews";
 import { collection, getDocs, limit, orderBy, query, startAfter, where } from "firebase/firestore";
 import type { ProductWithId, Variation } from "~/types/models/Product";
 
@@ -6,6 +7,7 @@ export const useViewProducts = () => {
   const products = ref<ProductWithId[]>([]);
   const loading = ref(false);
   const CACHE_KEY = "cachedProducts";
+  const { countViews } = useAddProductViews();
 
   const loadImage = (url: string): Promise<void> => {
     return new Promise((resolve, reject) => {
@@ -59,16 +61,22 @@ export const useViewProducts = () => {
       } else if (sortBy === "top-sales") {
         productsQuery = query(productsQuery, orderBy("totalSales", "desc"));
       }
+      // For "popular" we'll sort by view count after fetching
 
       // Get total count of products
       const totalSnapshot = await getDocs(productsQuery);
       const totalProducts = totalSnapshot.size;
 
       // Apply limit and orderBy
-      productsQuery = query(productsQuery, orderBy("dateCreated", "desc"), limit(limitCount));
+      if (sortBy !== "popular") {
+        productsQuery = query(productsQuery, orderBy("dateCreated", "desc"), limit(limitCount));
+      } else {
+        // For popular, we need to fetch all and sort manually later
+        productsQuery = query(productsQuery, orderBy("dateCreated", "desc"));
+      }
 
       // Calculate the offset
-      if (page > 1) {
+      if (page > 1 && sortBy !== "popular") {
         const offset = (page - 1) * limitCount;
         const snapshot = await getDocs(productsQuery);
         const lastVisible = snapshot.docs[offset - 1];
@@ -100,6 +108,28 @@ export const useViewProducts = () => {
           } as ProductWithId;
         })
       );
+
+      // Handle "popular" sort by using view counts
+      if (sortBy === "popular") {
+        // Fetch view counts for all products
+        const productsWithViews = await Promise.all(
+          enhancedProducts.map(async (product) => {
+            const viewCount = await countViews(product.id);
+            return { ...product, viewCount };
+          })
+        );
+
+        // Sort by view count descending
+        productsWithViews.sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0));
+
+        // Apply pagination manually since we couldn't use Firestore's pagination for this case
+        const startIndex = (page - 1) * limitCount;
+        const paginatedProducts = productsWithViews.slice(startIndex, startIndex + limitCount);
+
+        // Update enhancedProducts with the paginated results
+        enhancedProducts.length = 0;
+        enhancedProducts.push(...paginatedProducts);
+      }
 
       if (sortPrice === "lowest") {
         enhancedProducts.sort((a, b) => a.price - b.price);

@@ -472,13 +472,41 @@
     }
   };
 
-  const viewOrder = (order: ExtendedOrder) => {
-    selectedOrder.value = order;
+  const viewOrder = async (order: ExtendedOrder) => {
+    // Fetch the latest order data directly from the database
+    loading.value = true;
+    try {
+      const freshOrderData = await fetchOrderDetails(order.id);
+      if (freshOrderData) {
+        selectedOrder.value = freshOrderData;
+        // Also update the order in the list to keep the table in sync
+        updateOrderInList(freshOrderData);
+      } else {
+        selectedOrder.value = order;
+      }
+    } catch (error) {
+      console.error("Error fetching fresh order data:", error);
+      selectedOrder.value = order; // Fallback to the provided order
+    } finally {
+      loading.value = false;
+    }
     viewOrderDialog.value = true;
   };
 
-  const viewCancelOrder = (order: ExtendedOrder) => {
-    selectedOrder.value = order;
+  const viewCancelOrder = async (order: ExtendedOrder) => {
+    // Fetch fresh data before showing the cancel dialog
+    try {
+      const freshOrderData = await fetchOrderDetails(order.id);
+      if (freshOrderData) {
+        selectedOrder.value = freshOrderData;
+        updateOrderInList(freshOrderData);
+      } else {
+        selectedOrder.value = order;
+      }
+    } catch (error) {
+      console.error("Error fetching fresh order data:", error);
+      selectedOrder.value = order;
+    }
     viewCancelDialog.value = true;
   };
 

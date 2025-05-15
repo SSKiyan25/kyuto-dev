@@ -452,7 +452,6 @@
   const nextIcon = "lucide:chevron-right";
   const loadingProducts = ref(false);
   const productViewCounts = reactive<Record<string, number>>({});
-  const user = ref<User | null>(null);
 
   const handleProductClick = (productID: string) => {
     // console.log("Product clicked:", productID);
@@ -461,7 +460,6 @@
 
   const fetchProductViewCounts = async () => {
     // console.log("Fetching product view counts...");
-
     if (!products.value || products.value.length === 0) {
       // console.log("No products found to fetch view counts.");
       return;
@@ -590,21 +588,6 @@
       item.isActive = i === 0; // Set "All" to active
     });
     applyFilters();
-  };
-
-  const productsSection = ref<HTMLElement | null>(null);
-
-  const scrollToProducts = () => {
-    // Find the products section - targeting the container with flex-grow class
-    const targetElement = document.querySelector(".mx-auto.mb-20.flex.w-11/12.flex-col");
-
-    if (targetElement) {
-      // Scroll to the products section with smooth behavior
-      targetElement.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }
   };
 
   watch([selectedCategories, sortPrice, showAs], applyFilters);
