@@ -71,7 +71,7 @@
                       </div>
 
                       <!-- User Menu - Only shown when logged in -->
-                      <template v-if="user && user.id">
+                      <template v-if="user">
                         <UiGradientDivider class="my-5" />
                         <span class="font-bold">User Menu</span>
 
