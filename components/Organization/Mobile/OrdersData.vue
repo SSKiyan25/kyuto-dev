@@ -80,14 +80,47 @@
         }}
       </div>
 
+      <!-- Items per page selector -->
+      <div v-if="filteredOrders.length > 0" class="mb-3 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-muted-foreground">Items per page:</span>
+          <UiSelect v-model="itemsPerPageString">
+            <UiSelectTrigger class="h-8 w-20 text-xs">
+              <UiSelectValue placeholder="Select" />
+            </UiSelectTrigger>
+            <UiSelectContent>
+              <UiSelectGroup>
+                <UiSelectItem
+                  v-for="option in itemsPerPageOptions"
+                  :key="option"
+                  :value="String(option)"
+                  :text="String(option)"
+                />
+              </UiSelectGroup>
+            </UiSelectContent>
+          </UiSelect>
+        </div>
+        <div class="text-xs text-muted-foreground">
+          Showing {{ startIndex + 1 }}-{{ Math.min(endIndex, filteredOrders.length) }} of
+          {{ filteredOrders.length }} orders
+        </div>
+      </div>
+
       <div
-        v-for="order in filteredOrders"
+        v-for="(order, index) in paginatedOrders"
         :key="order.id"
         class="rounded-lg border bg-card p-4 shadow-sm"
       >
         <!-- Order Header -->
+        <span
+          class="inline-flex items-center justify-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary"
+        >
+          Order #{{ startIndex + index + 1 }}
+        </span>
         <div class="mb-2 flex items-center justify-between">
-          <span class="font-semibold">Ref: {{ order.uniqRefNumber }}</span>
+          <div class="flex items-center gap-2">
+            <span class="font-semibold">Ref: {{ order.uniqRefNumber }}</span>
+          </div>
           <div class="flex items-center gap-2">
             <!-- Order Status Badge -->
             <div :class="getStatusClass(order.orderStatus)">
@@ -156,6 +189,43 @@
             </UiDropdownMenuContent>
           </UiDropdownMenu>
         </div>
+      </div>
+      <!-- Pagination controls -->
+      <div v-if="totalPages > 1" class="mt-4 flex items-center justify-between">
+        <UiButton
+          variant="outline"
+          size="sm"
+          @click="prevPage"
+          :disabled="currentPage === 1"
+          class="h-8 w-24 text-xs"
+        >
+          <Icon name="lucide:chevron-left" class="mr-1 h-4 w-4" />
+          Previous
+        </UiButton>
+
+        <div class="flex items-center space-x-1">
+          <UiButton
+            v-for="page in paginationRange"
+            :key="page"
+            :variant="currentPage === page ? 'default' : 'outline'"
+            size="sm"
+            @click="goToPage(page)"
+            class="h-8 w-8 p-0 text-xs"
+          >
+            {{ page }}
+          </UiButton>
+        </div>
+
+        <UiButton
+          variant="outline"
+          size="sm"
+          @click="nextPage"
+          :disabled="currentPage === totalPages"
+          class="h-8 w-24 text-xs"
+        >
+          Next
+          <Icon name="lucide:chevron-right" class="ml-1 h-4 w-4" />
+        </UiButton>
       </div>
     </div>
 
@@ -413,16 +483,27 @@
   const viewOrderDialog = ref(false);
   const viewCancelDialog = ref(false);
   const statusLoading = ref(false);
-  const hideClose = ref(false);
   const expandedOrders = ref<string[]>([]);
   const cancelReason = ref("");
   const reasonError = ref("");
 
   // Inside <script setup>
-  const { isMobileDevice, exportToPdf, exportToExcel } = useExportOrders();
+  const { isMobileDevice } = useExportOrders();
 
   // Create a reactive property based on the function result
   const isMobileDeviceValue = ref(isMobileDevice());
+
+  // Pagination state
+  const currentPage = ref(1);
+  const itemsPerPage = ref(10); // Default to 10 items per page
+  const itemsPerPageOptions = [5, 10, 20, 50];
+
+  const itemsPerPageString = computed({
+    get: () => String(itemsPerPage.value),
+    set: (val: string) => {
+      itemsPerPage.value = Number(val);
+    },
+  });
 
   // Update on mount to ensure client-side detection
   onMounted(() => {
@@ -517,10 +598,11 @@
   // Fetch orders
   const fetchOrders = async (status: string) => {
     loading.value = true;
+    currentPage.value = 1; // Reset to first page when changing status
     try {
       const fetchedOrders = await fetchFilteredOrders(props.organizationID, status);
       orders.value = fetchedOrders;
-      allOrders.value = status === "all" ? fetchedOrders : allOrders.value; // Store all orders if "all" selected
+      allOrders.value = status === "all" ? fetchedOrders : allOrders.value;
       selectedStatus.value = status;
     } catch (error) {
       console.error("Error fetching orders:", error);
@@ -762,4 +844,82 @@
     cancelReason.value = "";
     reasonError.value = "";
   };
+
+  // Compute the total number of pages
+  const totalPages = computed(() => {
+    return Math.ceil(filteredOrders.value.length / itemsPerPage.value);
+  });
+
+  // Calculate start and end indices for the current page
+  const startIndex = computed(() => (currentPage.value - 1) * itemsPerPage.value);
+  const endIndex = computed(() => startIndex.value + itemsPerPage.value);
+
+  // Compute the current page's orders
+  const paginatedOrders = computed(() => {
+    return filteredOrders.value.slice(startIndex.value, endIndex.value);
+  });
+
+  // Create a range of page numbers to display (with ellipsis for large ranges)
+  const paginationRange = computed(() => {
+    const range = [];
+    const maxVisiblePages = 5;
+
+    if (totalPages.value <= maxVisiblePages) {
+      // Show all pages if total is less than max visible
+      for (let i = 1; i <= totalPages.value; i++) {
+        range.push(i);
+      }
+    } else {
+      // Always show first page
+      range.push(1);
+
+      // Calculate center range
+      const leftBound = Math.max(2, currentPage.value - 1);
+      const rightBound = Math.min(totalPages.value - 1, currentPage.value + 1);
+
+      // Add ellipsis if needed before left bound
+      if (leftBound > 2) {
+        range.push("...");
+      }
+
+      // Add center pages
+      for (let i = leftBound; i <= rightBound; i++) {
+        range.push(i);
+      }
+
+      // Add ellipsis if needed after right bound
+      if (rightBound < totalPages.value - 1) {
+        range.push("...");
+      }
+
+      // Always show last page
+      range.push(totalPages.value);
+    }
+
+    return range;
+  });
+
+  // Navigation methods
+  const goToPage = (page: number | string) => {
+    if (typeof page === "number") {
+      currentPage.value = page;
+    }
+  };
+
+  const nextPage = () => {
+    if (currentPage.value < totalPages.value) {
+      currentPage.value++;
+    }
+  };
+
+  const prevPage = () => {
+    if (currentPage.value > 1) {
+      currentPage.value--;
+    }
+  };
+
+  // Watch for changes that should reset pagination
+  watch([searchTerm, selectedStatus, itemsPerPage], () => {
+    currentPage.value = 1;
+  });
 </script>
