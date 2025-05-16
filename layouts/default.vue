@@ -430,7 +430,7 @@
   onMounted(() => {
     const authStore = useAuthStore();
     user.value = authStore.user;
-    console.log("User in layout:", user.value);
+    // console.log("User in layout:", user.value);
   });
 
   const hasOrganization = computed(() => !!user.value?.organizationId);
@@ -451,7 +451,7 @@
         );
         const authStore = useAuthStore();
         authStore.user = newUser as Account;
-        console.log("User in layout:", authStore.user);
+        // console.log("User in layout:", authStore.user);
         fetchUserCart();
       }
     },

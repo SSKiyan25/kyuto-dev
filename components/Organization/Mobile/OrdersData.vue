@@ -1,6 +1,19 @@
 <template>
   <div class="mb-24">
     <UiDivider class="my-4" />
+
+    <div class="mb-4 flex items-center justify-between">
+      <p class="text-xs text-muted-foreground">{{ filteredOrders.length }} orders found</p>
+
+      <!-- Export options - Show on all devices -->
+      <div class="flex gap-2">
+        <OrganizationMobileExportButton
+          :orders="filteredOrders"
+          :current-status="selectedStatus"
+          :is-mobile="isMobileDeviceValue"
+        />
+      </div>
+    </div>
     <!-- Search input with enhanced instructions -->
     <div class="mb-4 w-full">
       <div class="group relative">
@@ -378,6 +391,7 @@
 </template>
 
 <script lang="ts" setup>
+  import { useExportOrders } from "~/composables/organization/orders/useExportOrders";
   import { useFetchFilterOrders } from "~/composables/organization/orders/useFetchFilterOrders";
   import { Timestamp } from "firebase/firestore";
   import type {
@@ -403,6 +417,17 @@
   const expandedOrders = ref<string[]>([]);
   const cancelReason = ref("");
   const reasonError = ref("");
+
+  // Inside <script setup>
+  const { isMobileDevice, exportToPdf, exportToExcel } = useExportOrders();
+
+  // Create a reactive property based on the function result
+  const isMobileDeviceValue = ref(isMobileDevice());
+
+  // Update on mount to ensure client-side detection
+  onMounted(() => {
+    isMobileDeviceValue.value = isMobileDevice();
+  });
 
   // Fetch orders composable
   const {
