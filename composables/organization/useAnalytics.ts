@@ -25,7 +25,7 @@ export const useOrganizationAnalytics = () => {
   const getCache = (key: string) => {
     const cached = cache[key];
     if (cached && cached.expiry > Date.now()) {
-      console.log(`Cache hit for key: ${key}`);
+      // console.log(`Cache hit for key: ${key}`);
       return cached.data;
     }
     console.log(`Cache miss for key: ${key}`);
@@ -118,7 +118,7 @@ export const useOrganizationAnalytics = () => {
 
     snapshot.forEach((doc) => {
       const order = doc.data() as OrderWithOrgName;
-      console.log("Order:", order);
+      // console.log("Order:", order);
       totalRevenue += order.totalPrice || 0;
     });
 

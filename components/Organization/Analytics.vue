@@ -4,6 +4,7 @@
     <div v-if="status === 'pending'" class="space-y-4">
       <div class="flex flex-col justify-between gap-2 sm:flex-row sm:items-center sm:gap-0">
         <h1 class="text-xl font-bold sm:text-2xl">Sales Analytics</h1>
+        <OrganizationAnalyticsExportButton v-if="analytics" type="summary" :data="analytics" />
         <UiButton
           variant="outline"
           :disabled="isRefreshing"
@@ -100,26 +101,35 @@
           <UiCardHeader>
             <div class="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
               <UiCardTitle class="text-md font-medium">Sales Trend</UiCardTitle>
-              <div class="flex items-center space-x-2">
-                <label for="timeRange" class="whitespace-nowrap text-sm font-medium"
-                  >Time Range:</label
-                >
-                <select
-                  v-model="selectedTimeRange"
-                  id="timeRange"
-                  class="w-full rounded border px-2 py-1 text-sm sm:w-auto"
-                >
-                  <option value="30days">Last 30 Days</option>
-                  <option value="week">This Week</option>
-                  <option value="month">This Month</option>
-                  <option value="quarter">This Quarter</option>
-                  <option value="year">This Year</option>
-                </select>
+              <div class="flex flex-wrap items-center gap-2">
+                <OrganizationAnalyticsExportButton
+                  v-if="chartData.length > 0"
+                  type="sales"
+                  :data="chartData"
+                  :chart-ref="salesChartRef"
+                  :time-range="selectedTimeRange"
+                />
+                <div class="flex items-center gap-2">
+                  <label for="timeRange" class="whitespace-nowrap text-sm font-medium"
+                    >Time Range:</label
+                  >
+                  <select
+                    v-model="selectedTimeRange"
+                    id="timeRange"
+                    class="w-full rounded border px-2 py-1 text-sm sm:w-auto"
+                  >
+                    <option value="30days">Last 30 Days</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                    <option value="quarter">This Quarter</option>
+                    <option value="year">This Year</option>
+                  </select>
+                </div>
               </div>
             </div>
           </UiCardHeader>
           <UiCardContent class="overflow-x-auto">
-            <div v-if="chartData.length > 0" class="min-w-[300px]">
+            <div v-if="chartData.length > 0" class="min-w-[300px]" ref="salesChartRef">
               <UiChartBar
                 :data="chartData"
                 index="date"
@@ -143,12 +153,24 @@
       <!-- Order Type Comparison -->
       <div class="w-full space-y-4 pt-4">
         <!-- Chart Title -->
-        <h2 class="px-2 text-center text-lg font-bold sm:text-xl">
-          Comparison of Pre-Orders and Direct Order Items
-        </h2>
+        <div class="flex items-center justify-between px-2">
+          <h2 class="text-lg font-bold sm:text-xl">
+            Comparison of Pre-Orders and Direct Order Items
+          </h2>
+          <OrganizationAnalyticsExportButton
+            v-if="comparisonData.length > 0 && hasOrderData"
+            type="comparison"
+            :data="comparisonData"
+            :chart-ref="comparisonChartRef"
+          />
+        </div>
 
         <!-- Chart -->
-        <div v-if="comparisonData.length > 0 && hasOrderData" class="flex justify-center">
+        <div
+          v-if="comparisonData.length > 0 && hasOrderData"
+          class="flex justify-center"
+          ref="comparisonChartRef"
+        >
           <UiChartDonut
             index="name"
             :category="'Total'"
@@ -180,6 +202,11 @@
         <UiCard>
           <UiCardHeader>
             <UiCardTitle class="text-sm font-medium">Top Performing Products</UiCardTitle>
+            <OrganizationAnalyticsExportButton
+              v-if="analytics?.popularProducts?.length > 0"
+              type="products"
+              :data="analytics.popularProducts"
+            />
           </UiCardHeader>
           <UiCardContent>
             <div v-if="analytics.popularProducts && analytics.popularProducts.length > 0">
@@ -324,6 +351,9 @@
   const status = ref<"pending" | "success" | "error">("pending");
   const isRefreshing = ref(false);
   const selectedTimeRange = ref("30days");
+
+  const salesChartRef = ref(null);
+  const comparisonChartRef = ref(null);
 
   // Check if comparison data has any orders
   const hasOrderData = computed(() => {
