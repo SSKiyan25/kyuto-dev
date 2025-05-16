@@ -340,19 +340,21 @@
       <!-- Products Container -->
       <div class="flex-grow">
         <div
-          class="mt-4 flex flex-row flex-wrap justify-center gap-1 sm:mt-6 sm:justify-start sm:gap-3 sm:px-9"
+          class="mt-2 grid grid-cols-2 gap-3 sm:mt-2 sm:flex sm:flex-row sm:flex-wrap sm:justify-start sm:gap-4 sm:px-9"
         >
           <template v-if="loadingProducts">
-            <div v-for="i in 5" :key="i" class="flex flex-col items-center space-x-4">
+            <div v-for="i in 5" :key="i" class="flex flex-col items-center">
               <div
-                class="flex max-h-[32rem] max-w-[16rem] flex-col rounded-md border border-secondary p-2 sm:max-h-[40rem] sm:max-w-[24rem]"
+                class="flex max-h-[32rem] max-w-[16rem] flex-col rounded-lg border-[3px] border-muted bg-white p-3 shadow-lg sm:max-h-[40rem] sm:max-w-[24rem]"
               >
-                <div class="flex justify-center border-b p-2">
-                  <div class="h-32 w-32 overflow-hidden sm:h-52 sm:w-52">
-                    <UiSkeleton loading class="h-full w-full rounded-sm" />
+                <div class="flex justify-center border-b border-muted p-2">
+                  <div
+                    class="h-32 w-32 overflow-hidden rounded-lg bg-secondary-foreground sm:h-48 sm:w-48"
+                  >
+                    <UiSkeleton loading class="h-full w-full rounded-lg" />
                   </div>
                 </div>
-                <div class="flex w-full flex-col items-start pt-1">
+                <div class="flex w-full flex-col items-start p-2">
                   <UiSkeleton loading class="h-4 w-24 rounded-sm" />
                   <UiSkeleton loading class="mt-2 h-6 w-32 rounded-sm" />
                   <UiSkeleton loading class="mt-1 h-4 w-16 rounded-sm" />
@@ -360,14 +362,15 @@
               </div>
             </div>
           </template>
+
           <template v-else>
             <div v-for="(product, i) in products" :key="i">
               <NuxtLink :to="`/product/${product.id}`" @click="handleProductClick(product.id)">
                 <div
-                  class="flex max-h-[32rem] max-w-[16rem] flex-col rounded-sm border p-2 hover:shadow-lg sm:max-h-[40rem] sm:max-w-[24rem]"
+                  class="product-card flex max-h-[32rem] max-w-[16rem] flex-col rounded-lg bg-white p-3 shadow-md transition-all duration-300 hover:scale-[1.02] hover:border-primary hover:shadow-lg sm:max-h-[40rem] sm:max-w-[24rem]"
                 >
-                  <div class="flex justify-center border-b p-2">
-                    <div class="h-32 w-32 overflow-hidden sm:h-52 sm:w-52">
+                  <div class="mb-2 flex justify-center border-b border-muted p-2">
+                    <div class="h-32 w-32 overflow-hidden rounded-lg bg-gray-100 sm:h-52 sm:w-52">
                       <img
                         :src="product.featuredPhotoURL"
                         :alt="product.name"
@@ -375,15 +378,17 @@
                       />
                     </div>
                   </div>
-                  <div class="flex w-full flex-col items-start pt-1">
-                    <span class="text-[12px] text-muted-foreground sm:text-sm"
-                      >₱{{ calculatePriceWithCommission(product.price).toFixed(2) }}</span
+                  <div class="flex w-full flex-col items-start p-2">
+                    <span class="text-sm font-bold text-primary sm:text-base">
+                      ₱{{ calculatePriceWithCommission(product.price).toFixed(2) }}
+                    </span>
+                    <p
+                      class="w-full truncate pt-2 text-sm font-semibold text-foreground sm:text-base"
                     >
-                    <p class="w-full truncate pt-2 text-[12px] font-semibold sm:text-sm">
                       {{ product.name }}
                     </p>
                     <div
-                      class="flex w-full flex-row justify-between pt-4 text-[10px] opacity-50 sm:text-[12px]"
+                      class="mt-2 flex w-full flex-row justify-between text-xs text-muted-foreground sm:text-sm"
                     >
                       <span>{{ productViewCounts[product.id] || 0 }} views</span>
                       <span>{{ product.totalSales }} sales</span>
@@ -392,41 +397,36 @@
                 </div>
               </NuxtLink>
             </div>
-            <template v-if="products.length === 0">
-              <div class="flex h-32 w-full flex-col items-center justify-center">
-                <p>No Available Products.</p>
-              </div>
-            </template>
           </template>
-          <div class="mt-8 flex w-full items-center justify-center gap-4">
-            <UiButton
-              :disabled="currentPage === 1"
-              @click="prevPage"
-              variant="outline"
-              class="flex items-center gap-2 px-4 py-2 transition-all duration-200 hover:bg-secondary/20"
-              :class="{ 'cursor-not-allowed opacity-50': currentPage === 1 }"
-            >
-              <Icon :name="prevIcon" class="h-4 w-4" />
-              <span class="text-sm font-medium">Previous</span>
-            </UiButton>
+        </div>
+        <div class="mt-8 flex w-full items-center justify-center gap-4">
+          <UiButton
+            :disabled="currentPage === 1"
+            @click="prevPage"
+            variant="outline"
+            class="flex items-center gap-2 px-4 py-2 transition-all duration-200 hover:bg-secondary/20"
+            :class="{ 'cursor-not-allowed opacity-50': currentPage === 1 }"
+          >
+            <Icon :name="prevIcon" class="h-4 w-4" />
+            <span class="text-sm font-medium">Previous</span>
+          </UiButton>
 
-            <div class="flex items-center text-sm">
-              <span class="font-medium text-foreground">{{ currentPage }}</span>
-              <span class="mx-2 text-muted-foreground">/</span>
-              <span class="text-muted-foreground">{{ totalPages || 1 }}</span>
-            </div>
-
-            <UiButton
-              :disabled="currentPage === totalPages"
-              @click="nextPage"
-              variant="outline"
-              class="flex items-center gap-2 px-4 py-2 transition-all duration-200 hover:bg-secondary/20"
-              :class="{ 'cursor-not-allowed opacity-50': currentPage === totalPages }"
-            >
-              <span class="text-sm font-medium">Next</span>
-              <Icon :name="nextIcon" class="h-4 w-4" />
-            </UiButton>
+          <div class="flex items-center text-sm">
+            <span class="font-medium text-foreground">{{ currentPage }}</span>
+            <span class="mx-2 text-muted-foreground">/</span>
+            <span class="text-muted-foreground">{{ totalPages || 1 }}</span>
           </div>
+
+          <UiButton
+            :disabled="currentPage === totalPages"
+            @click="nextPage"
+            variant="outline"
+            class="flex items-center gap-2 px-4 py-2 transition-all duration-200 hover:bg-secondary/20"
+            :class="{ 'cursor-not-allowed opacity-50': currentPage === totalPages }"
+          >
+            <span class="text-sm font-medium">Next</span>
+            <Icon :name="nextIcon" class="h-4 w-4" />
+          </UiButton>
         </div>
       </div>
     </div>

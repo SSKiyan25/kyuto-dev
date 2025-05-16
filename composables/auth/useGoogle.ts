@@ -4,7 +4,7 @@ import type { Account } from "~/types/models/Account";
 
 export const signInWithGoogle = async (auth: any) => {
   const db = useFirestore();
-  console.log("Firestore:", db);
+  // console.log("Firestore:", db);
 
   if (!db) {
     console.error("Firestore is not initialized");
@@ -35,7 +35,7 @@ export const signInWithGoogle = async (auth: any) => {
         role: "user",
       };
       await setDoc(userDocRef, newUser);
-      console.log("New user added to accounts collection:", newUser);
+      // console.log("New user added to accounts collection:", newUser);
     } else {
       console.log("User already exists in accounts collection");
     }

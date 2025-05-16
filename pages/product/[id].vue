@@ -174,98 +174,99 @@
         <div class="flex flex-col gap-4 pt-2">
           <div class="flex flex-col gap-3 sm:flex-row">
             <!-- Pre-Order -->
-            <UiDrawer>
-              <UiDrawerTrigger as-child>
+            <div v-if="product.canPreOrder">
+              <UiDrawer>
                 <UiDrawerTrigger as-child>
-                  <UiButton
-                    class="h-12 w-full flex-1 p-2 text-base sm:h-auto sm:p-4"
-                    size="lg"
-                    variant="outline"
-                    @click="handlePreOrder"
-                  >
-                    <Icon name="lucide:clock" class="mr-2 h-5 w-5" />
-                    Pre-Order
-                  </UiButton>
+                  <UiDrawerTrigger as-child>
+                    <UiButton
+                      class="h-12 w-full flex-1 p-2 text-base sm:h-auto sm:p-4"
+                      size="lg"
+                      variant="outline"
+                      @click="handlePreOrder"
+                    >
+                      <Icon name="lucide:clock" class="mr-2 h-5 w-5" />
+                      Pre-Order
+                    </UiButton>
+                  </UiDrawerTrigger>
                 </UiDrawerTrigger>
-              </UiDrawerTrigger>
-              <UiDrawerContent>
-                <div class="mx-auto w-full max-w-md rounded-t-lg p-6">
-                  <UiDrawerTitle
-                    class="flex items-center justify-center gap-2 text-center font-semibold"
-                  >
-                    <Icon name="lucide:clock" class="h-5 w-5 text-amber-500" />
-                    Pre-Order Item
-                  </UiDrawerTitle>
-                  <UiDrawerDescription class="text-center">
-                    <p class="mt-2 text-sm">
-                      Pre-order this item now and we'll notify you when it's available.
-                    </p>
-                  </UiDrawerDescription>
+                <UiDrawerContent>
+                  <div class="mx-auto w-full max-w-md rounded-t-lg p-6">
+                    <UiDrawerTitle
+                      class="flex items-center justify-center gap-2 text-center font-semibold"
+                    >
+                      <Icon name="lucide:clock" class="h-5 w-5 text-amber-500" />
+                      Pre-Order Item
+                    </UiDrawerTitle>
+                    <UiDrawerDescription class="text-center">
+                      <p class="mt-2 text-sm">
+                        Pre-order this item now and we'll notify you when it's available.
+                      </p>
+                    </UiDrawerDescription>
 
-                  <div class="mt-6 space-y-6">
-                    <!-- Variation -->
-                    <div>
-                      <h3 class="mb-3 font-medium">Choose Variation</h3>
-                      <div class="flex flex-wrap justify-center gap-2">
-                        <UiButton
-                          v-for="(vari, i) in variations"
-                          :key="i"
-                          @click="selectVariation(vari, 'preOrder')"
-                          :disabled="isSubmitting"
-                          :variant="
-                            selectedVariationPreOrder?.id === vari.id ? 'default' : 'outline'
-                          "
-                          class="min-w-20"
-                        >
-                          {{ vari.value === "None" ? product.name : vari.value }}
-                        </UiButton>
+                    <div class="mt-6 space-y-6">
+                      <!-- Variation -->
+                      <div>
+                        <h3 class="mb-3 font-medium">Choose Variation</h3>
+                        <div class="flex flex-wrap justify-center gap-2">
+                          <UiButton
+                            v-for="(vari, i) in variations"
+                            :key="i"
+                            @click="selectVariation(vari, 'preOrder')"
+                            :disabled="isSubmitting"
+                            :variant="
+                              selectedVariationPreOrder?.id === vari.id ? 'default' : 'outline'
+                            "
+                            class="min-w-20"
+                          >
+                            {{ vari.value === "None" ? product.name : vari.value }}
+                          </UiButton>
+                        </div>
                       </div>
-                    </div>
 
-                    <!-- Quantity -->
-                    <div>
-                      <h3 class="mb-3 font-medium">Select Quantity</h3>
-                      <div class="flex justify-center">
-                        <UiNumberField
-                          :min="1"
-                          :max="1000"
-                          :disabled="!selectedVariationPreOrder || isSubmitting"
-                          v-model="quantityPreOrder"
-                          class="w-32"
-                        >
-                          <UiNumberFieldInput
+                      <!-- Quantity -->
+                      <div>
+                        <h3 class="mb-3 font-medium">Select Quantity</h3>
+                        <div class="flex justify-center">
+                          <UiNumberField
+                            :min="1"
+                            :max="1000"
                             :disabled="!selectedVariationPreOrder || isSubmitting"
-                            placeholder="0"
-                          />
-                          <UiNumberFieldDecrement class="border-l" />
-                          <UiNumberFieldIncrement class="border-l" />
-                        </UiNumberField>
+                            v-model="quantityPreOrder"
+                            class="w-32"
+                          >
+                            <UiNumberFieldInput
+                              :disabled="!selectedVariationPreOrder || isSubmitting"
+                              placeholder="0"
+                            />
+                            <UiNumberFieldDecrement class="border-l" />
+                            <UiNumberFieldIncrement class="border-l" />
+                          </UiNumberField>
+                        </div>
                       </div>
-                    </div>
 
-                    <!-- Actions -->
-                    <div class="flex justify-center gap-3 pt-4">
-                      <UiDrawerClose>
-                        <UiButton variant="outline" size="lg" :disabled="isSubmitting">
-                          Cancel
+                      <!-- Actions -->
+                      <div class="flex justify-center gap-3 pt-4">
+                        <UiDrawerClose>
+                          <UiButton variant="outline" size="lg" :disabled="isSubmitting">
+                            Cancel
+                          </UiButton>
+                        </UiDrawerClose>
+                        <UiButton
+                          size="lg"
+                          :disabled="!selectedVariationPreOrder || quantityPreOrder === 0"
+                          :loading="loadingButton"
+                          @click="submitAddToCart(true)"
+                          class="h-12 text-base sm:h-auto"
+                        >
+                          <Icon name="lucide:shopping-cart" class="mr-2 h-4 w-4" />
+                          Add to Cart
                         </UiButton>
-                      </UiDrawerClose>
-                      <UiButton
-                        size="lg"
-                        :disabled="!selectedVariationPreOrder || quantityPreOrder === 0"
-                        :loading="loadingButton"
-                        @click="submitAddToCart(true)"
-                        class="h-12 text-base sm:h-auto"
-                      >
-                        <Icon name="lucide:shopping-cart" class="mr-2 h-4 w-4" />
-                        Add to Cart
-                      </UiButton>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </UiDrawerContent>
-            </UiDrawer>
-
+                </UiDrawerContent>
+              </UiDrawer>
+            </div>
             <!-- Add to Cart -->
             <UiDrawer>
               <UiDrawerTrigger as-child>

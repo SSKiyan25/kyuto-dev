@@ -269,9 +269,6 @@
 
   const currentPage = ref(1);
   const totalPages = ref(1);
-
-  const prevIcon = "lucide:chevron-left";
-  const nextIcon = "lucide:chevron-right";
   const loadingProducts = ref(false);
   const productViewCounts = reactive<Record<string, number>>({});
 
@@ -314,7 +311,7 @@
 
   const updateProducts = async () => {
     loadingProducts.value = true;
-    console.log("Current Page in script:", currentPage.value);
+    // console.log("Current Page in script:", currentPage.value);
     const activeFilter = showAs.value.find((item) => item.isActive);
     const sortBy = activeFilter ? activeFilter.name : "all";
     const selectedCategoryTitles = selectedCategories.value
@@ -331,7 +328,7 @@
       currentPage.value
     );
     totalPages.value = Math.ceil(totalProducts / 10);
-    console.log("Total Pages in script:", totalPages.value);
+    // console.log("Total Pages in script:", totalPages.value);
     loadingProducts.value = false;
   };
 
@@ -357,7 +354,7 @@
 
   const nextPage = () => {
     if (currentPage.value < totalPages.value) {
-      console.log("Current Page:", currentPage.value);
+      // console.log("Current Page:", currentPage.value);
       currentPage.value++;
       updateProducts();
     }
@@ -365,7 +362,7 @@
 
   const prevPage = () => {
     if (currentPage.value > 1) {
-      console.log("Current Page:", currentPage.value);
+      // console.log("Current Page:", currentPage.value);
       currentPage.value--;
       updateProducts();
     }

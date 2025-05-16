@@ -315,7 +315,9 @@
   };
 
   const logout = async () => {
+    const authStore = useAuthStore();
     await signOut(auth!);
+    authStore.user = null;
     navigateTo("/");
   };
 </script>
