@@ -54,7 +54,7 @@
   });
 
   const submit = handleSubmit(async (_) => {
-    console.log("Values", _);
+    // console.log("Values", _);
     const loading = useSonner.loading("Loading...", {
       description: "...",
     });
@@ -62,17 +62,17 @@
       const userCredential = await signInWithEmailAndPassword(auth!, _.email, _.password);
       const user = userCredential.user;
 
-      console.log("User: ", user);
+      // console.log("User: ", user);
       const userDocRef = doc(db, "accounts", user.uid);
       const userDoc = await getDoc(userDocRef);
-      console.log("UserDoc in Admin Login Page: ", userDoc);
-      console.log("User UID: ", user.uid);
+      // console.log("UserDoc in Admin Login Page: ", userDoc);
+      // console.log("User UID: ", user.uid);
       if (userDoc.exists()) {
         const userData = userDoc.data();
         const role = userData.role;
         if (role === "admin") {
           useSonner.success("Welcome back!", { id: loading });
-          console.log("User: ", user);
+          // console.log("User: ", user);
           authStore.user = userData as User;
           return navigateTo("/admin/dashboard");
         } else {

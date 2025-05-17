@@ -174,8 +174,10 @@
   const userData = useDocument<Partial<Account>>(userDocRef) as Partial<Account> | undefined;
 
   const logout = async () => {
+    const authStore = useAuthStore();
     await signOut(auth!);
-    navigateTo("/");
+    authStore.user = null;
+    navigateTo("/login");
   };
 
   const topNav = [

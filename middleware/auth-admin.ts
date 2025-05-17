@@ -1,5 +1,9 @@
-export default defineNuxtRouteMiddleware(async (to) => {
-  const user = await getCurrentUser();
+export default defineNuxtRouteMiddleware((to) => {
+  // Only run on client-side
+  if (import.meta.server) return;
+
+  const authStore = useAuthStore();
+  const { user } = storeToRefs(authStore);
 
   const {
     public: { adminEmails },
@@ -24,12 +28,12 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return navigateTo("/maintenance");
   }
 
-  if (!user) {
+  if (!user.value) {
     console.log("No user found. Redirecting to login page.");
     return navigateTo(`/`);
   }
-  if (!user.email || !authorizedEmails.includes(user.email)) {
-    console.warn(`Unauthorized admin access attempt by: ${user.email}`);
+  if (!user.value.email || !authorizedEmails.includes(user.value.email)) {
+    console.warn(`Unauthorized admin access attempt by: ${user.value.email}`);
     return navigateTo("/");
   }
 });

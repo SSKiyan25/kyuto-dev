@@ -114,7 +114,7 @@
           getOrganizationById(orgId.value)
             .then((org) => {
               organization.value = org;
-              console.log("Fetched organization:", org);
+              // console.log("Fetched organization:", org);
             })
             .catch((error) => {
               console.error("Error fetching organization data:", error);

@@ -55,10 +55,17 @@
         <h1 class="text-2xl font-semibold">Organizations</h1>
         <div class="flex gap-2">
           <UiSelect v-model="filters.paymentStatus" class="w-40">
-            <option value="">All Status</option>
-            <option value="active">Active</option>
-            <option value="overdue">Overdue</option>
-            <option value="inactive">Inactive</option>
+            <UiSelectTrigger class="w-full">
+              <UiSelectValue placeholder="All Status" />
+            </UiSelectTrigger>
+            <UiSelectContent>
+              <UiSelectGroup>
+                <UiSelectItem value="all" text="All Status" />
+                <UiSelectItem value="active" text="Active" />
+                <UiSelectItem value="overdue" text="Overdue" />
+                <UiSelectItem value="inactive" text="Inactive" />
+              </UiSelectGroup>
+            </UiSelectContent>
           </UiSelect>
         </div>
       </div>
@@ -108,7 +115,7 @@
   const commissionDialog = ref(false);
 
   const filters = reactive({
-    paymentStatus: "", // 'paid' | 'partial' | 'unpaid' | 'no-commissions'
+    paymentStatus: "all", // Changed from empty string to "all"
   });
 
   // Summary statistics
@@ -348,6 +355,7 @@
     async ajax(data: any, callback: any) {
       try {
         const allOrgs = await getAllOrganizations();
+        console.log("Total orgs fetched:", allOrgs.length);
 
         const orgsWithFinancials = await Promise.all(
           allOrgs.map(async (org) => {
@@ -356,8 +364,16 @@
             // Calculate payment status
             const paymentStatus = calculatePaymentStatus(commissionData);
 
+            // For debugging
+            console.log(`Org: ${org.name}, Payment Status: ${paymentStatus}`);
+
             // Calculate status based on payment status or other criteria
-            const status = paymentStatus === "paid" ? "active" : "overdue";
+            const status =
+              paymentStatus === "paid"
+                ? "active"
+                : paymentStatus === "partial"
+                  ? "overdue"
+                  : "inactive";
 
             return {
               ...org,
@@ -368,10 +384,14 @@
           })
         );
 
-        // Apply filters
+        console.log("Filter selected:", filters.paymentStatus);
+        console.log("Orgs with financials:", orgsWithFinancials.length);
+
+        // Apply filters - SIMPLIFIED LOGIC
         let filteredData = orgsWithFinancials;
-        if (filters.paymentStatus) {
-          filteredData = filteredData.filter((org) => org.paymentStatus === filters.paymentStatus);
+        if (filters.paymentStatus && filters.paymentStatus !== "all") {
+          filteredData = filteredData.filter((org) => org.status === filters.paymentStatus);
+          console.log(`After filtering for ${filters.paymentStatus}:`, filteredData.length);
         }
 
         // Apply search
