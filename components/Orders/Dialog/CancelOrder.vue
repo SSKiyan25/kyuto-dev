@@ -1,39 +1,39 @@
 <template>
-  <UiAlertDialog :open="dialogOpen" @update:open="updateOpen">
-    <UiAlertDialogContent class="bg-secondary">
-      <UiAlertDialogHeader>
-        <UiAlertDialogTitle>Are you absolutely sure?</UiAlertDialogTitle>
-        <UiAlertDialogDescription>
-          This action cannot be undone. Please state your reason for cancelling your order.
-          <UiInput
-            v-model="cancelRemarks"
-            type="text"
-            placeholder="Enter reason"
-            class="mt-4"
-            :class="{ 'border-red-500': !isValidCancelRemarks }"
+  <UiDialog :open="isOpen" @update:open="toggleOpen">
+    <UiDialogContent class="sm:max-w-[425px]">
+      <UiDialogHeader>
+        <UiDialogTitle>Cancel Order</UiDialogTitle>
+        <UiDialogDescription>
+          This action cannot be undone. Please provide a reason for cancellation.
+        </UiDialogDescription>
+      </UiDialogHeader>
+
+      <div class="grid gap-4 py-4">
+        <div class="grid gap-2">
+          <UiLabel for="reason" class="text-left">Reason</UiLabel>
+          <UiTextarea
+            id="reason"
+            v-model="reason"
+            placeholder="Please explain why you're canceling this order..."
+            :class="{ 'border-destructive': hasValidationError }"
           />
-          <p v-if="!isValidCancelRemarks" class="mt-2 text-sm text-red-500">
-            Remarks must be under 150 characters and cannot contain invalid characters.
+          <p v-if="hasValidationError" class="text-sm text-destructive">
+            Please provide a valid reason (5-200 characters)
           </p>
-        </UiAlertDialogDescription>
-      </UiAlertDialogHeader>
-      <UiAlertDialogFooter>
-        <UiAlertDialogCancel @click="closeDialog">Cancel</UiAlertDialogCancel>
-        <UiAlertDialogAction
-          @click="confirmCancelOrder"
-          :disabled="!isValidCancelRemarks"
-          variant="destructive"
-        >
-          Confirm
-        </UiAlertDialogAction>
-      </UiAlertDialogFooter>
-    </UiAlertDialogContent>
-  </UiAlertDialog>
+        </div>
+      </div>
+
+      <UiDialogFooter>
+        <UiButton variant="outline" @click="toggleOpen(false)"> Cancel </UiButton>
+        <UiButton variant="destructive" @click="submitCancellation">
+          Confirm Cancellation
+        </UiButton>
+      </UiDialogFooter>
+    </UiDialogContent>
+  </UiDialog>
 </template>
 
 <script lang="ts" setup>
-  import { computed } from "vue";
-
   const props = defineProps<{
     isOpen: boolean;
     orderId: string | null;
@@ -44,38 +44,30 @@
     (e: "cancelOrder", orderId: string, remarks: string): void;
   }>();
 
-  const cancelRemarks = ref("");
+  const reason = ref("");
+  const hasValidationError = ref(false);
 
-  // Use computed property with getter and setter
-  const dialogOpen = computed(() => props.isOpen);
-
-  const updateOpen = (value: boolean) => {
+  function toggleOpen(value: boolean) {
     emit("update:isOpen", value);
     if (!value) {
-      cancelRemarks.value = ""; // Reset remarks when closing
+      // Reset form when closing
+      reason.value = "";
+      hasValidationError.value = false;
     }
-  };
+  }
 
-  // Close the dialog
-  const closeDialog = () => {
-    emit("update:isOpen", false);
-    cancelRemarks.value = ""; // Reset remarks when closing
-  };
-
-  // Validation
-  const disallowedCharactersRegex = /^[^<@#`'"%;\\\[\]{}|&$*^~:/+=\r\n]*$/;
-
-  const isValidCancelRemarks = computed(() => {
-    return cancelRemarks.value.length <= 150 && disallowedCharactersRegex.test(cancelRemarks.value);
-  });
-
-  // Confirm cancellation
-  const confirmCancelOrder = async () => {
-    if (!props.orderId || !isValidCancelRemarks.value) {
+  function submitCancellation() {
+    // Simple validation - just check if the reason is provided and not too short
+    if (!reason.value.trim() || reason.value.trim().length < 5 || reason.value.length > 200) {
+      hasValidationError.value = true;
       return;
     }
 
-    emit("cancelOrder", props.orderId, cancelRemarks.value);
-    closeDialog();
-  };
+    hasValidationError.value = false;
+
+    if (props.orderId) {
+      emit("cancelOrder", props.orderId, reason.value.trim());
+      toggleOpen(false);
+    }
+  }
 </script>

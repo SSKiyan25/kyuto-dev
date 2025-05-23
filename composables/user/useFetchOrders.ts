@@ -178,7 +178,8 @@ export const useFetchOrders = () => {
 
   // 4. Cancel an order by changing its status and adding remarks
   const cancelOrder = async (orderID: string, remarks: string): Promise<void> => {
-    if (!remarks) {
+    if (!remarks || remarks.trim() === "") {
+      console.error("Empty remarks detected");
       throw new Error("Remarks is required to cancel an order.");
     }
 

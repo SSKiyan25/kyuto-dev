@@ -55,15 +55,15 @@
 
   <!-- Dialogs -->
   <OrdersDialogCancelOrder
-    v-model:is-open="cancelOrderDialog"
+    v-model:isOpen="cancelOrderDialog"
     :orderId="selectedOrderID"
-    @cancel-order="handleCancelOrder"
+    @cancelOrder="handleCancelOrder"
   />
 
   <OrdersDialogViewOrder
-    v-model:is-open="viewOrderDialog"
+    v-model:isOpen="viewOrderDialog"
     :order="selectedOrder"
-    @cancel-order="openCancelOrderDialog"
+    @cancelOrder="openCancelOrderDialog"
   />
 </template>
 
@@ -126,15 +126,10 @@
   });
 
   // Composables and data fetching
-  const { fetchUserOrders, fetchLatestOrder, fetchOrders, cancelOrder, fetchOrderItems } =
-    useFetchOrders();
+  const { fetchUserOrders, fetchLatestOrder, cancelOrder, fetchOrderItems } = useFetchOrders();
 
   async function loadOrderData() {
-    const [userOrders, allOrders] = await Promise.all([
-      fetchUserOrders(userID.value),
-      fetchOrders(userID.value, "all", ""),
-    ]);
-
+    const userOrders = await fetchUserOrders(userID.value);
     orders.value = userOrders;
     filterOrders(selectedStatus.value);
     await refreshLatestOrder();
@@ -204,6 +199,11 @@
 
   const handleCancelOrder = async (orderId: string, remarks: string) => {
     try {
+      if (!remarks || remarks.trim() === "") {
+        console.error("Empty remarks detected in handler");
+        throw new Error("Remarks cannot be empty");
+      }
+
       await cancelOrder(orderId, remarks);
       useToast().toast({
         title: "Order Cancelled",
@@ -216,7 +216,8 @@
       console.error("Error cancelling order:", error);
       useToast().toast({
         title: "Error",
-        description: "There was an error cancelling the order.",
+        description:
+          error instanceof Error ? error.message : "There was an error cancelling the order.",
         duration: 5000,
         icon: "lucide:x",
       });
