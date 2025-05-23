@@ -96,7 +96,7 @@ Kyuto is a modern, scalable e-commerce platform designed specifically for studen
   - **GCash Payment Integration**
   - **Staff/Manager Account Management for Organizations**
 
-### **KT.010.004 (Latest - May 17, 2025)**
+### **KT.010.004 (May 17, 2025)**
 
 - **Major Improvements**
 
@@ -124,6 +124,29 @@ Kyuto is a modern, scalable e-commerce platform designed specifically for studen
   - **UX Improvements:**
     - Enhanced color contrast for better accessibility
     - Added loading states and animations for improved user feedback
+
+- **Known Issues**
+
+  - **Search Functionality Limitations:**
+    - The search function currently only processes individual keywords
+    - Combined search terms ("Old Lanyard") fail to match products with those exact phrases
+    - When using multiple keywords (e.g., ["cs3", "old", "lanyard"]), only individual keyword matches are returned
+
+- **Next Release**
+  - **GCash Payment Integration**
+  - **Staff/Manager Account Management for Organizations**
+  - **Advanced Search Algorithm with Phrase Matching**
+  - **Package Feature** (product bundling functionality)
+
+### **KT.010.005 (Latest - May 23, 2025)**
+
+- **Bug Fixes**
+
+  - **Order Cancellation System:**
+    - Fixed critical bug (BUG-0001) that prevented users from cancelling orders
+    - Implemented proper validation for cancellation remarks field
+    - Ensured cancellation reasons are properly submitted and processed
+    - Improved error handling during the order cancellation process
 
 - **Known Issues**
 
