@@ -25,7 +25,7 @@
         <span
           class="mt-2 block bg-gradient-to-r from-primary to-emerald-600 bg-clip-text text-transparent"
         >
-          Proudly Represent Your School
+          Proudly Represent Your Organization
         </span>
       </h1>
 
@@ -36,7 +36,8 @@
         Discover premium
         <span class="font-medium text-foreground">VSU-branded apparel and accessories</span>. From
         stylish t-shirts and hoodies to practical lanyards and stickers — show your
-        <span class="font-medium text-primary">school spirit</span> with our official merchandise.
+        <span class="font-medium text-primary">organization spirit</span> with their official
+        merchandises.
       </p>
 
       <!-- Call to action buttons -->
