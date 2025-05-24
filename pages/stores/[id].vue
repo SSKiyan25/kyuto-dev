@@ -5,7 +5,7 @@
       <!-- Cover image (full width on mobile) -->
       <div class="order-1 w-full overflow-hidden rounded-lg lg:order-2 lg:w-2/3">
         <img
-          :src="store?.coverImageURL || '/placeholder-cover.jpg'"
+          :src="store?.coverImageURL || '/display2.png'"
           alt="Store Cover Image"
           class="h-48 w-full rounded-lg object-cover shadow-md sm:h-64 md:h-80 lg:h-96"
         />

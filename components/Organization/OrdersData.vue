@@ -533,13 +533,19 @@
     {
       title: "Buyer Email",
       data: "buyerAccountDetails.email",
-      render: (data: string) => data || "N/A",
+      render: (data: string) => {
+        if (!data) return "N/A";
+        return `
+    <div class="max-w-[100px] text-xs md:max-w-[150px] lg:max-w-[200px] truncate" title="${data}">
+      ${data}
+    </div>`;
+      },
     },
     {
       title: "Products",
       data: "orderItems",
       render: (data: ExtendedOrder["orderItems"]) => {
-        return data
+        const productList = data
           .map((item) => {
             const productName = item.productDetails?.name || "Unknown";
             const variationName = item.variationDetails?.value
@@ -548,6 +554,8 @@
             return `${productName}${variationName}`;
           })
           .join("<br>");
+
+        return `<div class="max-w-[200px] text-xs">${productList}</div>`;
       },
     },
     {
@@ -565,7 +573,7 @@
         return `
         <div class="flex items-center gap-3">
           <div class="flex cursor-pointer items-center gap-2">
-            <span class="px-2 py-1 rounded ${colorClass} capitalize">${data}</span>
+            <span class="px-2 text-xs py-1 rounded ${colorClass} capitalize">${data}</span>
           </div>
         </div>`;
       },
@@ -585,7 +593,7 @@
         return `
       <div class="flex items-center gap-3">
         <div class="flex cursor-pointer items-center gap-2">
-          <span class="px-2 py-1 rounded ${colorClass} capitalize">${data}</span>
+          <span class="px-2 py-1 text-xs rounded ${colorClass} capitalize">${data}</span>
         </div>
       </div>`;
       },
