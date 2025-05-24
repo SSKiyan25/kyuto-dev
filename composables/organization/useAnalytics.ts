@@ -94,9 +94,12 @@ export const useOrganizationAnalytics = () => {
           // Increment totalQuantity and totalRevenue only if paymentStatus is "paid"
           if (order.paymentStatus === "paid") {
             productSales[item.productID].totalQuantity += item.quantity;
-            productSales[item.productID].totalRevenue += item.totalPrice;
+            productSales[item.productID].totalRevenue += Number((item.totalPrice || 0).toFixed(2));
           }
         }
+        Object.keys(productSales).forEach((key) => {
+          productSales[key].totalRevenue = Number(productSales[key].totalRevenue.toFixed(2));
+        });
       });
     }
 
@@ -110,7 +113,11 @@ export const useOrganizationAnalytics = () => {
     if (cachedData) return cachedData;
     // console.log("Fetching order stats for organization ID:", organizationID);
     const ordersRef = collection(db, "orders");
-    const q = query(ordersRef, where("organizationID", "==", organizationID));
+    const q = query(
+      ordersRef,
+      where("organizationID", "==", organizationID),
+      where("paymentStatus", "==", "paid")
+    );
 
     const snapshot = await getDocs(q);
     let totalRevenue = 0;
@@ -118,11 +125,14 @@ export const useOrganizationAnalytics = () => {
 
     snapshot.forEach((doc) => {
       const order = doc.data() as OrderWithOrgName;
-      // console.log("Order:", order);
-      totalRevenue += order.totalPrice || 0;
+      // Format to 2 decimal places as we add
+      totalRevenue += Number((order.totalPrice || 0).toFixed(2));
     });
 
-    const result = { orderCount, totalRevenue };
+    const result = {
+      orderCount,
+      totalRevenue: Number(totalRevenue.toFixed(2)),
+    };
     setCache(cacheKey, result, 3600 * 1000); // Cache for 1 hour
     return result;
   };

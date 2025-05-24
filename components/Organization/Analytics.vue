@@ -468,7 +468,7 @@
 
         return {
           date: formattedDate,
-          Revenue: d.revenue,
+          Revenue: Number(d.revenue.toFixed(2)),
           Orders: d.count,
         };
       }) || []
