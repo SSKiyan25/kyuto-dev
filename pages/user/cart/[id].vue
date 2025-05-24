@@ -678,12 +678,10 @@
     removeLoading.value = false;
   };
 
-  // Add these at the top of your script section with the other refs
   const products = ref<Record<string, Product>>({});
   const variations = ref<Record<string, Variation>>({});
   const organizations = ref<Record<string, { id: string; name: string }>>({});
 
-  // The loading states you already have
   const productLoadingStates = ref<Record<string, boolean>>({});
   const variationLoadingStates = ref<Record<string, boolean>>({});
   const organizationLoadingStates = ref<Record<string, boolean>>({});
@@ -772,6 +770,7 @@
                 name: "Organization Not Found",
               };
             }
+            // console.log("Organization fetched:", organizations.value[product.organizationID]);
           } catch (error) {
             console.error("Error fetching organization:", error);
             organizations.value[product.organizationID] = {
@@ -873,7 +872,7 @@
       }
       const commissionRateID = commissionRate.value.id;
       const commissionRateValue = commissionRate.value.rate;
-
+      console.log("User ID:", userID.value);
       const uniqRefNumber = await createOrder(
         userID.value as string,
         organizationID as string,

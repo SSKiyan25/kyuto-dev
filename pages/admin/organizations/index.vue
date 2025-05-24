@@ -54,6 +54,11 @@
       <div class="flex flex-row items-center justify-between">
         <h1 class="text-2xl font-semibold">Organizations</h1>
         <div class="flex gap-2">
+          <UiButton size="sm" variant="outline" @click="refreshData" :disabled="isRefreshing">
+            <Icon v-if="isRefreshing" name="lucide:loader-2" class="mr-1 h-4 w-4 animate-spin" />
+            <Icon v-else name="lucide:refresh-cw" class="mr-1 h-4 w-4" />
+            {{ isRefreshing ? "Refreshing..." : "Refresh" }}
+          </UiButton>
           <UiSelect v-model="filters.paymentStatus" class="w-40">
             <UiSelectTrigger class="w-full">
               <UiSelectValue placeholder="All Status" />
@@ -113,11 +118,11 @@
   const { getAllOrganizations, getOrganizationFinancials } = useOrganization();
   const userDialog = ref(false);
   const commissionDialog = ref(false);
+  const isRefreshing = ref(false);
 
   const filters = reactive({
     paymentStatus: "all", // Changed from empty string to "all"
   });
-
   // Summary statistics
   const summaryStats = reactive({
     totalOrgs: 0,
@@ -146,8 +151,10 @@
       }
 
       console.log("Summary Stats:", summaryStats);
+      return summaryStats;
     } catch (error) {
       console.error("Error computing summary stats:", error);
+      throw error;
     }
   };
 
@@ -189,7 +196,6 @@
       console.error("Error fetching commission rate:", error);
     }
   };
-
   const handleRateUpdated = () => {
     fetchComissionRate();
     toast.toast({
@@ -197,6 +203,37 @@
       description: `Commission rate updated to ${currentRate.value?.rate}%`,
       variant: "success",
     });
+  };
+
+  const refreshData = async () => {
+    try {
+      isRefreshing.value = true;
+
+      // Clear the organization cache
+      const { clearCache } = useOrganization();
+      clearCache();
+
+      // Refresh the table data
+      tableRef.value?.ajax.reload();
+
+      // Recalculate summary stats
+      await computeSummaryStats();
+
+      toast.toast({
+        title: "Refreshed",
+        description: "Organization data has been refreshed",
+        variant: "success",
+      });
+    } catch (error) {
+      console.error("Error refreshing data:", error);
+      toast.toast({
+        title: "Error",
+        description: "Failed to refresh organization data",
+        variant: "destructive",
+      });
+    } finally {
+      isRefreshing.value = false;
+    }
   };
 
   onMounted(() => {
