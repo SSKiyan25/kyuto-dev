@@ -96,7 +96,6 @@
     relevanceScore?: number;
   }
 
-  // Define the type of what searchProducts actually returns
   interface SearchProductResult {
     id: string;
     relevanceScore: number;
