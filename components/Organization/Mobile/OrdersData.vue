@@ -7,6 +7,20 @@
 
       <!-- Export options - Show on all devices -->
       <div class="flex gap-2">
+        <UiButton
+          variant="outline"
+          size="sm"
+          @click="refreshOrders"
+          :disabled="loading"
+          class="h-8 text-xs"
+        >
+          <Icon
+            :name="loading ? 'lucide:loader-circle' : 'lucide:refresh-cw'"
+            class="mr-1 h-4 w-4"
+            :class="{ 'animate-spin': loading }"
+          />
+          Refresh
+        </UiButton>
         <OrganizationMobileExportButton
           :orders="filteredOrders"
           :current-status="selectedStatus"
@@ -518,6 +532,8 @@
     markAsPaid,
     cancelOrder,
     fetchOrderDetails,
+    invalidateOrganizationCache,
+    clearBuyerCaches,
   } = useFetchFilterOrders();
 
   const statuses = [
@@ -596,16 +612,52 @@
   };
 
   // Fetch orders
-  const fetchOrders = async (status: string) => {
+  const fetchOrders = async (status: string, forceRefresh = false) => {
     loading.value = true;
     currentPage.value = 1; // Reset to first page when changing status
     try {
-      const fetchedOrders = await fetchFilteredOrders(props.organizationID, status);
+      // Use forceRefresh parameter to control cache usage
+      const fetchedOrders = await fetchFilteredOrders(props.organizationID, status, forceRefresh);
       orders.value = fetchedOrders;
       allOrders.value = status === "all" ? fetchedOrders : allOrders.value;
       selectedStatus.value = status;
     } catch (error) {
       console.error("Error fetching orders:", error);
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const refreshOrders = async () => {
+    loading.value = true;
+    try {
+      // Invalidate organization cache and fetch fresh data
+      invalidateOrganizationCache(props.organizationID);
+      clearBuyerCaches();
+      const freshOrders = await fetchFilteredOrders(
+        props.organizationID,
+        selectedStatus.value,
+        true, // forceRefresh
+        true // refreshBuyers
+      );
+      // Add this line to update the UI:
+      orders.value = freshOrders;
+
+      useToast().toast({
+        title: "Orders Refreshed",
+        description: "Order data has been refreshed from the server",
+        duration: 3000,
+        icon: "lucide:refresh-cw",
+      });
+    } catch (error) {
+      console.error("Error refreshing orders:", error);
+      useToast().toast({
+        title: "Refresh Failed",
+        description: "Failed to refresh order data",
+        duration: 3000,
+        icon: "lucide:alert-triangle",
+        variant: "destructive",
+      });
     } finally {
       loading.value = false;
     }
@@ -683,17 +735,35 @@
           selectedOrder.value.orderItems
         );
 
-        // Update order in list
-        const updatedOrder = await fetchOrderDetails(selectedOrder.value.id);
+        // Force refresh to get the updated order
+        const updatedOrder = await fetchOrderDetails(selectedOrder.value.id, true);
         if (updatedOrder) {
           const index = orders.value.findIndex((order) => order.id === updatedOrder.id);
           if (index !== -1) {
             orders.value[index] = updatedOrder;
           }
+
+          // Also refresh the filtered orders
+          await fetchOrders(selectedStatus.value, true);
+
           emit("update-commission");
         }
+
+        useToast().toast({
+          title: "Order Cancelled",
+          description: "The order has been cancelled successfully.",
+          duration: 3000,
+          icon: "lucide:check",
+        });
       } catch (error) {
         console.error("Error cancelling order:", error);
+        useToast().toast({
+          title: "Error",
+          description: "There was an error cancelling the order.",
+          duration: 3000,
+          icon: "lucide:alert-triangle",
+          variant: "destructive",
+        });
       }
     }
 
@@ -719,8 +789,8 @@
     try {
       await markAsReady(selectedOrder.value.id, selectedOrder.value.orderStatus || "");
 
-      // Update the order in the list
-      const updatedOrder = await fetchOrderDetails(selectedOrder.value.id);
+      // Force refresh to get the updated order
+      const updatedOrder = await fetchOrderDetails(selectedOrder.value.id, true);
       if (updatedOrder) {
         // Update selected order for the dialog
         selectedOrder.value = updatedOrder;
@@ -735,7 +805,13 @@
       }
     } catch (error) {
       console.error("Error marking order as ready:", error);
-      // Show error notification
+      useToast().toast({
+        title: "Update Failed",
+        description: "Failed to update order status",
+        duration: 3000,
+        icon: "lucide:alert-triangle",
+        variant: "destructive",
+      });
     } finally {
       statusLoading.value = false;
     }
@@ -753,8 +829,8 @@
         selectedOrder.value.orderItems
       );
 
-      // Update the order in the list
-      const updatedOrder = await fetchOrderDetails(selectedOrder.value.id);
+      // Force refresh to get the updated order
+      const updatedOrder = await fetchOrderDetails(selectedOrder.value.id, true);
       if (updatedOrder) {
         // Update selected order for the dialog
         selectedOrder.value = updatedOrder;
@@ -769,7 +845,13 @@
       }
     } catch (error) {
       console.error("Error marking order as claimed:", error);
-      // Show error notification
+      useToast().toast({
+        title: "Update Failed",
+        description: "Failed to update order status",
+        duration: 3000,
+        icon: "lucide:alert-triangle",
+        variant: "destructive",
+      });
     } finally {
       statusLoading.value = false;
     }
@@ -783,8 +865,8 @@
     try {
       await markAsPaid(selectedOrder.value.id, selectedOrder.value.paymentStatus || "");
 
-      // Update the order in the list
-      const updatedOrder = await fetchOrderDetails(selectedOrder.value.id);
+      // Force refresh to get the updated order
+      const updatedOrder = await fetchOrderDetails(selectedOrder.value.id, true);
       if (updatedOrder) {
         // Update selected order for the dialog
         selectedOrder.value = updatedOrder;
@@ -799,7 +881,13 @@
       }
     } catch (error) {
       console.error("Error marking order as paid:", error);
-      // Show error notification
+      useToast().toast({
+        title: "Update Failed",
+        description: "Failed to update payment status",
+        duration: 3000,
+        icon: "lucide:alert-triangle",
+        variant: "destructive",
+      });
     } finally {
       statusLoading.value = false;
     }

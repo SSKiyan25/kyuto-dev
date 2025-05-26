@@ -9,12 +9,30 @@
           </span>
         </div>
 
-        <OrganizationOrdersProductSelector
-          v-model:open="productsDialog"
-          :products="products"
-          :loading="loadingFetchProductOrders"
-          @select="handleProductSelection"
-        />
+        <div class="flex items-center gap-2">
+          <div class="text-xs text-muted-foreground">
+            Last updated: {{ formattedLastRefreshTime }}
+          </div>
+          <UiButton
+            variant="outline"
+            size="sm"
+            @click="refreshOrganizationData"
+            :disabled="loadingFetchingOrgOrdersSummary"
+          >
+            <Icon
+              :name="loadingFetchingOrgOrdersSummary ? 'lucide:loader-circle' : 'lucide:refresh-cw'"
+              class="mr-1 h-4 w-4"
+              :class="{ 'animate-spin': loadingFetchingOrgOrdersSummary }"
+            />
+            Refresh
+          </UiButton>
+          <OrganizationOrdersProductSelector
+            v-model:open="productsDialog"
+            :products="products"
+            :loading="loadingFetchProductOrders"
+            @select="handleProductSelection"
+          />
+        </div>
       </div>
 
       <div v-if="!selectedProduct" class="w-full">
@@ -121,6 +139,8 @@
   const loadingFetchingOrgOrdersSummary = ref(false);
   const loadingSetOrderStatus = ref(false);
   const route = useRoute();
+  const lastRefreshTime = ref(Date.now());
+  const refreshInterval = ref<NodeJS.Timeout | null>(null);
 
   const orgIDparams = computed(() => {
     const id = route.params.id;
@@ -130,8 +150,14 @@
     return id;
   });
 
-  const { fetchOrganizationProducts, fetchProductOrders, fetchOrganizationOrders, setOrderStatus } =
-    useFetchOrders();
+  const {
+    fetchOrganizationProducts,
+    fetchProductOrders,
+    fetchOrganizationOrders,
+    setOrderStatus,
+    invalidateOrgCache,
+  } = useFetchOrders();
+
   const { trackCommission } = useTrackCommission();
 
   const commissionData = ref({ paidCommission: 0, unpaidCommission: 0 });
@@ -142,6 +168,58 @@
     commissionData.value = await trackCommission(orgIDparams.value);
   };
 
+  const refreshOrganizationData = async (showToast = true) => {
+    if (!orgIDparams.value) return;
+
+    loadingFetchingOrgOrdersSummary.value = true;
+    try {
+      // Force refresh from the server by invalidating cache
+      invalidateOrgCache(orgIDparams.value);
+
+      // Fetch fresh data - pass true to force refresh
+      const fetchedOrganizationOrders = await fetchOrganizationOrders(orgIDparams.value, true);
+      organizationOrders.value = fetchedOrganizationOrders;
+
+      // Refresh products list
+      const fetchedProducts = await fetchOrganizationProducts(orgIDparams.value);
+      products.value = fetchedProducts;
+
+      // If a product was selected, refresh its orders too
+      if (selectedProduct.value) {
+        const fetchedOrders = await fetchProductOrders(selectedProduct.value.id, true);
+        orders.value = fetchedOrders;
+      }
+
+      // Update commission data
+      await fetchCommissionData();
+
+      // Update the last refresh time
+      lastRefreshTime.value = Date.now();
+
+      if (showToast) {
+        useToast().toast({
+          title: "Data Refreshed",
+          description: "Order data has been refreshed from the server",
+          duration: 3000,
+          icon: "lucide:refresh-cw",
+        });
+      }
+    } catch (error) {
+      console.error("Error refreshing organization data:", error);
+      if (showToast) {
+        useToast().toast({
+          title: "Refresh Failed",
+          description: "Failed to refresh order data",
+          duration: 3000,
+          icon: "lucide:alert-triangle",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      loadingFetchingOrgOrdersSummary.value = false;
+    }
+  };
+
   const handleProductSelection = async (product: ExtendedProduct | null, save: boolean) => {
     loadingFetchProductOrders.value = true;
     productsDialog.value = false;
@@ -149,23 +227,46 @@
     if (save && product) {
       selectedProduct.value = product;
       try {
-        const fetchedOrders = await fetchProductOrders(product.id);
+        // Pass forceRefresh=false to use cached data if available
+        const fetchedOrders = await fetchProductOrders(product.id, false);
         orders.value = fetchedOrders;
+
+        // Enhanced toast message with pending count
+        const pendingCount = fetchedOrders.filter((o) => o.orderStatus === "pending").length;
+
+        useToast().toast({
+          title: `${product.name}`,
+          description: `Loaded ${fetchedOrders.length} orders (${pendingCount} pending)`,
+          duration: 3000,
+          icon: "lucide:package",
+        });
       } catch (error) {
         console.error("Error fetching orders for selected product:", error);
+
+        // Error toast
+        useToast().toast({
+          title: "Error Loading Orders",
+          description: "There was a problem fetching orders for this product",
+          duration: 3000,
+          icon: "lucide:alert-triangle",
+          variant: "destructive",
+        });
       } finally {
         loadingFetchProductOrders.value = false;
       }
     } else {
       loadingFetchProductOrders.value = false;
-    }
 
-    useToast().toast({
-      title: save ? "Product Chosen" : "Action Cancelled",
-      description: `Product has been ${save ? "chosen" : "cancelled"}`,
-      duration: 5000,
-      icon: save ? "lucide:check" : "lucide:x",
-    });
+      // Only show toast if action was cancelled by user
+      if (!save) {
+        useToast().toast({
+          title: "Selection Cancelled",
+          description: "No product was selected",
+          duration: 2000,
+          icon: "lucide:x",
+        });
+      }
+    }
   };
 
   const setPendingOrdersToPreparing = async () => {
@@ -173,21 +274,66 @@
       loadingSetOrderStatus.value = true;
       try {
         await setOrderStatus(selectedProduct.value.id, "preparing");
+
+        // Refresh product orders after status change - force refresh to get latest data
+        const refreshedOrders = await fetchProductOrders(selectedProduct.value.id, true);
+        orders.value = refreshedOrders;
+
+        // Also refresh organization orders - force refresh
+        const refreshedOrgOrders = await fetchOrganizationOrders(orgIDparams.value, true);
+        organizationOrders.value = refreshedOrgOrders;
+
+        useToast().toast({
+          title: "Orders Updated",
+          description: "Pending orders have been set to preparing",
+          duration: 3000,
+          icon: "lucide:check",
+        });
       } catch (error) {
         console.error("Error setting orders to preparing:", error);
+        useToast().toast({
+          title: "Update Failed",
+          description: "Failed to update order status",
+          duration: 3000,
+          icon: "lucide:alert-triangle",
+          variant: "destructive",
+        });
       } finally {
         loadingSetOrderStatus.value = false;
       }
     }
   };
 
+  // Similarly update setPendingOrdersToReady
   const setPendingOrdersToReady = async () => {
     if (selectedProduct.value) {
       loadingSetOrderStatus.value = true;
       try {
         await setOrderStatus(selectedProduct.value.id, "ready");
+
+        // Force refresh after status change
+        const refreshedOrders = await fetchProductOrders(selectedProduct.value.id, true);
+        orders.value = refreshedOrders;
+
+        // Force refresh organization orders
+        const refreshedOrgOrders = await fetchOrganizationOrders(orgIDparams.value, true);
+        organizationOrders.value = refreshedOrgOrders;
+
+        useToast().toast({
+          title: "Orders Updated",
+          description: "Pending orders have been set to ready",
+          duration: 3000,
+          icon: "lucide:check",
+        });
       } catch (error) {
         console.error("Error setting orders to ready:", error);
+        useToast().toast({
+          title: "Update Failed",
+          description: "Failed to update order status",
+          duration: 3000,
+          icon: "lucide:alert-triangle",
+          variant: "destructive",
+        });
       } finally {
         loadingSetOrderStatus.value = false;
       }
@@ -207,6 +353,7 @@
             preOrderStocks: item.variationDetails?.preOrderStocks || 0,
             completedOrders: item.variationDetails?.completedOrders || 0,
             cancelledOrders: item.variationDetails?.cancelledOrders || 0,
+            totalOrders: 0,
           };
         }
         summaries[item.variationID].totalOrders += item.quantity;
@@ -235,27 +382,54 @@
     return summary;
   });
 
+  // Format the last refresh time for display
+  const formattedLastRefreshTime = computed(() => {
+    return new Date(lastRefreshTime.value).toLocaleTimeString();
+  });
+
+  // Setup auto-refresh interval (every 5 minutes)
+  const setupAutoRefresh = () => {
+    // Clear any existing interval
+    if (refreshInterval.value) {
+      clearInterval(refreshInterval.value);
+    }
+
+    // Set up new interval (5 minutes = 300000 ms)
+    refreshInterval.value = setInterval(() => {
+      refreshOrganizationData(false); // Refresh without showing toast
+    }, 300000);
+  };
+
   onMounted(async () => {
     try {
-      fetchCommissionData();
+      await fetchCommissionData();
 
       if (!orgIDparams.value) {
         console.error("orgIDparams is undefined or null");
         return;
       }
 
-      // Fetch products for the organization
+      // Use cached data on initial load for better performance
       const fetchedProducts = await fetchOrganizationProducts(orgIDparams.value);
       products.value = fetchedProducts;
 
-      // Fetch orders for the organization
       loadingFetchingOrgOrdersSummary.value = true;
       const fetchedOrganizationOrders = await fetchOrganizationOrders(orgIDparams.value);
       organizationOrders.value = fetchedOrganizationOrders;
+
+      // Set up auto-refresh
+      setupAutoRefresh();
     } catch (error) {
       console.error("Error fetching products or orders:", error);
     } finally {
       loadingFetchingOrgOrdersSummary.value = false;
+    }
+  });
+
+  onBeforeUnmount(() => {
+    // Clear the interval when component is unmounted
+    if (refreshInterval.value) {
+      clearInterval(refreshInterval.value);
     }
   });
 </script>

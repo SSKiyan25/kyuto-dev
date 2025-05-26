@@ -1,5 +1,4 @@
 import { collection, doc, getDoc, getDocs, query, updateDoc, where } from "firebase/firestore";
-import type { Account } from "~/types/models/Account";
 import type { Order, OrderItem } from "~/types/models/Order";
 import type { Product, Variation } from "~/types/models/Product";
 
@@ -16,14 +15,98 @@ export type ExtendedOrder = Order & {
   orderItems: ExtendedOrderItem[];
 };
 
+interface CacheItem<T> {
+  data: T;
+  timestamp: number;
+  expiry: number; // Time in milliseconds when this cache item expires
+}
+
 export const useFetchOrders = () => {
   const db = useFirestore();
 
+  // Cache duration in milliseconds (default: 5 minutes)
+  const CACHE_DURATION = 5 * 60 * 1000;
+
+  // Cache keys
+  const CACHE_KEYS = {
+    PRODUCT: (productId: string) => `product_${productId}_details`,
+    VARIATION: (productId: string, variationId: string) =>
+      `variation_${productId}_${variationId}_details`,
+    ORDER_ITEMS: (orderId: string) => `order_items_${orderId}_details`,
+    PRODUCT_ORDERS: (productId: string) => `product_orders_${productId}_details`,
+    ORG_PRODUCTS: (orgId: string) => `org_products_${orgId}_details`,
+    ORG_ORDERS: (orgId: string) => `org_orders_${orgId}_details`,
+  };
+
+  // In-memory cache
+  const cache = reactive<Record<string, CacheItem<any>>>({});
+
+  // Cache management functions
+  const getCache = <T>(key: string): T | null => {
+    const item = cache[key];
+    if (!item) return null;
+
+    // Check if cache has expired
+    if (Date.now() > item.expiry) {
+      delete cache[key];
+      return null;
+    }
+
+    return item.data as T;
+  };
+
+  const setCache = <T>(key: string, data: T, duration = CACHE_DURATION): void => {
+    const now = Date.now();
+    cache[key] = {
+      data,
+      timestamp: now,
+      expiry: now + duration,
+    };
+  };
+
+  const invalidateCache = (key: string): void => {
+    if (cache[key]) {
+      delete cache[key];
+    }
+  };
+
+  const invalidateOrgCache = (orgId: string): void => {
+    // Clear all caches related to an organization
+    const keysToInvalidate = Object.keys(cache).filter(
+      (key) =>
+        key.includes(`org_${orgId}`) || key.startsWith("product_") || key.startsWith("order_")
+    );
+
+    keysToInvalidate.forEach((key) => delete cache[key]);
+  };
+
+  const invalidateProductCache = (productId: string): void => {
+    // Clear caches related to a specific product
+    const keysToInvalidate = Object.keys(cache).filter(
+      (key) => key.includes(`product_${productId}`) || key.startsWith("order_")
+    );
+
+    keysToInvalidate.forEach((key) => delete cache[key]);
+  };
+
   // Helper function to fetch product details
   const fetchProductDetails = async (productID: string): Promise<Product | null> => {
+    const cacheKey = CACHE_KEYS.PRODUCT(productID);
+    const cachedProduct = getCache<Product | null>(cacheKey);
+
+    if (cachedProduct !== null) {
+      return cachedProduct;
+    }
+
     const productRef = doc(db, "products", productID);
     const productDoc = await getDoc(productRef);
-    return productDoc.exists() ? (productDoc.data() as Product) : null;
+    const product = productDoc.exists() ? (productDoc.data() as Product) : null;
+
+    if (product) {
+      setCache(cacheKey, product);
+    }
+
+    return product;
   };
 
   // Helper function to fetch variation details from the sub-collection of the product
@@ -31,29 +114,46 @@ export const useFetchOrders = () => {
     productID: string,
     variationID: string
   ): Promise<Variation | null> => {
+    const cacheKey = CACHE_KEYS.VARIATION(productID, variationID);
+    const cachedVariation = getCache<Variation | null>(cacheKey);
+
+    if (cachedVariation !== null) {
+      return cachedVariation;
+    }
+
     const variationRef = doc(db, `products/${productID}/variations`, variationID);
     const variationDoc = await getDoc(variationRef);
-    return variationDoc.exists() ? (variationDoc.data() as Variation) : null;
+    const variation = variationDoc.exists() ? (variationDoc.data() as Variation) : null;
+
+    if (variation) {
+      setCache(cacheKey, variation);
+    }
+
+    return variation;
   };
 
   // Helper function to fetch order items for a given order ID
   const fetchOrderItems = async (orderID: string): Promise<ExtendedOrderItem[]> => {
-    // console.log("Fetching order items for order: ", orderID);
+    const cacheKey = CACHE_KEYS.ORDER_ITEMS(orderID);
+    const cachedOrderItems = getCache<ExtendedOrderItem[]>(cacheKey);
+
+    if (cachedOrderItems !== null) {
+      return cachedOrderItems;
+    }
+
     const orderItems: ExtendedOrderItem[] = [];
     try {
       const orderItemsRef = collection(db, `orders/${orderID}/orderItems`);
       const querySnapshot = await getDocs(orderItemsRef);
-      // console.log("Total order items fetched: ", querySnapshot.docs.length);
+
       for (const doc of querySnapshot.docs) {
         const orderItem = doc.data() as OrderItem;
-        // console.log("Processing order item: ", orderItem);
         const productDetails = await fetchProductDetails(orderItem.productID);
-        // console.log("Product details fetched: ", productDetails);
         const variationDetails = await fetchVariationDetails(
           orderItem.productID,
           orderItem.variationID
         );
-        // console.log("Variation details fetched: ", variationDetails);
+
         orderItems.push({
           ...orderItem,
           id: doc.id,
@@ -61,9 +161,12 @@ export const useFetchOrders = () => {
           variationDetails,
         });
       }
+
+      setCache(cacheKey, orderItems);
     } catch (error) {
       console.error("Error fetching order items:", error);
     }
+
     return orderItems;
   };
 
@@ -71,6 +174,13 @@ export const useFetchOrders = () => {
   const fetchOrganizationProducts = async (
     organizationID: string
   ): Promise<(Product & { id: string })[]> => {
+    const cacheKey = CACHE_KEYS.ORG_PRODUCTS(organizationID);
+    const cachedProducts = getCache<(Product & { id: string })[]>(cacheKey);
+
+    if (cachedProducts !== null) {
+      return cachedProducts;
+    }
+
     const productsRef = collection(db, "products");
     const q = query(productsRef, where("organizationID", "==", organizationID));
     const querySnapshot = await getDocs(q);
@@ -81,65 +191,91 @@ export const useFetchOrders = () => {
           ...doc.data(),
         }) as Product & { id: string }
     );
+
+    setCache(cacheKey, products);
     return products;
   };
 
   // Fetch orders for a chosen product
-  const fetchProductOrders = async (productID: string): Promise<ExtendedOrder[]> => {
-    // console.log("Fetching orders for product: ", productID);
+  const fetchProductOrders = async (
+    productID: string,
+    forceRefresh = false
+  ): Promise<ExtendedOrder[]> => {
+    const cacheKey = CACHE_KEYS.PRODUCT_ORDERS(productID);
+    if (!forceRefresh) {
+      const cachedOrders = getCache<ExtendedOrder[]>(cacheKey);
+      if (cachedOrders !== null) {
+        return cachedOrders;
+      }
+    } else {
+      invalidateProductCache(productID);
+    }
+
     const orders: ExtendedOrder[] = [];
     try {
       const ordersRef = collection(db, "orders");
       const querySnapshot = await getDocs(ordersRef);
-      // console.log("Total orders fetched: ", querySnapshot.docs.length);
+
       for (const doc of querySnapshot.docs) {
         const order = doc.data() as Order;
-        // console.log("Processing order: ", order);
         const orderItems = await fetchOrderItems(doc.id);
-        // console.log("Order items fetched: ", orderItems);
         const filteredOrderItems = orderItems.filter((item) => item.productID === productID);
-        // console.log(`Order ID: ${doc.id}, Filtered Order Items:`, filteredOrderItems);
+
         if (filteredOrderItems.length > 0) {
           orders.push({ ...order, id: doc.id, orderItems: filteredOrderItems });
         }
       }
+
+      setCache(cacheKey, orders);
     } catch (error) {
       console.error("Error fetching product orders:", error);
     }
-    // console.log("Fetched Orders:", orders);
+
     return orders;
   };
 
   // Fetch orders for the organization
-  const fetchOrganizationOrders = async (organizationID: string): Promise<ExtendedOrder[]> => {
-    // console.log("Fetching orders for organization: ", organizationID);
+  const fetchOrganizationOrders = async (
+    organizationID: string,
+    forceRefresh = false
+  ): Promise<ExtendedOrder[]> => {
+    const cacheKey = CACHE_KEYS.ORG_ORDERS(organizationID);
+    if (!forceRefresh) {
+      const cachedOrders = getCache<ExtendedOrder[]>(cacheKey);
+      if (cachedOrders !== null) {
+        return cachedOrders;
+      }
+    } else {
+      invalidateOrgCache(organizationID);
+    }
+
     const orders: ExtendedOrder[] = [];
     try {
       const ordersRef = collection(db, "orders");
       const q = query(ordersRef, where("organizationID", "==", organizationID));
       const querySnapshot = await getDocs(q);
-      // console.log("Total orders fetched: ", querySnapshot.docs.length);
+
       for (const doc of querySnapshot.docs) {
         const order = doc.data() as Order;
-        // console.log("Processing order: ", order);
         const orderItems = await fetchOrderItems(doc.id);
-        // console.log("Order items fetched: ", orderItems);
         orders.push({ ...order, id: doc.id, orderItems });
       }
+
+      setCache(cacheKey, orders);
     } catch (error) {
       console.error("Error fetching organization orders:", error);
     }
-    // console.log("Fetched Orders:", orders);
+
     return orders;
   };
 
+  // Update order status and invalidate relevant caches
   const setOrderStatus = async (
     productID: string,
     orderStatus: "preparing" | "ready"
   ): Promise<void> => {
-    // console.log(`Setting orders for product ${productID} to ${orderStatus}`);
     try {
-      const orders = await fetchProductOrders(productID);
+      const orders = await fetchProductOrders(productID, true); // Force fresh data
       for (const order of orders) {
         const orderRef = doc(db, `orders/${order.id}`);
         const orderDoc = await getDoc(orderRef);
@@ -147,14 +283,40 @@ export const useFetchOrders = () => {
 
         if (currentStatus !== "claimed" && currentStatus !== "cancelled") {
           await updateDoc(orderRef, { orderStatus });
-          // console.log(`Order ${order.id} status set to ${orderStatus}`);
-        } else {
-          console.log(`Order ${order.id} status is ${currentStatus}, not updating`);
+
+          // Invalidate caches for this order
+          invalidateCache(CACHE_KEYS.ORDER_ITEMS(order.id));
         }
+      }
+
+      // Invalidate product orders cache after updating statuses
+      invalidateCache(CACHE_KEYS.PRODUCT_ORDERS(productID));
+
+      // Also invalidate organization orders cache if we can get the orgID
+      if (orders.length > 0 && orders[0].organizationID) {
+        invalidateCache(CACHE_KEYS.ORG_ORDERS(orders[0].organizationID));
       }
     } catch (error) {
       console.error("Error setting order status:", error);
     }
+  };
+
+  // Get cache statistics for debugging
+  const getCacheStats = () => {
+    const now = Date.now();
+    const keys = Object.keys(cache);
+
+    return {
+      totalItems: keys.length,
+      validItems: keys.filter((key) => cache[key].expiry > now).length,
+      expiredItems: keys.filter((key) => cache[key].expiry <= now).length,
+      keys: keys,
+    };
+  };
+
+  // Clear all caches
+  const clearAllCaches = () => {
+    Object.keys(cache).forEach((key) => delete cache[key]);
   };
 
   return {
@@ -163,5 +325,9 @@ export const useFetchOrders = () => {
     fetchProductOrders,
     fetchOrderItems,
     setOrderStatus,
+    invalidateOrgCache,
+    invalidateProductCache,
+    getCacheStats,
+    clearAllCaches,
   };
 };

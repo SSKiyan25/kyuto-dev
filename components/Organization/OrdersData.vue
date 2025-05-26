@@ -1,15 +1,32 @@
 <template>
   <UiDivider class="my-4" />
-  <div class="flex flex-row flex-wrap gap-2 pt-8 opacity-70">
-    <template v-for="status in statuses" :key="status.value">
-      <UiButton
-        :variant="statusVariant(status.value)"
-        @click="fetchOrders(status.value)"
-        class="mb-2 text-xs sm:text-sm"
-      >
-        {{ status.status }}
-      </UiButton>
-    </template>
+  <div class="flex flex-row flex-wrap items-center justify-between gap-2 pt-8">
+    <div class="flex flex-wrap gap-2 opacity-70">
+      <template v-for="status in statuses" :key="status.value">
+        <UiButton
+          :variant="statusVariant(status.value)"
+          @click="fetchOrders(status.value)"
+          class="mb-2 text-xs sm:text-sm"
+        >
+          {{ status.status }}
+        </UiButton>
+      </template>
+    </div>
+
+    <UiButton
+      variant="outline"
+      size="sm"
+      @click="refreshOrders"
+      :disabled="loading"
+      class="h-8 text-xs"
+    >
+      <Icon
+        :name="loading ? 'lucide:loader-circle' : 'lucide:refresh-cw'"
+        class="mr-1 h-4 w-4"
+        :class="{ 'animate-spin': loading }"
+      />
+      Refresh
+    </UiButton>
   </div>
   <UiDivider />
   <div class="mt-4 w-full">
@@ -44,6 +61,14 @@
       :hideClose="statusLoading"
     >
       <template #content>
+        <!-- Loading overlay - use orderDetailsLoading instead of statusLoading -->
+        <div
+          v-if="orderDetailsLoading"
+          class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-secondary-foreground/5 backdrop-blur-sm"
+        >
+          <Icon name="lucide:loader-circle" class="h-12 w-12 animate-spin text-primary" />
+          <p class="mt-2 text-sm font-medium">Loading order details...</p>
+        </div>
         <!-- Loading overlay -->
         <div
           v-if="statusLoading"
@@ -320,6 +345,8 @@
     markAsClaimed,
     fetchOrderDetails,
     cancelOrder,
+    invalidateOrganizationCache,
+    clearBuyerCaches,
   } = useFetchFilterOrders();
 
   const closeDialog = () => {
@@ -341,14 +368,28 @@
     if (selectedOrder.value && selectedOrder.value.id) {
       statusLoading.value = true;
       isCheckboxMarked.value = true;
-      await markAsReady(selectedOrder.value.id, selectedOrder.value.orderStatus);
-      const updatedOrder = await fetchOrderDetails(selectedOrder.value.id);
-      if (updatedOrder) {
-        selectedOrder.value = updatedOrder;
-        updateOrderInList(updatedOrder);
+      try {
+        await markAsReady(selectedOrder.value.id, selectedOrder.value.orderStatus);
+
+        // Force refresh to get updated order
+        const updatedOrder = await fetchOrderDetails(selectedOrder.value.id, true);
+        if (updatedOrder) {
+          selectedOrder.value = updatedOrder;
+          updateOrderInList(updatedOrder);
+        }
+      } catch (error) {
+        console.error("Error marking order as ready:", error);
+        useToast().toast({
+          title: "Update Failed",
+          description: "Failed to update order status",
+          duration: 3000,
+          icon: "lucide:alert-triangle",
+          variant: "destructive",
+        });
+      } finally {
+        statusLoading.value = false;
+        isCheckboxMarked.value = false;
       }
-      statusLoading.value = false;
-      isCheckboxMarked.value = false;
     }
   };
 
@@ -356,16 +397,30 @@
     if (selectedOrder.value && selectedOrder.value.id) {
       statusLoading.value = true;
       isCheckboxMarked.value = true;
-      await markAsPaid(selectedOrder.value.id, selectedOrder.value.paymentStatus);
-      const updatedOrder = await fetchOrderDetails(selectedOrder.value.id);
-      if (updatedOrder) {
-        selectedOrder.value = updatedOrder;
-        updateOrderInList(updatedOrder);
-      }
-      statusLoading.value = false;
-      isCheckboxMarked.value = false;
+      try {
+        await markAsPaid(selectedOrder.value.id, selectedOrder.value.paymentStatus);
 
-      emit("updateCommission");
+        // Force refresh to get updated order
+        const updatedOrder = await fetchOrderDetails(selectedOrder.value.id, true);
+        if (updatedOrder) {
+          selectedOrder.value = updatedOrder;
+          updateOrderInList(updatedOrder);
+        }
+
+        emit("updateCommission");
+      } catch (error) {
+        console.error("Error marking order as paid:", error);
+        useToast().toast({
+          title: "Update Failed",
+          description: "Failed to update payment status",
+          duration: 3000,
+          icon: "lucide:alert-triangle",
+          variant: "destructive",
+        });
+      } finally {
+        statusLoading.value = false;
+        isCheckboxMarked.value = false;
+      }
     }
   };
 
@@ -373,18 +428,32 @@
     if (selectedOrder.value && selectedOrder.value.id && selectedOrder.value.orderItems) {
       statusLoading.value = true;
       isCheckboxMarked.value = true;
-      await markAsClaimed(
-        selectedOrder.value.id,
-        selectedOrder.value.orderStatus,
-        selectedOrder.value.orderItems
-      );
-      const updatedOrder = await fetchOrderDetails(selectedOrder.value.id);
-      if (updatedOrder) {
-        selectedOrder.value = updatedOrder;
-        updateOrderInList(updatedOrder);
+      try {
+        await markAsClaimed(
+          selectedOrder.value.id,
+          selectedOrder.value.orderStatus,
+          selectedOrder.value.orderItems
+        );
+
+        // Force refresh to get updated order
+        const updatedOrder = await fetchOrderDetails(selectedOrder.value.id, true);
+        if (updatedOrder) {
+          selectedOrder.value = updatedOrder;
+          updateOrderInList(updatedOrder);
+        }
+      } catch (error) {
+        console.error("Error marking order as claimed:", error);
+        useToast().toast({
+          title: "Update Failed",
+          description: "Failed to update order status",
+          duration: 3000,
+          icon: "lucide:alert-triangle",
+          variant: "destructive",
+        });
+      } finally {
+        statusLoading.value = false;
+        isCheckboxMarked.value = false;
       }
-      statusLoading.value = false;
-      isCheckboxMarked.value = false;
     }
   };
 
@@ -392,25 +461,30 @@
     statusLoading.value = true;
     if (selectedOrder.value && selectedOrder.value.id) {
       try {
-        // console.log("Cancelling order:", selectedOrder.value.id);
-        // console.log("Remarks:", cancelRemarks.value);
         await cancelOrder(
           selectedOrder.value.id,
           cancelRemarks.value,
           selectedOrder.value.orderItems
         );
+
+        // Refresh orders after cancellation with forceRefresh=true
+        const updatedOrder = await fetchOrderDetails(selectedOrder.value.id, true);
+        if (updatedOrder) {
+          updateOrderInList(updatedOrder);
+        }
+
+        // Also refresh filtered orders
+        await fetchOrders(selectedStatus.value, true);
+
         useToast().toast({
           title: "Order Cancelled",
           description: "The order has been cancelled successfully.",
           duration: 5000,
           icon: "lucide:check",
         });
-        // Refresh orders after cancellation
-        const updatedOrder = await fetchOrderDetails(selectedOrder.value.id);
-        if (updatedOrder) {
-          updateOrderInList(updatedOrder);
-        }
+
         cancelRemarks.value = "";
+        emit("updateCommission");
       } catch (error) {
         console.error("Error cancelling order: ", error);
         useToast().toast({
@@ -458,11 +532,11 @@
     },
   ];
 
-  const fetchOrders = async (status: string) => {
+  const fetchOrders = async (status: string, forceRefresh = false) => {
     loading.value = true;
-    console.log(props.organizationID, status);
     try {
-      const fetchedOrders = await fetchFilteredOrders(props.organizationID, status);
+      // Use forceRefresh parameter to control cache usage
+      const fetchedOrders = await fetchFilteredOrders(props.organizationID, status, forceRefresh);
       orders.value = fetchedOrders;
       selectedStatus.value = status;
     } catch (error) {
@@ -472,25 +546,63 @@
     }
   };
 
-  const viewOrder = async (order: ExtendedOrder) => {
-    // Fetch the latest order data directly from the database
+  const refreshOrders = async () => {
     loading.value = true;
+    try {
+      // Invalidate organization cache and fetch fresh data
+      invalidateOrganizationCache(props.organizationID);
+      clearBuyerCaches();
+      // await fetchOrders(selectedStatus.value, true);
+      const freshOrders = await fetchFilteredOrders(
+        props.organizationID,
+        selectedStatus.value,
+        true, // forceRefresh
+        true // refreshBuyers
+      );
+      orders.value = freshOrders;
+      // console.log("Buyer Account data:", orders);
+      useToast().toast({
+        title: "Orders Refreshed",
+        description: "Order data has been refreshed from the server",
+        duration: 3000,
+        icon: "lucide:refresh-cw",
+      });
+    } catch (error) {
+      console.error("Error refreshing orders:", error);
+      useToast().toast({
+        title: "Refresh Failed",
+        description: "Failed to refresh order data",
+        duration: 3000,
+        icon: "lucide:alert-triangle",
+        variant: "destructive",
+      });
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const orderDetailsLoading = ref(false);
+
+  const viewOrder = async (order: ExtendedOrder) => {
+    // Initialize the dialog with existing data first
+    selectedOrder.value = order;
+    viewOrderDialog.value = true;
+
+    // Then fetch fresh data in the background without loading the whole table
+    orderDetailsLoading.value = true;
     try {
       const freshOrderData = await fetchOrderDetails(order.id);
       if (freshOrderData) {
         selectedOrder.value = freshOrderData;
-        // Also update the order in the list to keep the table in sync
-        updateOrderInList(freshOrderData);
-      } else {
-        selectedOrder.value = order;
+        // Don't update the main table data - this avoids the refresh effect
+        // updateOrderInList(freshOrderData); // Remove or comment this line
       }
     } catch (error) {
       console.error("Error fetching fresh order data:", error);
-      selectedOrder.value = order; // Fallback to the provided order
+      // We already set selectedOrder earlier, so no need to fallback
     } finally {
-      loading.value = false;
+      orderDetailsLoading.value = false;
     }
-    viewOrderDialog.value = true;
   };
 
   const viewCancelOrder = async (order: ExtendedOrder) => {
@@ -532,12 +644,14 @@
     { title: "Reference Number", data: "uniqRefNumber" },
     {
       title: "Buyer Email",
-      data: "buyerAccountDetails.email",
-      render: (data: string) => {
-        if (!data) return "N/A";
+      data: null, // Change to null instead of using 'buyerAccountDetails.email'
+      render: (data: any, type: any, row: ExtendedOrder) => {
+        // Access the email from the row object directly with optional chaining
+        const email = row.buyerAccountDetails?.email;
+        if (!email) return "N/A";
         return `
-    <div class="max-w-[100px] text-xs md:max-w-[150px] lg:max-w-[200px] truncate" title="${data}">
-      ${data}
+    <div class="max-w-[100px] text-xs md:max-w-[150px] lg:max-w-[200px] truncate" title="${email}">
+      ${email}
     </div>`;
       },
     },
