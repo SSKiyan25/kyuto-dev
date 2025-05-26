@@ -62,7 +62,13 @@ export default defineNuxtConfig({
   },
 
   build: {
-    transpile: ["vue-sonner"],
+    transpile: ["vue-sonner", "xlsx"],
+  },
+
+  vite: {
+    optimizeDeps: {
+      include: ["xlsx"],
+    },
   },
 
   app: {
