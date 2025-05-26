@@ -274,7 +274,7 @@
 
   const handleProductSelect = (product: ProductSearchResult) => {
     // Handle navigation or other actions
-    navigateTo(`/products/${product.id}`);
+    navigateTo(`/product/${product.id}`);
   };
 
   const handleProductClick = (productID: string) => {
