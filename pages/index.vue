@@ -364,6 +364,23 @@
             </div>
           </template>
 
+          <template v-else-if="products.length === 0">
+            <!-- Empty state message -->
+            <div class="col-span-2 w-full py-16 text-center sm:py-24">
+              <div class="mx-auto flex max-w-xl flex-col items-center">
+                <Icon name="lucide:package-x" class="mb-4 h-12 w-12 text-muted-foreground/60" />
+                <h3 class="text-lg font-medium text-foreground sm:text-xl">No products found</h3>
+                <p class="mt-2 text-sm text-muted-foreground">
+                  We couldn't find any products matching your current filters or search criteria.
+                </p>
+                <UiButton variant="outline" class="mt-6" @click="resetFilters">
+                  <Icon name="lucide:refresh-cw" class="mr-2 h-4 w-4" />
+                  Reset Filters
+                </UiButton>
+              </div>
+            </div>
+          </template>
+
           <template v-else>
             <div v-for="(product, i) in products" :key="i">
               <NuxtLink :to="`/product/${product.id}`" @click="handleProductClick(product.id)">
