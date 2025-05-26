@@ -456,7 +456,6 @@
   import { useCommissionRate } from "~/composables/useCommissionRate";
   import { usePriceCalculator } from "~/composables/usePriceCalculator";
   import { useViewProducts } from "~/composables/useViewProducts";
-  import type { Account as User } from "~/types/models/Account";
 
   const { products, fetchProducts, clearCache } = useViewProducts();
   const { commissionRate, fetchCommissionRate } = useCommissionRate();
@@ -465,6 +464,7 @@
 
   const currentPage = ref(1);
   const totalPages = ref(1);
+  const itemsPerPage = 10;
 
   const prevIcon = "lucide:chevron-left";
   const nextIcon = "lucide:chevron-right";
@@ -505,17 +505,16 @@
       sortBy,
       selectedCategoryTitles,
       sortPrice.value,
-      10,
+      itemsPerPage,
       currentPage.value
     );
-    totalPages.value = Math.ceil(totalProducts / 10);
-    // console.log("Total Pages in script:", totalPages.value);
+    totalPages.value = Math.ceil(totalProducts / itemsPerPage);
+    await fetchProductViewCounts();
     loadingProducts.value = false;
   };
 
   onMounted(async () => {
     await updateProducts();
-    await fetchProductViewCounts();
     await fetchCommissionRate();
   });
 
@@ -525,7 +524,29 @@
     loadingProducts.value = true;
     try {
       clearCache();
-      await fetchProducts();
+      currentPage.value = 1;
+
+      // Get the current filter settings to pass to fetchProducts
+      const activeFilter = showAs.value.find((item) => item.isActive);
+      const sortBy = activeFilter ? activeFilter.name : "all";
+      const selectedCategoryTitles = selectedCategories.value
+        .map((key) => {
+          const category = filterCategories.find((c) => c.key === key);
+          return category ? category.title : "";
+        })
+        .filter((title) => title !== "");
+
+      // Call fetchProducts with all required arguments
+      await fetchProducts(
+        sortBy,
+        selectedCategoryTitles,
+        sortPrice.value,
+        itemsPerPage,
+        currentPage.value
+      );
+
+      // Update product view counts
+      await fetchProductViewCounts();
     } catch (error) {
       console.error("Error refreshing products:", error);
     } finally {
@@ -541,19 +562,17 @@
     }
   };
 
-  const nextPage = () => {
+  const nextPage = async () => {
     if (currentPage.value < totalPages.value) {
-      console.log("Current Page:", currentPage.value);
       currentPage.value++;
-      updateProducts();
+      await updateProducts();
     }
   };
 
-  const prevPage = () => {
+  const prevPage = async () => {
     if (currentPage.value > 1) {
-      console.log("Current Page:", currentPage.value);
       currentPage.value--;
-      updateProducts();
+      await updateProducts();
     }
   };
 
@@ -608,7 +627,15 @@
     applyFilters();
   };
 
-  watch([selectedCategories, sortPrice, showAs], applyFilters);
+  watch(
+    () => [
+      JSON.stringify(selectedCategories.value),
+      sortPrice.value,
+      JSON.stringify(showAs.value.map((item) => item.isActive)),
+    ],
+    () => {},
+    { deep: true }
+  );
 </script>
 
 <style scoped>

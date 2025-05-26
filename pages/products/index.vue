@@ -269,6 +269,7 @@
 
   const currentPage = ref(1);
   const totalPages = ref(1);
+  const itemsPerPage = 10;
   const loadingProducts = ref(false);
   const productViewCounts = reactive<Record<string, number>>({});
 
@@ -309,6 +310,23 @@
     }
   };
 
+  const getFilterParams = () => {
+    const activeFilter = showAs.value.find((item) => item.isActive);
+    const sortBy = activeFilter ? activeFilter.name : "all";
+    const selectedCategoryTitles = selectedCategories.value
+      .map((key) => {
+        const category = filterCategories.find((c) => c.key === key);
+        return category ? category.title : "";
+      })
+      .filter((title) => title !== "");
+
+    return {
+      sortBy,
+      selectedCategoryTitles,
+      sortPrice: sortPrice.value,
+    };
+  };
+
   const updateProducts = async () => {
     loadingProducts.value = true;
     // console.log("Current Page in script:", currentPage.value);
@@ -324,17 +342,17 @@
       sortBy,
       selectedCategoryTitles,
       sortPrice.value,
-      10,
+      itemsPerPage,
       currentPage.value
     );
     totalPages.value = Math.ceil(totalProducts / 10);
+    await fetchProductViewCounts();
     // console.log("Total Pages in script:", totalPages.value);
     loadingProducts.value = false;
   };
 
   onMounted(async () => {
     await updateProducts();
-    await fetchProductViewCounts();
     await fetchCommissionRate();
   });
 
@@ -344,7 +362,21 @@
     loadingProducts.value = true;
     try {
       clearCache();
-      await fetchProducts();
+      currentPage.value = 1;
+
+      // Get the current filter settings
+      const { sortBy, selectedCategoryTitles, sortPrice } = getFilterParams();
+
+      // Call fetchProducts with all required arguments
+      await fetchProducts(
+        sortBy,
+        selectedCategoryTitles,
+        sortPrice,
+        itemsPerPage,
+        currentPage.value
+      );
+
+      await fetchProductViewCounts();
     } catch (error) {
       console.error("Error refreshing products:", error);
     } finally {
@@ -409,8 +441,6 @@
     currentPage.value = 1;
     updateProducts();
   };
-
-  watch([selectedCategories, sortPrice, showAs], applyFilters);
 </script>
 
 <style scoped>

@@ -26,7 +26,7 @@ export const useViewProducts = () => {
     sortBy: string = "all",
     categories: string[] = [],
     sortPrice: string = "none",
-    limitCount: number = 10,
+    limitCount: number,
     page: number = 1
   ): Promise<{ products: ProductWithId[]; totalProducts: number }> => {
     loading.value = true;
