@@ -2,6 +2,7 @@ import {
   collection,
   doc,
   limit as firestoreLimit,
+  getDoc,
   getDocs,
   query,
   startAfter,
@@ -9,7 +10,9 @@ import {
   where,
   writeBatch,
 } from "firebase/firestore";
+import type { CachedQueryResult } from "~/stores/productCache";
 import type { Product, Variation } from "~/types/models/Product";
+import type { DocumentData, QueryDocumentSnapshot } from "firebase/firestore";
 
 interface EnhancedProduct extends Product {
   id: string;
@@ -17,13 +20,67 @@ interface EnhancedProduct extends Product {
   stock: number;
 }
 
+// Define a safe result type that can be properly serialized
+export interface SafeProductsResult {
+  products: EnhancedProduct[];
+  lastVisible: QueryDocumentSnapshot<DocumentData> | null;
+  lastVisibleId?: string;
+  lastVisiblePath?: string;
+}
+
 export async function fetchProducts(
   limit: number,
   filterBy: string,
   category: string,
   lastVisible: any = null,
-  organizationId: string
-) {
+  organizationId: string,
+  page: number = 0,
+  useCache: boolean = true
+): Promise<SafeProductsResult> {
+  // Use the product cache store
+  const productCache = useProductCacheStore();
+
+  // Create a cache key for this specific query
+  const cacheKey = productCache.cacheKeys.PRODUCTS_LIST(
+    organizationId,
+    filterBy,
+    category,
+    limit,
+    page
+  );
+
+  // Check if we have cached data and should use it
+  if (useCache) {
+    const cachedData = productCache.getCache<CachedQueryResult>(cacheKey);
+    if (cachedData) {
+      // If we need to use lastVisible from cache, we need to get the actual document
+      let lastVisibleDoc = null;
+      if (cachedData.lastVisibleId && cachedData.lastVisiblePath) {
+        // Only try to get the lastVisible document if we're paginating and need it
+        if (page > 0 && lastVisible === null) {
+          const db = useFirestore();
+          try {
+            const docRef = doc(db, cachedData.lastVisiblePath);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+              lastVisibleDoc = docSnap;
+            }
+          } catch (e) {
+            console.error("Error retrieving lastVisible document:", e);
+          }
+        }
+      }
+
+      return {
+        products: cachedData.products,
+        lastVisible: lastVisibleDoc,
+        lastVisibleId: cachedData.lastVisibleId,
+        lastVisiblePath: cachedData.lastVisiblePath,
+      };
+    }
+  }
+
+  // If no cache or not using cache, fetch from Firestore
   const db = useFirestore();
 
   let productsQuery = query(
@@ -51,17 +108,37 @@ export async function fetchProducts(
     const product = doc.data() as Product;
     return { ...product, id: doc.id };
   });
-  // console.log("Products in composable: ", products);
 
   const enhancedProducts = await Promise.all(
     products.map(async (product) => {
-      const variationsSnapshot = await getDocs(
-        collection(db, "products", product.id, "variations")
-      );
-      const variations = variationsSnapshot.docs.map((doc) => doc.data() as Variation);
+      // Check for cached variations
+      const variationsCacheKey = productCache.cacheKeys.VARIATIONS(product.id);
+      let variations: (Variation & { id: string })[] | null = null;
 
-      const maxPrice = Math.max(...variations.map((v) => v.price));
-      const totalStocks = variations.reduce((sum, v) => sum + v.remainingStocks, 0);
+      if (useCache) {
+        variations = productCache.getCache<(Variation & { id: string })[]>(variationsCacheKey);
+      }
+
+      if (!variations) {
+        const variationsSnapshot = await getDocs(
+          collection(db, "products", product.id, "variations")
+        );
+        variations = variationsSnapshot.docs.map(
+          (doc) => ({ ...doc.data(), id: doc.id }) as Variation & { id: string }
+        );
+
+        // Cache the variations
+        productCache.setCache(
+          variationsCacheKey,
+          variations,
+          productCache.cacheDurations.VARIATIONS
+        );
+      }
+
+      // Handle the case where there are no variations
+      const prices = variations.map((v) => v.price || 0);
+      const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
+      const totalStocks = variations.reduce((sum, v) => sum + (v.remainingStocks || 0), 0);
 
       return {
         ...product,
@@ -71,10 +148,29 @@ export async function fetchProducts(
     })
   );
 
-  // console.log("Enhanced Products in composable: ", enhancedProducts);
+  // Get the last visible document
+  const lastDoc = productsSnapshot.docs[productsSnapshot.docs.length - 1];
+
+  // Create a serialization-safe result for caching
+  const cacheResult: CachedQueryResult = {
+    products: enhancedProducts,
+  };
+
+  // Only store ID and path from the lastVisible document
+  if (lastDoc) {
+    cacheResult.lastVisibleId = lastDoc.id;
+    cacheResult.lastVisiblePath = lastDoc.ref.path;
+  }
+
+  // Cache the serialization-safe result
+  productCache.setCache(cacheKey, cacheResult, productCache.cacheDurations.PRODUCTS_LIST);
+
+  // Return the full result for current use
   return {
     products: enhancedProducts,
-    lastVisible: productsSnapshot.docs[productsSnapshot.docs.length - 1],
+    lastVisible: lastDoc,
+    lastVisibleId: lastDoc?.id,
+    lastVisiblePath: lastDoc?.ref.path,
   };
 }
 
@@ -82,6 +178,10 @@ export async function archiveProduct(productId: string) {
   const db = useFirestore();
   const productRef = doc(db, "products", productId);
   await updateDoc(productRef, { isArchived: true, status: "Archived" });
+
+  // Invalidate cache for this product
+  const productCache = useProductCacheStore();
+  productCache.invalidateProductCache(productId);
 }
 
 export async function addDiscountToProduct(
@@ -152,18 +252,45 @@ export async function addDiscountToProduct(
       const variationData = variationDoc.data() as Variation;
       const discountPrice = variationData.price - (variationData.price * discount) / 100;
 
-      newBatch.update(variationRef, { discountPrice });
+      newBatch.update(variationRef, { discountPrice: parseFloat(discountPrice.toFixed(2)) });
     });
   }
 
   await newBatch.commit();
+
+  // Invalidate cache for this product and its variations
+  const productCache = useProductCacheStore();
+  productCache.invalidateProductCache(productId);
 }
 
-export async function fetchVariations(productId: string): Promise<(Variation & { id: string })[]> {
+export async function fetchVariations(
+  productId: string,
+  useCache: boolean = true
+): Promise<(Variation & { id: string })[]> {
+  // Use the product cache store
+  const productCache = useProductCacheStore();
+
+  // Create a cache key for variations
+  const cacheKey = productCache.cacheKeys.VARIATIONS(productId);
+
+  // Check if we have cached data and should use it
+  if (useCache) {
+    const cachedData = productCache.getCache<(Variation & { id: string })[]>(cacheKey);
+    if (cachedData) {
+      return cachedData;
+    }
+  }
+
+  // If no cache or not using cache, fetch from Firestore
   const db = useFirestore();
   const variationsRef = collection(db, "products", productId, "variations");
   const variationsSnapshot = await getDocs(variationsRef);
-  return variationsSnapshot.docs.map(
+  const variations = variationsSnapshot.docs.map(
     (doc) => ({ ...doc.data(), id: doc.id }) as Variation & { id: string }
   );
+
+  // Cache the variations
+  productCache.setCache(cacheKey, variations, productCache.cacheDurations.VARIATIONS);
+
+  return variations;
 }

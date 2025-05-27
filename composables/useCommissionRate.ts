@@ -45,7 +45,7 @@ export const useCommissionRate = () => {
 
       // Return cached data if available
       if (cachedCommissionRate) {
-        console.log("Loaded commission rate from cache");
+        // console.log("Loaded commission rate from cache");
         commissionRate.value = cachedCommissionRate;
         return;
       }
