@@ -1,6 +1,6 @@
 import { array, mixed, number, object, string } from "yup";
 
-export const disallowedCharactersRegex = /^[^<@#`'"%;\\\[\]{}|&$*^~:/?!+=,\r\n]*$/;
+export const disallowedCharactersRegex = /^[^<@#`'"%;\\\[\]{}|&$*^~:/?!+=\r\n]*$/;
 
 export const LoginSchema = object({
   email: string().required().label("Email").email(),
@@ -33,7 +33,7 @@ export const AddProductSchema = object({
   description: string()
     .label("Description")
     .max(200)
-    .matches(disallowedCharactersRegex, "Password contains invalid characters"),
+    .matches(disallowedCharactersRegex, "Description contains invalid characters"),
   status: string().required().label("Set Status"),
   featured_image: mixed()
     .required("Featured image is required")
@@ -67,15 +67,15 @@ export const EditProfileSchema = object({
   firstname: string()
     .label("First Name")
     .max(50)
-    .matches(disallowedCharactersRegex, "Password contains invalid characters"),
+    .matches(disallowedCharactersRegex, "Firstname contains invalid characters"),
   lastname: string()
     .label("Last Name")
     .max(50)
-    .matches(disallowedCharactersRegex, "Password contains invalid characters"),
+    .matches(disallowedCharactersRegex, "Lastname contains invalid characters"),
   username: string()
     .label("Username")
     .max(30)
-    .matches(disallowedCharactersRegex, "Password contains invalid characters"),
+    .matches(disallowedCharactersRegex, "Username contains invalid characters"),
   // email: string().required().label("Email Address").email(),
   phoneNumber: string()
     .label("Phone Number")
@@ -92,11 +92,11 @@ export const EditStudentInfoSchema = object({
   course: string()
     .label("Course")
     .max(50)
-    .matches(disallowedCharactersRegex, "Password contains invalid characters"),
+    .matches(disallowedCharactersRegex, "Course contains invalid characters"),
   college: string()
     .label("College")
     .max(50)
-    .matches(disallowedCharactersRegex, "Password contains invalid characters"),
+    .matches(disallowedCharactersRegex, "College contains invalid characters"),
 });
 
 export const DiscountSchema = object({

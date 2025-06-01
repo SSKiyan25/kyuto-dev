@@ -31,6 +31,7 @@
   ];
   const statusOptions = ["Draft", "Publish"];
   const currentMessage = "Please wait while we save your changes...";
+  const activeSection = ref("details");
 
   // Product Data
   const route = useRoute();
@@ -40,11 +41,10 @@
   const { data: product, pending } = useDocument<Partial<Product>>(productRef);
 
   const orgId = ref<string | null>(null);
-  // console.log("Organization ID: ", orgId);
   const { getOrganizationById, clearCache } = useOrganization();
   const organization = ref<OrganizationWithId | null>(null);
 
-  // Constants and Meta
+  // Breadcrumbs configuration
   const crumbs = reactive<Crumbs[]>([
     {
       label: "Dashboard",
@@ -73,7 +73,7 @@
     },
     { immediate: true }
   );
-  // console.log("Organization ID: ", orgId);
+
   // Form data with original values tracking
   const formData = reactive({
     name: "",
@@ -103,7 +103,6 @@
         formData.photos = newProduct.photosURL || [];
         formData.newPhotos = [];
         orgId.value = newProduct.organizationID || "";
-        // console.log("Organization ID in watch function: ", orgId.value);
 
         // Update original data
         Object.assign(originalData, { ...formData });
@@ -111,10 +110,9 @@
         // Fetch organization data if orgId is available
         if (orgId.value) {
           clearCache();
-          getOrganizationById(orgId.value)
+          getOrganizationById(orgId.value as string)
             .then((org) => {
               organization.value = org;
-              // console.log("Fetched organization:", org);
             })
             .catch((error) => {
               console.error("Error fetching organization data:", error);
@@ -189,12 +187,19 @@
   };
 
   const validateFields = () => {
-    // Regex to detect invalid characters
-    const invalidChars = /[<@#`"%;\\\[\]{}|$*^~:/?!+=,\r\n]/;
+    // More flexible approach for name validation
+    const nameInvalidChars = /[<>@#`"\\{}|$*^~]/;
 
-    // Regex to detect HTML tags
+    // More permissive for description (allows more formatting)
+    const descInvalidChars = /[<>{}|$*^]/;
+
+    // Regex to detect HTML tags - keep this as is
     const htmlTagRegex = /<\/?[\w\s="/.':;#-\/\?]+>/gi;
 
+    // Script tags detection (high security priority)
+    const scriptTagRegex = /<\s*script\b[^>]*>.*?<\/\s*script\s*>/gi;
+
+    // Basic validation
     if (!formData.name.trim()) {
       showError("Name cannot be empty");
       return false;
@@ -205,24 +210,33 @@
       return false;
     }
 
-    if (invalidChars.test(formData.name)) {
-      showError("Name contains invalid characters");
+    // Name validation (stricter)
+    if (nameInvalidChars.test(formData.name)) {
+      showError("Product name contains invalid characters");
       return false;
     }
 
     if (htmlTagRegex.test(formData.name)) {
-      showError("Name cannot contain HTML tags");
+      showError("Product name cannot contain HTML tags");
       return false;
     }
 
-    if (formData.description && invalidChars.test(formData.description)) {
-      showError("Description contains invalid characters");
-      return false;
-    }
+    // Description validation (more permissive)
+    if (formData.description) {
+      if (descInvalidChars.test(formData.description)) {
+        showError("Description contains invalid characters");
+        return false;
+      }
 
-    if (formData.description && htmlTagRegex.test(formData.description)) {
-      showError("Description cannot contain HTML tags");
-      return false;
+      if (htmlTagRegex.test(formData.description)) {
+        showError("Description cannot contain HTML tags");
+        return false;
+      }
+
+      if (scriptTagRegex.test(formData.description)) {
+        showError("Description contains potentially unsafe code");
+        return false;
+      }
     }
 
     return true;
@@ -293,6 +307,35 @@
         });
     }
   });
+
+  // Progress indicator
+  const completionSteps = computed(() => {
+    const steps = [
+      {
+        name: "Basic Information",
+        complete: !!formData.name && !!formData.category && !!formData.status,
+      },
+      {
+        name: "Description",
+        complete: !!formData.description,
+      },
+      {
+        name: "Featured Image",
+        complete: !!formData.featuredPhoto,
+      },
+      {
+        name: "Gallery Images",
+        complete: formData.photos.length > 0 || formData.newPhotos.length > 0,
+      },
+    ];
+
+    return steps;
+  });
+
+  const completionPercentage = computed(() => {
+    const completed = completionSteps.value.filter((step) => step.complete).length;
+    return Math.round((completed / completionSteps.value.length) * 100);
+  });
 </script>
 
 <template>
@@ -301,298 +344,99 @@
       <UiBreadcrumbs class="justify-center" :items="crumbs" />
     </div>
 
-    <form>
-      <div class="w-full">
-        <!-- Product Details -->
+    <!-- Progress Indicator -->
+    <div class="mx-auto mb-6 w-full max-w-4xl">
+      <div class="mb-2 flex items-center justify-between">
+        <h3 class="text-sm font-medium">Product completion</h3>
+        <span class="text-sm font-medium">{{ completionPercentage }}%</span>
+      </div>
+      <div class="h-2.5 w-full rounded-full bg-muted">
         <div
-          class="mt-4 flex h-auto w-full flex-col items-start rounded-md bg-muted p-4 shadow sm:mt-6 sm:p-6"
-        >
-          <div class="flex flex-col items-start gap-1">
-            <span class="text-lg font-semibold sm:text-xl md:text-2xl">Product Details</span>
-            <p class="text-xs opacity-60 sm:text-sm">
-              Edit the details of your product and save the changes.
-            </p>
-          </div>
-          <UiGradientDivider class="mt-3 sm:mt-4" />
-          <div class="flex w-full flex-col gap-4 pt-4">
-            <div class="flex flex-col gap-2 sm:flex-row">
-              <span class="font-semibold">Product Name: </span>
-              <span class="text-muted-foreground"> {{ product?.name }}</span>
-            </div>
-            <fieldset>
-              <UiLabel for="name">Change Product Name</UiLabel>
-              <UiInput
-                name="name"
-                id="name"
-                type="text"
-                class="w-full"
-                v-model="formData.name"
-                required
-              />
-              <div class="flex w-full flex-col gap-2 pt-4">
-                <div class="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
-                  <span class="font-semibold text-muted-foreground">Current Category: </span>
-                  <span class="font-semibold">{{ product?.category }}</span>
-                </div>
-                <div class="w-full sm:w-2/3 md:w-1/2 lg:w-4/12">
-                  <UiSelect label="Category" name="category" v-model="formData.category">
-                    <UiSelectTrigger placeholder="Select Category" />
-                    <UiSelectContent>
-                      <UiSelectLabel>Categories</UiSelectLabel>
-                      <UiSelectSeparator />
-                      <UiSelectGroup>
-                        <UiSelectItem
-                          v-for="category in categories"
-                          :key="category"
-                          :value="category"
-                          :text="category"
-                        />
-                      </UiSelectGroup>
-                    </UiSelectContent>
-                  </UiSelect>
-                </div>
-              </div>
-              <div class="flex w-full flex-col gap-2 pt-4">
-                <div class="flex flex-col items-start gap-2 sm:flex-row sm:items-center">
-                  <span class="font-semibold text-muted-foreground">Status:</span>
-                  <span class="font-semibold">{{ product?.status }}</span>
-                </div>
-                <div class="w-full sm:w-2/3 md:w-1/2 lg:w-4/12">
-                  <UiSelect label="Status" name="status" v-model="formData.status">
-                    <UiSelectTrigger placeholder="Select Status" />
-                    <UiSelectContent>
-                      <UiSelectLabel>Status</UiSelectLabel>
-                      <UiSelectSeparator />
-                      <UiSelectGroup>
-                        <UiSelectItem
-                          v-for="stat in formData.status ? statusOptions : []"
-                          :key="stat"
-                          :value="stat"
-                          :text="stat"
-                          :disabled="stat === 'Publish' && !organization?.isPublic"
-                        />
-                      </UiSelectGroup>
-                    </UiSelectContent>
-                  </UiSelect>
-                </div>
-                <!-- Reason for disabling Publish -->
-                <p
-                  v-if="!organization?.isPublic"
-                  class="mt-2 text-xs text-muted-foreground sm:text-sm"
-                >
-                  The "Publish" option is disabled because the organization is currently hidden.
-                  Make the organization public to enable publishing.
-                </p>
-              </div>
-              <UiLabel for="description" class="pt-4">Product Description</UiLabel>
-              <UiTextarea
-                id="description"
-                name="description"
-                class="w-full"
-                v-model="formData.description"
-                placeholder="Enter product description"
-              />
-              <!-- Pre Order-->
-              <div class="flex flex-col gap-2 pt-4">
-                <span class="font-semibold">Pre-Order settings: </span>
-                <p class="px-2 text-justify text-xs text-muted-foreground sm:px-4 sm:text-sm">
-                  {{ formData.canPreOrder ? "Pre-Order is enabled." : "Pre-Order is disabled." }}
-                </p>
-              </div>
-              <div class="flex flex-row items-center gap-2 pt-2">
-                <span class="text-xs text-muted-foreground sm:text-sm"
-                  >Do you want to change it?</span
-                >
-              </div>
-
-              <div class="flex flex-row items-center space-x-2 pt-4">
-                <input type="checkbox" v-model="formData.canPreOrder" id="canPreOrder" />
-                <UiLabel for="canPreOrder">
-                  {{ formData.canPreOrder ? "Enabled" : "Disabled" }}
-                </UiLabel>
-              </div>
-            </fieldset>
-          </div>
-        </div>
-
+          class="h-2.5 rounded-full bg-primary transition-all duration-500"
+          :style="`width: ${completionPercentage}%`"
+        ></div>
+      </div>
+      <div class="mt-2 grid grid-cols-4 gap-2">
         <div
-          class="mx-auto my-4 flex flex-col text-xs text-muted-foreground sm:my-6 sm:flex-row sm:text-sm"
+          v-for="(step, index) in completionSteps"
+          :key="index"
+          class="flex flex-col items-center"
         >
-          <span>Want to change the variations, prices, and stocks?</span>
-          <NuxtLink :to="`/organization/products/inventory/${productID}`">
-            <span
-              class="mt-1 cursor-pointer text-muted-foreground underline underline-offset-2 hover:text-primary sm:ml-2 sm:mt-0"
-              >Click here</span
-            >
-          </NuxtLink>
-        </div>
-
-        <!-- Product Images -->
-        <div
-          class="mt-4 flex h-auto w-full flex-col items-start rounded-md bg-muted p-4 shadow sm:mt-6 sm:p-6"
-        >
-          <div class="flex flex-col items-start gap-1">
-            <span class="text-lg font-semibold sm:text-xl md:text-2xl">Product Images</span>
-            <p class="text-xs opacity-60 sm:text-sm">
-              You can change your product images here. Make sure to upload high-quality images.
-            </p>
-          </div>
-          <UiGradientDivider class="mt-3 sm:mt-4" />
-          <div class="flex w-full flex-col gap-4 pt-4">
-            <fieldset>
-              <div class="flex flex-col gap-2">
-                <span class="font-semibold">Current Featured Photo</span>
-                <UiDrawer>
-                  <UiDrawerTrigger as-child>
-                    <div
-                      class="w-full cursor-pointer overflow-hidden rounded-md transition-opacity hover:opacity-80 sm:w-64"
-                    >
-                      <img
-                        :src="formData.featuredPhoto"
-                        alt="Product Image"
-                        class="h-auto w-full object-cover"
-                      />
-                    </div>
-                  </UiDrawerTrigger>
-                  <UiDrawerContent>
-                    <div class="mx-auto w-full max-w-screen-md rounded-t-lg p-4 pb-10">
-                      <UiDrawerTitle class="mb-1.5"> Current Featured Photo</UiDrawerTitle>
-                      <UiDrawerDescription> </UiDrawerDescription>
-                      <div class="min-h-[200px] pt-4 text-center sm:min-h-[400px]">
-                        <img
-                          :src="formData.featuredPhoto"
-                          alt="Product Image"
-                          class="mx-auto max-h-[250px] sm:max-h-[400px]"
-                        />
-                      </div>
-                      <UiDrawerClose class="absolute right-4 top-3 h-7 w-7" asChild>
-                        <UiButton
-                          variant="outline"
-                          class="text-destructive opacity-50 hover:opacity-100"
-                        >
-                          <Icon name="lucide:x" class="size-4" />
-                        </UiButton>
-                      </UiDrawerClose>
-                    </div>
-                  </UiDrawerContent>
-                </UiDrawer>
-
-                <fieldset>
-                  <UiLabel for="featured_image">Change Featured Photo</UiLabel>
-                  <UiInput
-                    type="file"
-                    id="featured_image"
-                    @change="handleFeaturedFileChange"
-                    accept="image/*"
-                    hint="Max file size: 10MB"
-                  />
-                </fieldset>
-              </div>
-              <UiDivider class="my-4 sm:my-6" />
-              <div class="flex flex-col">
-                <span class="font-semibold">Product Gallery</span>
-                <p class="text-xs text-muted-foreground sm:text-sm">
-                  You can change the product gallery images here. Click the photo if you want to
-                  remove.
-                </p>
-
-                <div
-                  class="my-4 grid grid-cols-1 gap-4 sm:my-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
-                >
-                  <div v-for="photo in combinedPhotos" :key="photo">
-                    <UiDrawer>
-                      <UiDrawerTrigger as-child>
-                        <div
-                          class="cursor-pointer overflow-hidden rounded-md border shadow-sm transition-opacity hover:opacity-80 hover:shadow-md"
-                        >
-                          <img
-                            :src="photo"
-                            alt="Product Image"
-                            class="aspect-square w-full object-cover"
-                          />
-                        </div>
-                      </UiDrawerTrigger>
-                      <UiDrawerContent>
-                        <div class="mx-auto w-full max-w-screen-md rounded-t-lg">
-                          <UiDrawerTitle class="mb-1.5 text-center"
-                            >Are you sure to remove this photo?</UiDrawerTitle
-                          >
-                          <UiDrawerDescription class="text-center text-xs sm:text-sm">
-                            This action cannot be undone.
-                          </UiDrawerDescription>
-                          <div class="relative min-h-[200px] pt-4">
-                            <img
-                              :src="photo"
-                              alt="Product Image"
-                              class="max-h-[250px] w-full object-contain sm:max-h-[400px]"
-                            />
-                          </div>
-                          <UiDrawerClose as-child>
-                            <div
-                              class="flex flex-col items-center justify-center gap-2 p-4 sm:flex-row"
-                            >
-                              <UiButton
-                                variant="outline"
-                                class="w-full opacity-50 hover:opacity-100 sm:w-auto"
-                              >
-                                Cancel
-                              </UiButton>
-                              <UiButton
-                                @click="handleRemoveImage(photo)"
-                                variant="destructive"
-                                class="w-full sm:w-auto"
-                                >Remove</UiButton
-                              >
-                            </div>
-                          </UiDrawerClose>
-                        </div>
-                      </UiDrawerContent>
-                    </UiDrawer>
-                  </div>
-                </div>
-
-                <div class="flex flex-row items-center gap-1 pb-2">
-                  <span class="text-xs text-muted-foreground sm:text-sm"
-                    >Add more images? (Limited to 5 total only)</span
-                  >
-                </div>
-                <div class="pb-4 sm:pb-6">
-                  <fieldset>
-                    <UiLabel for="photos">Add More Images</UiLabel>
-                    <UiInput
-                      type="file"
-                      id="photos"
-                      accept="image/*"
-                      @change="handleGalleryFileChange"
-                      :disabled="!canAddMoreImages"
-                      multiple
-                    />
-                  </fieldset>
-                </div>
-              </div>
-            </fieldset>
-          </div>
-        </div>
-
-        <div class="my-6 flex flex-col-reverse justify-end gap-3 sm:my-8 sm:flex-row">
-          <UiButton
-            variant="outline"
-            class="w-full sm:w-auto"
-            :to="`/organization/products/${orgId}`"
+          <div
+            class="flex h-6 w-6 items-center justify-center rounded-full border"
+            :class="
+              step.complete
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-muted-foreground bg-background text-muted-foreground'
+            "
           >
-            Cancel
-          </UiButton>
-          <UiButton
-            @click.prevent="handleSaveChanges"
-            type="submit"
-            class="w-full sm:w-auto"
-            :class="{ 'cursor-not-allowed': !canAddMoreImages }"
-            :disabled="!canAddMoreImages"
-          >
-            Save Changes
-          </UiButton>
+            <Icon :name="step.complete ? 'lucide:check' : 'lucide:circle'" class="h-4 w-4" />
+          </div>
+          <span class="mt-1 text-center text-xs">{{ step.name }}</span>
         </div>
       </div>
+    </div>
+
+    <!-- Section Navigation -->
+    <div class="mx-auto mb-6 w-full max-w-4xl">
+      <div class="flex border-b">
+        <button
+          @click="activeSection = 'details'"
+          class="-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-all duration-200"
+          :class="
+            activeSection === 'details'
+              ? 'border-primary text-primary'
+              : 'border-transparent hover:text-primary/80'
+          "
+        >
+          <Icon name="lucide:clipboard-list" class="mr-2 inline-block h-4 w-4" />
+          Product Details
+        </button>
+        <button
+          @click="activeSection = 'images'"
+          class="-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-all duration-200"
+          :class="
+            activeSection === 'images'
+              ? 'border-primary text-primary'
+              : 'border-transparent hover:text-primary/80'
+          "
+        >
+          <Icon name="lucide:image" class="mr-2 inline-block h-4 w-4" />
+          Product Images
+        </button>
+      </div>
+    </div>
+
+    <form class="mx-auto w-full max-w-4xl">
+      <!-- Product Details Section -->
+      <OrganizationProductEditDetailsForm
+        v-if="activeSection === 'details'"
+        :product="product"
+        :formData="formData"
+        :categories="categories"
+        :statusOptions="statusOptions"
+        :organization="organization"
+        :productID="productID"
+        :orgId="orgId"
+      />
+
+      <!-- Product Images Section -->
+      <OrganizationProductEditImageManager
+        v-if="activeSection === 'images'"
+        :formData="formData"
+        :combinedPhotos="combinedPhotos"
+        :canAddMoreImages="canAddMoreImages"
+        @remove-image="handleRemoveImage"
+        @update-featured="handleFeaturedFileChange"
+        @update-gallery="handleGalleryFileChange"
+      />
+
+      <!-- Save Actions (Fixed at bottom) -->
+      <OrganizationProductEditSaveActions
+        :hasChanges="hasChanges"
+        :orgId="orgId"
+        @save="handleSaveChanges"
+      />
     </form>
   </div>
 
