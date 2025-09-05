@@ -72,46 +72,48 @@
 
                       <!-- User Menu - Only shown when logged in -->
                       <template v-if="user">
-                        <UiGradientDivider class="my-5" />
-                        <span class="font-bold">User Menu</span>
+                        <div v-if="user && !hasOrganization">
+                          <UiGradientDivider class="my-5" />
+                          <span class="font-bold">User Menu</span>
 
-                        <div class="flex flex-row items-center">
-                          <Icon name="lucide:user" class="h-5 w-5" />
-                          <UiButton
-                            variant="ghost"
-                            class="justify-start text-sm"
-                            :to="`/user/profile/${user.id}`"
-                          >
-                            My Profile
-                          </UiButton>
-                        </div>
+                          <div class="flex flex-row items-center">
+                            <Icon name="lucide:user" class="h-5 w-5" />
+                            <UiButton
+                              variant="ghost"
+                              class="justify-start text-sm"
+                              :to="`/user/profile/${user.id}`"
+                            >
+                              My Profile
+                            </UiButton>
+                          </div>
 
-                        <div class="flex flex-row items-center">
-                          <UiChip
-                            :class="cartNum > 0 ? 'bg-red-700 text-white' : ''"
-                            size="lg"
-                            :text="cartNum > 0 ? cartNum.toString() : ''"
-                          >
-                            <Icon name="lucide:shopping-cart" class="h-5 w-5" />
-                          </UiChip>
-                          <UiButton
-                            variant="ghost"
-                            class="justify-start text-sm"
-                            :to="`/user/cart/${user.id}`"
-                          >
-                            Cart
-                          </UiButton>
-                        </div>
+                          <div class="flex flex-row items-center">
+                            <UiChip
+                              :class="cartNum > 0 ? 'bg-red-700 text-white' : ''"
+                              size="lg"
+                              :text="cartNum > 0 ? cartNum.toString() : ''"
+                            >
+                              <Icon name="lucide:shopping-cart" class="h-5 w-5" />
+                            </UiChip>
+                            <UiButton
+                              variant="ghost"
+                              class="justify-start text-sm"
+                              :to="`/user/cart/${user.id}`"
+                            >
+                              Cart
+                            </UiButton>
+                          </div>
 
-                        <div class="flex flex-row items-center">
-                          <Icon name="lucide:shopping-basket" class="h-5 w-5" />
-                          <UiButton
-                            variant="ghost"
-                            class="justify-start text-sm"
-                            :to="`/user/orders/track-orders/${user.id}`"
-                          >
-                            My Orders
-                          </UiButton>
+                          <div class="flex flex-row items-center">
+                            <Icon name="lucide:shopping-basket" class="h-5 w-5" />
+                            <UiButton
+                              variant="ghost"
+                              class="justify-start text-sm"
+                              :to="`/user/orders/track-orders/${user.id}`"
+                            >
+                              My Orders
+                            </UiButton>
+                          </div>
                         </div>
 
                         <!-- Organization Menu - Only shown when user has an organization -->
@@ -173,15 +175,20 @@
         </div>
         <div class="hidden items-center gap-3 sm:flex">
           <template v-if="user">
-            <UiButton :to="`/user/cart/${user.id}`" variant="ghost">
-              <UiChip
-                :class="cartNum > 0 ? 'bg-red-700 text-white' : ''"
-                size="lg"
-                :text="cartNum > 0 ? cartNum.toString() : ''"
-              >
-                <Icon name="lucide:shopping-cart" class="h-6 w-6 cursor-pointer hover:shadow-md" />
-              </UiChip>
-            </UiButton>
+            <div v-if="user && !hasOrganization">
+              <UiButton :to="`/user/cart/${user.id}`" variant="ghost">
+                <UiChip
+                  :class="cartNum > 0 ? 'bg-red-700 text-white' : ''"
+                  size="lg"
+                  :text="cartNum > 0 ? cartNum.toString() : ''"
+                >
+                  <Icon
+                    name="lucide:shopping-cart"
+                    class="h-6 w-6 cursor-pointer hover:shadow-md"
+                  />
+                </UiChip>
+              </UiButton>
+            </div>
             <!-- User -->
             <UiNavigationMenu>
               <UiNavigationMenuList>
@@ -197,7 +204,7 @@
                   </UiNavigationMenuTrigger>
                   <UiNavigationMenuContent>
                     <div class="flex w-[200px] flex-col justify-start px-4 py-4 text-sm">
-                      <div v-if="user">
+                      <div v-if="user && !hasOrganization">
                         <span></span>
                         <!-- User Profile -->
                         <NuxtLink :to="`/user/profile/${user.id}`">
@@ -240,7 +247,7 @@
                         </NuxtLink>
                       </div>
                       <div v-if="hasOrganization">
-                        <UiDivider class="py-2" />
+                        <!-- <UiDivider class="py-2" /> -->
                         <!-- Organization Dashboard -->
                         <NuxtLink :to="`/organization/products/${user?.organizationId}`">
                           <div

@@ -172,7 +172,7 @@
 
         <!-- Actions -->
         <div class="flex flex-col gap-4 pt-2">
-          <div class="flex flex-col gap-3 sm:flex-row">
+          <div v-if="!isUserSeller" class="flex flex-col gap-3 sm:flex-row">
             <!-- Pre-Order -->
             <div v-if="product.canPreOrder">
               <UiDrawer>
@@ -378,9 +378,32 @@
             </UiDrawer>
           </div>
 
+          <!-- Organization/Seller Notice -->
+          <div
+            v-else
+            class="rounded-md border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30"
+          >
+            <div class="flex items-start gap-3">
+              <Icon name="lucide:info" class="mt-0.5 h-5 w-5 text-amber-500" />
+              <div>
+                <h3 class="font-medium text-amber-800 dark:text-amber-400">
+                  Organization Member View
+                </h3>
+                <p class="mt-1 text-sm text-amber-700 dark:text-amber-300">
+                  You're viewing this product as an organization member. Purchase options are
+                  disabled in this view.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <p class="text-center text-xs text-muted-foreground">
             <Icon name="lucide:info" class="mr-1 inline-block h-3 w-3" />
-            Products will be added to your cart for later checkout
+            {{
+              isUserSeller
+                ? "View-only mode: organization members cannot purchase products"
+                : "Products will be added to your cart for later checkout"
+            }}
           </p>
         </div>
       </div>
@@ -452,6 +475,7 @@
   import { useCommissionRate } from "~/composables/useCommissionRate";
   import { useOrganizationProducts } from "~/composables/useOrganizationProducts";
   import { usePriceCalculator } from "~/composables/usePriceCalculator";
+  import { useUserRoleDetection } from "~/composables/useUserRoleDetection";
   import { collection, doc } from "firebase/firestore";
   import { Carousel, Slide } from "vue3-carousel";
   import type { Crumbs } from "~/components/Ui/Breadcrumbs.vue";
@@ -472,6 +496,7 @@
     currentSlide.value = val;
   };
 
+  console.log("User: ", user.value);
   const crumbs: Crumbs[] = [
     { label: "Home", link: "/", icon: "lucide:house" },
     { label: "All Products", link: "/products", icon: "lucide:box" },
@@ -750,4 +775,6 @@
       await fetchOrganizationProducts();
     }
   });
+
+  const { isUserSeller, isLoading: isRoleCheckLoading } = useUserRoleDetection();
 </script>
