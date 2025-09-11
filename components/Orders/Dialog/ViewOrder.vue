@@ -45,6 +45,46 @@
           </div>
         </div>
 
+        <!-- Order Timeline -->
+        <div class="mb-6 rounded-lg border bg-card/50 p-4">
+          <h3 class="mb-3 flex items-center gap-2 text-sm font-medium">
+            <Icon name="lucide:clock" class="h-4 w-4 text-primary" />
+            Order Timeline
+          </h3>
+
+          <div class="relative pl-6">
+            <!-- Timeline track -->
+            <div class="absolute bottom-1 left-[7px] top-1 w-0.5 bg-muted"></div>
+
+            <div v-if="timeline.length === 0" class="py-2 text-xs text-muted-foreground">
+              No status updates available
+            </div>
+
+            <div
+              v-for="(item, index) in timeline"
+              :key="index"
+              class="relative mb-3 pb-1 last:mb-0"
+            >
+              <!-- Timeline dot -->
+              <div
+                class="absolute -left-6 top-0 flex h-3.5 w-3.5 items-center justify-center rounded-full border"
+                :class="getTimelineItemColor(item.status)"
+              >
+                <div
+                  class="h-1.5 w-1.5 rounded-full"
+                  :class="getTimelineItemColor(item.status)"
+                ></div>
+              </div>
+
+              <!-- Timeline content -->
+              <div class="text-xs font-medium">{{ item.label }}</div>
+              <div class="text-xs text-muted-foreground">
+                {{ formatDateTime(item.date) }}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Organization -->
         <div class="mb-6 rounded-lg bg-secondary/30 p-4">
           <div class="flex items-center gap-2">
@@ -161,6 +201,7 @@
 </template>
 
 <script lang="ts" setup>
+  import { useOrderStatusOperations } from "~/composables/organization/orders/useOrderStatusOperations";
   import { computed } from "vue";
   import type { ExtendedOrderItem } from "~/composables/user/useFetchOrders";
   import type { Order } from "~/types/models/Order";
@@ -188,6 +229,38 @@
     }
   };
 
+  // Get timeline data
+  const { getOrderTimeline } = useOrderStatusOperations();
+
+  const timeline = computed(() => {
+    if (!props.order) return [];
+    return getOrderTimeline(props.order);
+  });
+
+  // Timeline styling helper
+  const getTimelineItemColor = (status: string): string => {
+    switch (status) {
+      case "ordered":
+        return "bg-blue-100 border-blue-300";
+      case "pending":
+        return "bg-yellow-100 border-yellow-300";
+      case "preparing":
+        return "bg-blue-100 border-blue-300";
+      case "ready":
+        return "bg-amber-100 border-amber-300";
+      case "paid":
+        return "bg-green-100 border-green-300";
+      case "completed":
+        return "bg-green-100 border-green-300";
+      case "cancelled":
+        return "bg-red-100 border-red-300";
+      case "refunded":
+        return "bg-purple-100 border-purple-300";
+      default:
+        return "bg-gray-100 border-gray-300";
+    }
+  };
+
   // Utility function to format date
   const formatDate = (timestamp: any): string => {
     if (!timestamp || typeof timestamp !== "object" || !timestamp.seconds) {
@@ -202,4 +275,42 @@
       return "Invalid date";
     }
   };
+
+  // Utility function to format date with time
+  const formatDateTime = (date: Date): string => {
+    if (!date) return "N/A";
+
+    try {
+      return date.toLocaleString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "numeric",
+      });
+    } catch (error) {
+      console.error("Error formatting date time:", error);
+      return "Invalid date";
+    }
+  };
 </script>
+
+<style scoped>
+  /* Optional: Fade in animation for timeline items */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .timeline-item {
+    animation: fadeIn 0.3s ease-out forwards;
+    animation-delay: calc(var(--index) * 0.1s);
+    opacity: 0;
+  }
+</style>

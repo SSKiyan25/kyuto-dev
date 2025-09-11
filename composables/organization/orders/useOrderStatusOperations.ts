@@ -438,7 +438,7 @@ export const useOrderStatusOperations = () => {
       timeline.push({
         status: "paid",
         date: ensureDate(order.datePaid),
-        label: "Payment Received",
+        label: "Payment Completed",
       });
     }
 
