@@ -1,4 +1,5 @@
 export interface Order {
+  // Existing fields
   buyerID: string;
   organizationID: string;
   orderStatus: string;
@@ -19,6 +20,23 @@ export interface Order {
   dateOrdered: Date;
   lastModified: Date;
   isArchived: boolean;
+
+  // New date tracking fields
+  datePending?: Date;
+  dateReady?: Date;
+  datePaid?: Date;
+  dateCompleted?: Date;
+  dateCancelled?: Date;
+  dateRefunded?: Date;
+
+  // Status history for comprehensive tracking
+  statusHistory?: Array<{
+    status: string;
+    date: Date;
+    previousStatus?: string;
+    updatedBy?: string;
+    remarks?: string;
+  }>;
 }
 
 export interface OrderItem {

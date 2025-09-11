@@ -28,6 +28,7 @@
         />
       </div>
     </div>
+
     <!-- Search input with enhanced instructions -->
     <div class="mb-4 w-full">
       <div class="group relative">
@@ -48,7 +49,7 @@
           <Icon name="lucide:x" class="h-4 w-4" />
         </button>
 
-        <!-- Tooltip with instructions - added pointer-events-none to prevent click interference -->
+        <!-- Tooltip with instructions -->
         <div
           class="pointer-events-none absolute -top-14 left-0 hidden w-full rounded-md bg-popover p-3 text-xs shadow-md group-hover:block"
         >
@@ -60,11 +61,11 @@
           </ul>
         </div>
 
-        <!-- Helper text below input -->
         <p class="mt-1 text-xs text-muted-foreground">Type at least 3 characters to search</p>
       </div>
     </div>
 
+    <!-- Status filter buttons -->
     <div class="flex flex-row flex-wrap gap-2 pt-4 opacity-70">
       <template v-for="status in statuses" :key="status.value">
         <UiButton
@@ -86,6 +87,7 @@
 
     <!-- Order cards list -->
     <div v-else class="flex flex-col gap-4 py-3">
+      <!-- No orders message -->
       <div v-if="filteredOrders.length === 0" class="py-8 text-center text-muted-foreground">
         {{
           searchTerm
@@ -120,6 +122,7 @@
         </div>
       </div>
 
+      <!-- Order cards -->
       <div
         v-for="(order, index) in paginatedOrders"
         :key="order.id"
@@ -204,6 +207,7 @@
           </UiDropdownMenu>
         </div>
       </div>
+
       <!-- Pagination controls -->
       <div v-if="totalPages > 1" class="mt-4 flex items-center justify-between">
         <UiButton
@@ -243,245 +247,38 @@
       </div>
     </div>
 
-    <!-- Dialogs -->
-    <UiDialog v-model:open="viewOrderDialog">
-      <UiDialogContent
-        class="overflow-y-auto bg-card sm:max-h-[750px]"
-        :title="`Order: ${selectedOrder?.uniqRefNumber || ''}`"
-        :hideClose="statusLoading"
-      >
-        <template #content>
-          <!-- Loading overlay -->
-          <div
-            v-if="statusLoading"
-            class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-secondary-foreground/10 backdrop-blur-sm"
-          >
-            <Icon name="lucide:loader-circle" class="h-20 w-20 animate-spin text-primary" />
-            <p class="mt-4 font-medium">Updating order status...</p>
-          </div>
+    <!-- Reuse OrderDetailDialog component -->
+    <OrganizationOrdersOrderDetailDialog
+      :open="viewOrderDialog"
+      :order="selectedOrder"
+      :status-loading="statusLoading"
+      :order-details-loading="orderDetailsLoading"
+      @close="closeDialog"
+      @mark-as-ready="handleMarkAsReady"
+      @mark-as-paid="handleMarkAsPaid"
+      @mark-as-claimed="handleMarkAsClaimed"
+      @view-cancel-order="viewCancelOrder"
+      @update:open="viewOrderDialog = $event"
+    />
 
-          <!-- Order details -->
-          <div class="flex flex-col gap-4">
-            <!-- Status badges -->
-            <div class="flex flex-wrap items-center gap-2">
-              <div :class="getStatusClass(selectedOrder?.orderStatus || '')">
-                <Icon name="lucide:box" class="mr-1 h-3 w-3" />
-                {{ selectedOrder?.orderStatus }}
-              </div>
-              <div :class="getPaymentClass(selectedOrder?.paymentStatus || '')">
-                <Icon name="lucide:credit-card" class="mr-1 h-3 w-3" />
-                {{
-                  selectedOrder?.paymentStatus === "not_paid"
-                    ? "Unpaid"
-                    : selectedOrder?.paymentStatus
-                }}
-              </div>
-              <div class="rounded bg-secondary px-2 py-1 text-xs text-secondary-foreground">
-                <Icon name="lucide:calendar" class="mr-1 h-3 w-3" />
-                {{ formatDate(selectedOrder?.dateOrdered) }}
-              </div>
-            </div>
-
-            <!-- Customer info -->
-            <div class="rounded-lg border bg-card/50 p-3">
-              <h3 class="mb-2 flex items-center gap-2 font-medium">
-                <Icon name="lucide:user" class="h-4 w-4 text-muted-foreground" />
-                Customer Information
-              </h3>
-              <div class="grid grid-cols-1 gap-2 text-sm">
-                <div class="flex justify-between">
-                  <span class="text-muted-foreground">Name:</span>
-                  <span>{{
-                    [
-                      selectedOrder?.buyerAccountDetails?.firstname,
-                      selectedOrder?.buyerAccountDetails?.lastname,
-                    ]
-                      .filter(Boolean)
-                      .join(" ") || "N/A"
-                  }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-muted-foreground">Email:</span>
-                  <span>{{ selectedOrder?.buyerAccountDetails?.email || "N/A" }}</span>
-                </div>
-                <div class="flex justify-between">
-                  <span class="text-muted-foreground">Phone:</span>
-                  <span>{{ selectedOrder?.buyerAccountDetails?.phoneNumber || "N/A" }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Order items -->
-            <div class="rounded-lg border bg-card/50 p-3">
-              <h3 class="mb-2 flex items-center gap-2 font-medium">
-                <Icon name="lucide:shopping-cart" class="h-4 w-4 text-muted-foreground" />
-                Order Items
-              </h3>
-              <div class="space-y-3">
-                <div
-                  v-for="item in selectedOrder?.orderItems"
-                  :key="item.productID"
-                  class="flex items-start justify-between gap-2 border-b pb-2 text-sm"
-                >
-                  <div class="flex-1">
-                    <p class="font-medium">{{ item.productDetails?.name || "Unknown Product" }}</p>
-                    <p class="text-xs text-muted-foreground">
-                      {{ item.variationDetails?.value || "No variation" }} × {{ item.quantity }}
-                    </p>
-                  </div>
-                  <div class="text-right">
-                    <p>₱{{ (item.priceWithCommission * item.quantity).toFixed(2) }}</p>
-                    <p class="text-xs text-muted-foreground">
-                      ₱{{ item.priceWithCommission }} each
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Order summary -->
-              <div class="mt-3 space-y-2 border-t pt-2">
-                <div class="flex justify-between text-sm">
-                  <span class="text-muted-foreground">Subtotal:</span>
-                  <span>₱{{ Number(computeSubtotal(selectedOrder?.orderItems)).toFixed(2) }}</span>
-                </div>
-                <div class="flex justify-between text-sm font-bold">
-                  <span>Total:</span>
-                  <span>₱{{ Number(selectedOrder?.totalPrice).toFixed(2) }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Status change actions -->
-            <div class="rounded-lg border bg-card/50 p-3">
-              <h3 class="mb-3 flex items-center gap-2 font-medium">
-                <Icon name="lucide:settings" class="h-4 w-4 text-muted-foreground" />
-                Order Actions
-              </h3>
-
-              <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <!-- Ready button -->
-                <UiButton
-                  v-if="selectedOrder?.orderStatus === 'pending'"
-                  variant="outline"
-                  class="w-full justify-start"
-                  size="sm"
-                  @click="handleMarkAsReady"
-                >
-                  <Icon name="lucide:package-check" class="mr-2 h-4 w-4" />
-                  Mark as Ready
-                </UiButton>
-
-                <!-- Claimed button -->
-                <UiButton
-                  v-if="selectedOrder?.orderStatus === 'ready'"
-                  variant="outline"
-                  class="w-full justify-start"
-                  size="sm"
-                  @click="handleMarkAsClaimed"
-                >
-                  <Icon name="lucide:check-circle" class="mr-2 h-4 w-4" />
-                  Mark as Claimed
-                </UiButton>
-
-                <!-- Paid button -->
-                <UiButton
-                  v-if="
-                    selectedOrder?.paymentStatus !== 'paid' &&
-                    selectedOrder?.orderStatus !== 'cancelled'
-                  "
-                  variant="outline"
-                  class="w-full justify-start"
-                  size="sm"
-                  @click="handleMarkAsPaid"
-                >
-                  <Icon name="lucide:credit-card" class="mr-2 h-4 w-4" />
-                  Mark as Paid
-                </UiButton>
-
-                <!-- Cancel button -->
-                <UiButton
-                  v-if="
-                    selectedOrder?.orderStatus !== 'cancelled' &&
-                    selectedOrder?.orderStatus !== 'completed'
-                  "
-                  variant="destructive"
-                  class="w-full justify-start"
-                  size="sm"
-                  @click="viewCancelOrder(selectedOrder as ExtendedOrder)"
-                >
-                  <Icon name="lucide:x-circle" class="mr-2 h-4 w-4" />
-                  Cancel Order
-                </UiButton>
-              </div>
-            </div>
-          </div>
-        </template>
-      </UiDialogContent>
-    </UiDialog>
-    <!-- Cancel Order Dialog -->
-    <UiDialog v-model:open="viewCancelDialog">
-      <UiDialogContent
-        title="Cancel Order"
-        description="Are you sure you want to cancel this order?"
-      >
-        <template #content>
-          <div class="flex flex-col gap-3">
-            <p>Cancelling the order will release reserved stocks back to inventory.</p>
-
-            <div class="flex flex-col gap-1">
-              <span class="text-sm font-medium">Order Reference:</span>
-              <span class="font-semibold">{{ selectedOrder?.uniqRefNumber }}</span>
-            </div>
-
-            <div class="mt-2">
-              <label for="cancel-reason" class="mb-1 block text-sm font-medium">
-                Cancellation Reason <span class="text-red-500">*</span>
-              </label>
-              <UiTextarea
-                id="cancel-reason"
-                v-model="cancelReason"
-                placeholder="Please explain why you're cancelling this order..."
-                class="w-full resize-none"
-                :class="{ 'border-red-500 focus:ring-red-500': reasonError }"
-                :rows="3"
-                maxlength="200"
-              />
-              <div v-if="reasonError" class="mt-1 text-xs text-red-500">
-                {{ reasonError }}
-              </div>
-              <div class="mt-1 flex justify-end text-xs text-muted-foreground">
-                {{ cancelReason.length }}/200
-              </div>
-            </div>
-          </div>
-        </template>
-        <template #footer>
-          <UiDialogFooter>
-            <UiButton variant="outline" @click="closeCancel" :disabled="statusLoading">
-              Cancel
-            </UiButton>
-            <UiButton
-              variant="destructive"
-              @click="confirmCancelOrder"
-              :disabled="statusLoading || !isReasonValid"
-            >
-              {{ statusLoading ? "Processing..." : "Confirm" }}
-            </UiButton>
-          </UiDialogFooter>
-        </template>
-      </UiDialogContent>
-    </UiDialog>
+    <!-- Reuse CancelOrderDialog component -->
+    <OrganizationOrdersCancelOrderDialog
+      :open="viewCancelDialog"
+      :order="selectedOrder"
+      :status-loading="statusLoading"
+      @close="closeCancel"
+      @confirm="confirmCancelOrder"
+      @update:open="viewCancelDialog = $event"
+    />
   </div>
 </template>
 
 <script lang="ts" setup>
   import { useExportOrders } from "~/composables/organization/orders/useExportOrders";
   import { useFetchFilterOrders } from "~/composables/organization/orders/useFetchFilterOrders";
+  import { useOrderUtils } from "~/utils/useOrderUtils";
   import { Timestamp } from "firebase/firestore";
-  import type {
-    ExtendedOrder,
-    ExtendedOrderItem,
-  } from "~/composables/organization/orders/useFetchFilterOrders";
+  import type { ExtendedOrder } from "~/composables/organization/orders/useFetchFilterOrders";
   import type { ButtonVariant } from "~/types/Button";
 
   const props = defineProps<{ organizationID: string }>();
@@ -497,9 +294,11 @@
   const viewOrderDialog = ref(false);
   const viewCancelDialog = ref(false);
   const statusLoading = ref(false);
+  const orderDetailsLoading = ref(false);
   const expandedOrders = ref<string[]>([]);
-  const cancelReason = ref("");
-  const reasonError = ref("");
+
+  // Get utils
+  const { getStatusClass, getPaymentClass, computeSubtotal } = useOrderUtils();
 
   // Inside <script setup>
   const { isMobileDevice } = useExportOrders();
@@ -670,25 +469,6 @@
     return date.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
   };
 
-  // Status styles
-  const getStatusClass = (status: string) => {
-    let baseClass = "text-xs px-2 py-1 rounded capitalize";
-    if (status === "pending") return `${baseClass} bg-yellow-200 text-yellow-800`;
-    if (status === "cancelled") return `${baseClass} bg-red-200 text-red-800`;
-    if (status === "completed") return `${baseClass} bg-green-200 text-green-800`;
-    if (status === "ready") return `${baseClass} bg-blue-200 text-blue-800`;
-    if (status === "preparing") return `${baseClass} bg-purple-200 text-purple-800`;
-    return `${baseClass} bg-gray-200 text-gray-800`;
-  };
-
-  const getPaymentClass = (status: string) => {
-    let baseClass = "text-xs px-2 py-1 rounded capitalize";
-    if (status === "paid") return `${baseClass} bg-green-200 text-green-800`;
-    if (status === "not_paid") return `${baseClass} bg-red-200 text-red-800`;
-    if (status === "partial") return `${baseClass} bg-yellow-200 text-yellow-800`;
-    return `${baseClass} bg-gray-200 text-gray-800`;
-  };
-
   // Toggle product details
   const toggleProductDetails = (orderId: string) => {
     if (expandedOrders.value.includes(orderId)) {
@@ -704,36 +484,22 @@
     viewOrderDialog.value = true;
   };
 
+  // Close dialog
+  const closeDialog = () => {
+    viewOrderDialog.value = false;
+  };
+
   // View cancel order
   const viewCancelOrder = (order: ExtendedOrder) => {
     selectedOrder.value = order;
     viewCancelDialog.value = true;
   };
 
-  // Compute subtotal
-  const computeSubtotal = (orderItems: ExtendedOrderItem[] | undefined): number => {
-    if (!orderItems) return 0;
-    return orderItems.reduce(
-      (subtotal, item) => subtotal + item.priceWithCommission * item.quantity,
-      0
-    );
-  };
-
-  const confirmCancelOrder = async () => {
-    // Validate reason first
-    if (!validateReason()) {
-      return;
-    }
-
+  const confirmCancelOrder = async (reason: string) => {
     statusLoading.value = true;
     if (selectedOrder.value && selectedOrder.value.id && selectedOrder.value.orderItems) {
       try {
-        // Use the sanitized reason from the input
-        await cancelOrder(
-          selectedOrder.value.id,
-          cancelReason.value.trim(),
-          selectedOrder.value.orderItems
-        );
+        await cancelOrder(selectedOrder.value.id, reason.trim(), selectedOrder.value.orderItems);
 
         // Force refresh to get the updated order
         const updatedOrder = await fetchOrderDetails(selectedOrder.value.id, true);
@@ -770,6 +536,11 @@
     // Reset and close
     closeCancel();
     statusLoading.value = false;
+  };
+
+  // Close cancel dialog
+  const closeCancel = () => {
+    viewCancelDialog.value = false;
   };
 
   // Button variant
@@ -891,46 +662,6 @@
     } finally {
       statusLoading.value = false;
     }
-  };
-
-  // Compute whether reason is valid
-  const isReasonValid = computed(() => {
-    return cancelReason.value.trim().length >= 10 && !reasonError.value;
-  });
-
-  // Validate reason input against malicious content
-  const validateReason = (): boolean => {
-    // Reset error
-    reasonError.value = "";
-
-    // Check for minimum length
-    if (cancelReason.value.trim().length < 10) {
-      reasonError.value = "Please provide a reason with at least 10 characters";
-      return false;
-    }
-
-    // Check for potentially dangerous content
-    const dangerousPatterns = [
-      /<script/i,
-      /javascript:/i,
-      /on\w+=/i, // onclick, onload, etc.
-      /data:/i, // data URIs
-    ];
-
-    for (const pattern of dangerousPatterns) {
-      if (pattern.test(cancelReason.value)) {
-        reasonError.value = "Invalid characters detected in reason";
-        return false;
-      }
-    }
-
-    return true;
-  };
-
-  const closeCancel = () => {
-    viewCancelDialog.value = false;
-    cancelReason.value = "";
-    reasonError.value = "";
   };
 
   // Compute the total number of pages

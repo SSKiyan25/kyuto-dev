@@ -1,18 +1,10 @@
 import { useOrderCacheStore } from "~/stores/orderCache";
-import {
-  addDoc,
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  orderBy,
-  query,
-  updateDoc,
-  where,
-} from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, orderBy, query, where } from "firebase/firestore";
 import type { Account } from "~/types/models/Account";
 import type { Order, OrderItem } from "~/types/models/Order";
 import type { Product, Variation } from "~/types/models/Product";
+
+import { useOrderStatusOperations } from "./useOrderStatusOperations";
 
 // Define a new type that extends OrderItem to include additional properties
 export type ExtendedOrderItem = OrderItem & {
@@ -32,6 +24,9 @@ export type ExtendedOrder = Order & {
 export const useFetchFilterOrders = () => {
   const db = useFirestore();
   const cacheStore = useOrderCacheStore();
+
+  // Get the status operations
+  const statusOperations = useOrderStatusOperations();
 
   // Use the durations and keys from the store
   const CACHE_DURATIONS = cacheStore.cacheDurations;
@@ -157,7 +152,6 @@ export const useFetchFilterOrders = () => {
 
     // Force refresh will skip the cache completely
     if (forceRefresh) {
-      // console.log(`Force refreshing buyer details for ${buyerID}`);
       invalidateCache(cacheKey);
     }
 
@@ -166,13 +160,11 @@ export const useFetchFilterOrders = () => {
       if (!forceRefresh) {
         const cachedBuyer = getCache<Account | null>(cacheKey);
         if (cachedBuyer !== null) {
-          // console.log(`Using cached buyer details for ${buyerID}:`, cachedBuyer);
           return cachedBuyer;
         }
       }
 
       // Fetch from Firestore
-      // console.log(`Fetching buyer details for ID: ${buyerID}`);
       const buyerRef = doc(db, "accounts", buyerID);
       const buyerDoc = await getDoc(buyerRef);
 
@@ -184,7 +176,6 @@ export const useFetchFilterOrders = () => {
 
       // Document exists, get the data
       const buyerData = buyerDoc.data();
-      // console.log(`Found buyer data for ${buyerID}:`, buyerData);
 
       // Ensure we have all required fields for an Account
       const buyer = {
@@ -205,7 +196,6 @@ export const useFetchFilterOrders = () => {
   const fetchBuyerDirectly = async (buyerID: string): Promise<Account | undefined> => {
     if (!buyerID) return undefined;
 
-    // console.log(`Direct fetch buyer details for ID: ${buyerID}`);
     try {
       const buyerRef = doc(db, "accounts", buyerID);
       const buyerDoc = await getDoc(buyerRef);
@@ -334,243 +324,82 @@ export const useFetchFilterOrders = () => {
     }
   };
 
-  // Function to mark order as ready or pending
+  // Wrapper for markAsReady to pass the necessary dependencies
   const markAsReady = async (orderID: string, currentStatus: string): Promise<void> => {
-    const orderRef = doc(db, "orders", orderID);
-    const newStatus = currentStatus === "ready" ? "pending" : "ready";
-    await updateDoc(orderRef, { orderStatus: newStatus, lastModified: new Date() });
-
-    // Invalidate caches after update
-    invalidateOrderCache(orderID);
-
-    // Also get the organization ID to invalidate org caches
-    const orderDoc = await getDoc(orderRef);
-    if (orderDoc.exists()) {
-      const orderData = orderDoc.data() as Order;
-      invalidateOrganizationCache(orderData.organizationID);
-    }
+    return statusOperations.markAsReady(
+      orderID,
+      currentStatus,
+      invalidateOrderCache,
+      invalidateOrganizationCache
+    );
   };
 
+  // Wrapper for markAsPaid to pass the necessary dependencies
   const markAsPaid = async (orderID: string, currentStatus: string): Promise<void> => {
-    const orderRef = doc(db, "orders", orderID);
-    const newStatus = currentStatus === "paid" ? "not_paid" : "paid";
-
-    try {
-      // Update the order's payment status
-      await updateDoc(orderRef, { paymentStatus: newStatus, lastModified: new Date() });
-
-      // Fetch the order document
-      const orderDoc = await getDoc(orderRef);
-      if (!orderDoc.exists()) {
-        console.error("Order document not found");
-        return;
-      }
-
-      const orderData = orderDoc.data();
-      const organizationID = orderData.organizationID;
-      const commissionAmount = orderData.commissionAmount || 0;
-
-      // Fetch the organization document
-      const orgRef = doc(db, "organizations", organizationID);
-      const orgDoc = await getDoc(orgRef);
-
-      if (!orgDoc.exists()) {
-        console.error("Organization document not found");
-        return;
-      }
-
-      const orgData = orgDoc.data();
-      let newTotalDue = orgData.totalDue || 0;
-
-      // Adjust the organization's totalDue based on the new payment status
-      if (newStatus === "paid") {
-        // Add the commission amount to totalDue
-        newTotalDue += commissionAmount;
-      } else {
-        // Deduct the commission amount from totalDue
-        newTotalDue -= commissionAmount;
-      }
-
-      newTotalDue = parseFloat(newTotalDue.toFixed(2));
-
-      // Update the organization's financials
-      await updateDoc(orgRef, {
-        totalDue: newTotalDue,
-        lastModified: new Date(),
-      });
-
-      // Invalidate caches after update
-      invalidateOrderCache(orderID);
-      invalidateOrganizationCache(organizationID);
-    } catch (error) {
-      console.error("Error updating payment status or organization financials:", error);
-    }
+    return statusOperations.markAsPaid(
+      orderID,
+      currentStatus,
+      invalidateOrderCache,
+      invalidateOrganizationCache
+    );
   };
 
-  // Function to mark order as claimed or pending
+  // Wrapper for markAsClaimed to pass the necessary dependencies
   const markAsClaimed = async (
     orderID: string,
     currentStatus: string,
     orderItems: ExtendedOrderItem[]
   ): Promise<void> => {
-    const orderRef = doc(db, "orders", orderID);
-    const newStatus = currentStatus === "completed" ? "pending" : "completed";
-
-    // Get the organization ID before updating
-    const orderDoc = await getDoc(orderRef);
-    let organizationID = "";
-    if (orderDoc.exists()) {
-      const orderData = orderDoc.data() as Order;
-      organizationID = orderData.organizationID;
-    }
-
-    await updateDoc(orderRef, {
-      orderStatus: newStatus,
-      lastModified: new Date(),
-      receivedDate: new Date(),
-    });
-
-    if (newStatus === "completed") {
-      for (const item of orderItems) {
-        const variationRef = doc(db, `products/${item.productID}/variations`, item.variationID);
-        const variationDoc = await getDoc(variationRef);
-        if (variationDoc.exists()) {
-          const variation = variationDoc.data() as Variation;
-          const updatedVariationData: Partial<Variation> = {
-            completedOrders: variation.completedOrders + item.quantity,
-            lastStockUpdate: new Date(),
-            lastModified: new Date(),
-          };
-          if (item.isPreOrder) {
-            updatedVariationData.preOrderStocks = variation.preOrderStocks - item.quantity;
-          } else {
-            updatedVariationData.reservedStocks = variation.reservedStocks - item.quantity;
-          }
-          await updateDoc(variationRef, updatedVariationData);
-
-          // Invalidate variation cache
-          invalidateCache(CACHE_KEYS.VARIATION(item.productID, item.variationID));
-
-          // Update the product's total sales
-          const productRef = doc(db, "products", item.productID);
-          const productDoc = await getDoc(productRef);
-          if (productDoc.exists()) {
-            const product = productDoc.data() as Product;
-            const updatedProductData: Partial<Product> = {
-              totalSales: product.totalSales + item.quantity,
-              lastModified: new Date(),
-            };
-            await updateDoc(productRef, updatedProductData);
-
-            // Invalidate product cache
-            invalidateCache(CACHE_KEYS.PRODUCT(item.productID));
-          }
-        }
-      }
-    }
-
-    // Invalidate caches after update
-    invalidateOrderCache(orderID);
-    if (organizationID) {
-      invalidateOrganizationCache(organizationID);
-    }
+    return statusOperations.markAsClaimed(
+      orderID,
+      currentStatus,
+      orderItems,
+      invalidateCache,
+      invalidateOrderCache,
+      invalidateOrganizationCache,
+      CACHE_KEYS
+    );
   };
 
-  // Function to cancel order
+  // Wrapper for cancelOrder to pass the necessary dependencies
   const cancelOrder = async (
     orderID: string,
     remarks: string,
     orderItems: ExtendedOrderItem[]
   ): Promise<void> => {
-    if (!remarks) {
-      throw new Error("Remarks is required to cancel an order.");
-    }
-
-    const orderRef = doc(db, "orders", orderID);
-    const orderDoc = await getDoc(orderRef);
-    if (!orderDoc.exists()) {
-      throw new Error("Order not found");
-    }
-
-    const orderData = orderDoc.data();
-    const organizationID = orderData.organizationID;
-    const commissionAmount = orderData.commissionAmount || 0;
-
-    // Update the order status to "cancelled"
-    await updateDoc(orderRef, {
-      orderStatus: "cancelled",
+    return statusOperations.cancelOrder(
+      orderID,
       remarks,
-      lastModified: new Date(),
-    });
-
-    // If the order payment status is "paid", deduct the commission amount from totalDue
-    if (orderData.paymentStatus === "paid") {
-      const orgRef = doc(db, "organizations", organizationID);
-      const orgDoc = await getDoc(orgRef);
-
-      if (orgDoc.exists()) {
-        const orgData = orgDoc.data();
-        const newTotalDue = (orgData.totalDue || 0) - commissionAmount;
-
-        await updateDoc(orgRef, {
-          totalDue: newTotalDue,
-          lastModified: new Date(),
-        });
-      } else {
-        console.error("Organization document not found");
-      }
-    }
-
-    // Update stock and logs for each order item
-    for (const item of orderItems) {
-      const variationRef = doc(db, `products/${item.productID}/variations`, item.variationID);
-      const variationDoc = await getDoc(variationRef);
-      if (variationDoc.exists()) {
-        const variation = variationDoc.data() as Variation;
-        const updatedData: Partial<Variation> = {
-          cancelledOrders: variation.cancelledOrders + item.quantity,
-          remainingStocks: variation.remainingStocks + item.quantity,
-          lastStockUpdate: new Date(),
-          lastModified: new Date(),
-        };
-        if (item.isPreOrder) {
-          updatedData.preOrderStocks = variation.preOrderStocks - item.quantity;
-        } else {
-          updatedData.reservedStocks = variation.reservedStocks - item.quantity;
-        }
-        await updateDoc(variationRef, updatedData);
-
-        // Invalidate variation cache
-        invalidateCache(CACHE_KEYS.VARIATION(item.productID, item.variationID));
-
-        // Update the stocks logs
-        const stocksLogRef = collection(
-          db,
-          `products/${item.productID}/variations/${item.variationID}/stocksLogs`
-        );
-        await addDoc(stocksLogRef, {
-          variationID: item.variationID,
-          quantity: item.quantity,
-          action: "cancelled",
-          remarks: `Order ${orderID} cancelled`,
-          dateCreated: new Date(),
-        });
-      }
-    }
-
-    // Invalidate caches after update
-    invalidateOrderCache(orderID);
-    invalidateOrganizationCache(organizationID);
+      orderItems,
+      invalidateCache,
+      invalidateOrderCache,
+      invalidateOrganizationCache,
+      CACHE_KEYS
+    );
   };
 
-  // Get cache statistics for debugging - use the store's method
+  // Wrapper for markAsRefunded to pass the necessary dependencies
+  const markAsRefunded = async (orderID: string, remarks: string): Promise<void> => {
+    return statusOperations.markAsRefunded(
+      orderID,
+      remarks,
+      invalidateOrderCache,
+      invalidateOrganizationCache
+    );
+  };
+
+  // Get order timeline wrapper
+  const getOrderTimeline = (order: Order) => {
+    return statusOperations.getOrderTimeline(order);
+  };
+
+  // Get cache statistics for debugging
   const getCacheStats = () => {
     return cacheStore.getCacheStats();
   };
 
-  // Clear all caches - use the store method if it exists, or provide one
+  // Clear all caches
   const clearAllCaches = () => {
-    // Clear all caches by looping through all keys in the store
     const stats = cacheStore.getCacheStats();
     stats.keys.forEach((key) => cacheStore.invalidateCache(key));
   };
@@ -582,6 +411,8 @@ export const useFetchFilterOrders = () => {
     markAsPaid,
     markAsClaimed,
     cancelOrder,
+    markAsRefunded, // New function
+    getOrderTimeline, // New function
     invalidateOrderCache,
     invalidateOrganizationCache,
     clearBuyerCaches,
