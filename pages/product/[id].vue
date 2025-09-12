@@ -788,8 +788,11 @@
 
     const productName = product.value.name || "Product";
     const productDescription = product.value.description || `Buy ${productName} at the best price`;
-    const productImage = product.value.featuredPhotoURL || "/placeholder-image.png";
-    const productUrl = `${window.location.origin}/product/${productID.value}`;
+    // Make sure image URL is absolute
+    const productImage = product.value.featuredPhotoURL?.startsWith("http")
+      ? product.value.featuredPhotoURL
+      : `${process.env.NUXT_PUBLIC_SITE_URL || "https://verch-vs.vercel.app"}${product.value.featuredPhotoURL || "/placeholder-image.png"}`;
+    const productUrl = `https://verch-vs.vercel.app/product/${productID.value}`;
 
     return {
       title: productName,
@@ -804,6 +807,9 @@
         { property: "og:image", content: productImage },
         { property: "og:url", content: productUrl },
         { property: "og:site_name", content: "Verch Marketplace" },
+        // Add image dimensions if possible
+        { property: "og:image:width", content: "1200" },
+        { property: "og:image:height", content: "630" },
 
         // Twitter Card tags
         { name: "twitter:card", content: "summary_large_image" },
