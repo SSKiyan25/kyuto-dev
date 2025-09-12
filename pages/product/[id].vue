@@ -777,4 +777,44 @@
   });
 
   const { isUserSeller, isLoading: isRoleCheckLoading } = useUserRoleDetection();
+
+  useHead(() => {
+    if (!product.value) {
+      return {
+        title: "Product Not Found",
+        meta: [{ name: "description", content: "The requested product could not be found." }],
+      };
+    }
+
+    const productName = product.value.name || "Product";
+    const productDescription = product.value.description || `Buy ${productName} at the best price`;
+    const productImage = product.value.featuredPhotoURL || "/placeholder-image.png";
+    const productUrl = `${window.location.origin}/product/${productID.value}`;
+
+    return {
+      title: productName,
+      meta: [
+        // Basic meta tags
+        { name: "description", content: productDescription },
+
+        // Open Graph tags for Facebook, LinkedIn, etc.
+        { property: "og:type", content: "product" },
+        { property: "og:title", content: productName },
+        { property: "og:description", content: productDescription },
+        { property: "og:image", content: productImage },
+        { property: "og:url", content: productUrl },
+        { property: "og:site_name", content: "Verch Marketplace" },
+
+        // Twitter Card tags
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: productName },
+        { name: "twitter:description", content: productDescription },
+        { name: "twitter:image", content: productImage },
+
+        // Optional: Price information
+        { property: "product:price:amount", content: priceRange.value.replace("₱", "") },
+        { property: "product:price:currency", content: "PHP" },
+      ],
+    };
+  });
 </script>
