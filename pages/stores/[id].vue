@@ -274,6 +274,63 @@
       },
     },
   }));
+
+  useHead(() => {
+    if (!store.value) {
+      return {
+        title: "Store Not Found",
+        meta: [{ name: "description", content: "The requested store could not be found." }],
+      };
+    }
+
+    const storeName = store.value.name || "Store";
+    const storeDescription =
+      store.value.description || `Visit ${storeName} and explore our products`;
+
+    // Make sure image URL is absolute
+    const storeImage = store.value.coverImageURL?.startsWith("http")
+      ? store.value.coverImageURL
+      : store.value.logoImageURL?.startsWith("http")
+        ? store.value.logoImageURL
+        : `${process.env.NUXT_PUBLIC_SITE_URL || "https://verch-vs.vercel.app"}${store.value.coverImageURL || store.value.logoImageURL || "/placeholder-image.png"}`;
+    const storeUrl = `https://verch-vs.vercel.app/stores/${storeId}`;
+
+    // Create a meta description that includes product count if available
+    const metaDescription =
+      products.value?.length > 0
+        ? `${storeDescription}. Browse ${products.value.length} products from this store.`
+        : storeDescription;
+
+    return {
+      title: storeName,
+      meta: [
+        // Basic meta tags
+        { name: "description", content: metaDescription },
+
+        // Open Graph tags for Facebook, LinkedIn, etc.
+        { property: "og:type", content: "website" },
+        { property: "og:title", content: storeName },
+        { property: "og:description", content: metaDescription },
+        { property: "og:image", content: storeImage },
+        { property: "og:url", content: storeUrl },
+        { property: "og:site_name", content: "Verch Marketplace" },
+
+        // Add image dimensions
+        { property: "og:image:width", content: "1200" },
+        { property: "og:image:height", content: "630" },
+
+        // Twitter Card tags
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: storeName },
+        { name: "twitter:description", content: metaDescription },
+        { name: "twitter:image", content: storeImage },
+      ],
+      link: [
+        // Canonical URL to prevent duplicate content issues
+        { rel: "canonical", href: storeUrl },
+      ],
+    };
+  });
 </script>
 
 <style scoped>
