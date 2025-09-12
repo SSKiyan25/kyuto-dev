@@ -287,48 +287,59 @@
     const storeDescription =
       store.value.description || `Visit ${storeName} and explore our products`;
 
-    // Make sure image URL is absolute
-    const storeImage = store.value.coverImageURL?.startsWith("http")
-      ? store.value.coverImageURL
-      : store.value.logoImageURL?.startsWith("http")
+    // Make sure image URL is absolute and choose the best available image
+    let storeImage = "";
+
+    // First try cover image (most visually appealing for social sharing)
+    if (store.value.coverImageURL && store.value.coverImageURL.trim() !== "") {
+      storeImage = store.value.coverImageURL.startsWith("http")
+        ? store.value.coverImageURL
+        : `https://verch-vs.vercel.app${store.value.coverImageURL}`;
+    }
+    // Fall back to logo if no cover image
+    else if (store.value.logoImageURL && store.value.logoImageURL.trim() !== "") {
+      storeImage = store.value.logoImageURL.startsWith("http")
         ? store.value.logoImageURL
-        : `${process.env.NUXT_PUBLIC_SITE_URL || "https://verch-vs.vercel.app"}${store.value.coverImageURL || store.value.logoImageURL || "/placeholder-image.png"}`;
+        : `https://verch-vs.vercel.app${store.value.logoImageURL}`;
+    }
+    // Last resort - default image
+    else {
+      storeImage = "https://verch-vs.vercel.app/display2.png";
+    }
+
     const storeUrl = `https://verch-vs.vercel.app/stores/${storeId}`;
 
-    // Create a meta description that includes product count if available
+    // Add store name to meta description for better search results
     const metaDescription =
       products.value?.length > 0
-        ? `${storeDescription}. Browse ${products.value.length} products from this store.`
-        : storeDescription;
+        ? `${storeDescription}. Browse ${products.value.length} products from ${storeName}.`
+        : `${storeDescription}. Shop at ${storeName} on Verch Marketplace.`;
 
     return {
-      title: storeName,
+      title: `${storeName} | Verch Marketplace`,
       meta: [
-        // Basic meta tags
         { name: "description", content: metaDescription },
 
-        // Open Graph tags for Facebook, LinkedIn, etc.
+        // Facebook Open Graph - specific properties that help with debugging
         { property: "og:type", content: "website" },
-        { property: "og:title", content: storeName },
+        { property: "og:title", content: `${storeName} | Verch Marketplace` },
         { property: "og:description", content: metaDescription },
         { property: "og:image", content: storeImage },
+        { property: "og:image:width", content: "1200" },
+        { property: "og:image:height", content: "630" },
         { property: "og:url", content: storeUrl },
         { property: "og:site_name", content: "Verch Marketplace" },
 
-        // Add image dimensions
-        { property: "og:image:width", content: "1200" },
-        { property: "og:image:height", content: "630" },
+        // Additional Facebook hints
+        { property: "og:locale", content: "en_US" },
 
-        // Twitter Card tags
+        // Twitter Card
         { name: "twitter:card", content: "summary_large_image" },
-        { name: "twitter:title", content: storeName },
+        { name: "twitter:title", content: `${storeName} | Verch Marketplace` },
         { name: "twitter:description", content: metaDescription },
         { name: "twitter:image", content: storeImage },
       ],
-      link: [
-        // Canonical URL to prevent duplicate content issues
-        { rel: "canonical", href: storeUrl },
-      ],
+      link: [{ rel: "canonical", href: storeUrl }],
     };
   });
 </script>
