@@ -258,6 +258,7 @@
 
 <script lang="ts" setup>
   import { useFetchUserCart } from "~/composables/user/useFetchUserCart";
+  import { useCartStore } from "~/stores/cart";
   import { signOut } from "firebase/auth";
   import { doc } from "firebase/firestore";
   import type { Crumbs } from "~/components/Ui/Breadcrumbs.vue";
@@ -270,7 +271,8 @@
   const userData = useDocument<Partial<Account>>(userDocRef) as Partial<Account> | undefined;
   // console.log("userData", userData);
 
-  const cartCount = ref(0);
+  const cartStore = useCartStore();
+  const cartCount = computed(() => cartStore.count);
 
   // Fetch cart count when user is loaded
   watch(
@@ -278,21 +280,13 @@
     async (newUser) => {
       if (newUser?.uid) {
         try {
-          const { userCart, fetchUserCart } = useFetchUserCart(newUser.uid);
+          const { fetchUserCart } = useFetchUserCart(newUser.uid);
           await fetchUserCart();
-
-          watch(
-            () => userCart.value,
-            (cart) => {
-              cartCount.value = cart?.length || 0;
-            },
-            { immediate: true }
-          );
         } catch (error) {
           console.error("Error fetching cart:", error);
         }
       } else {
-        cartCount.value = 0;
+        cartStore.clearCart();
       }
     },
     { immediate: true }

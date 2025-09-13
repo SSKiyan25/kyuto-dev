@@ -872,7 +872,7 @@
       }
       const commissionRateID = commissionRate.value.id;
       const commissionRateValue = commissionRate.value.rate;
-      console.log("User ID:", userID.value);
+      // console.log("User ID:", userID.value);
       const uniqRefNumber = await createOrder(
         userID.value as string,
         organizationID as string,
