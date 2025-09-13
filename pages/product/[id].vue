@@ -496,7 +496,7 @@
     currentSlide.value = val;
   };
 
-  console.log("User: ", user.value);
+  // console.log("User: ", user.value);
   const crumbs: Crumbs[] = [
     { label: "Home", link: "/", icon: "lucide:house" },
     { label: "All Products", link: "/products", icon: "lucide:box" },
