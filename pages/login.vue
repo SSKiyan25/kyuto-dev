@@ -1,13 +1,13 @@
 <script setup lang="ts">
-  import { signInWithGoogle } from "~/composables/auth/useGoogle";
+  import { handleGoogleRedirectResult, signInWithGoogle } from "~/composables/auth/useGoogle";
   import { useAuthStore } from "~/stores/auth";
-  import { signInWithEmailAndPassword, signOut } from "firebase/auth";
+  import { getRedirectResult, signInWithEmailAndPassword, signOut } from "firebase/auth";
   import { doc, getDoc, updateDoc } from "firebase/firestore";
   import type { Account as User } from "~/types/models/Account";
 
   definePageMeta({
     layout: "no-nav",
-    middleware: "already-logged-in",
+    middleware: ["already-logged-in"],
   });
 
   const auth = useFirebaseAuth();
@@ -21,6 +21,9 @@
   const router = useRouter();
   const userOrganization = ref(false);
   const userOrganizationId = ref("");
+
+  // Add browser detection
+  const isInFacebookBrowser = ref(false);
 
   const authStore = useAuthStore();
 
@@ -80,24 +83,54 @@
 
   onMounted(async () => {
     authStore.user = null; // Clear user from store
+
+    try {
+      // First check for any pending redirect result
+      const redirectResult = await handleGoogleRedirectResult(auth);
+      if (redirectResult.success) {
+        await checkConsentStatus();
+      }
+    } catch (error) {
+      console.error("Error handling redirect result:", error);
+    }
+
+    // Check consent status for already logged-in users
     await checkConsentStatus();
+
+    // Check if user is in Facebook browser
+    const ua = navigator.userAgent.toLowerCase();
+    isInFacebookBrowser.value =
+      ua.includes("fban") ||
+      ua.includes("fbav") ||
+      ua.includes("instagram") ||
+      ua.includes("fb_iab");
   });
 
   const handleGoogleSignIn = async () => {
     try {
-      await signInWithGoogle(auth);
+      // If in Facebook browser, show warning instead of attempting login
+      if (isInFacebookBrowser.value) {
+        useSonner.warning("Browser not supported", {
+          description: "Please use email login or open this site in Chrome/Safari.",
+        });
+        return;
+      }
 
-      // Check consent status after successful Google login
-      await checkConsentStatus();
+      const result = await signInWithGoogle(auth);
 
-      // If consent is already given, navigate to the home page
-      if (!isConsentModalOpen.value) {
-        if (userOrganization.value) {
-          console.log("User has an organization.");
-          return router.push(`/organization/${userOrganizationId.value}`);
-        } else {
-          console.log("User does not have an organization.");
-          return router.push("/");
+      if (result?.success) {
+        // Check consent status after successful Google login
+        await checkConsentStatus();
+
+        // Navigate based on user state
+        if (!isConsentModalOpen.value) {
+          if (userOrganization.value) {
+            console.log("User has an organization.");
+            return router.push(`/organization/${userOrganizationId.value}`);
+          } else {
+            console.log("User does not have an organization.");
+            return router.push("/");
+          }
         }
       }
     } catch (error: any) {
@@ -216,6 +249,24 @@
             <h1 class="text-2xl font-semibold tracking-tight">Sign in your account</h1>
             <p class="text-sm text-muted-foreground">Enter your email and password to proceed</p>
           </div>
+
+          <!-- Browser warning banner -->
+          <div
+            v-if="isInFacebookBrowser"
+            class="mb-4 rounded-md bg-amber-50 p-3 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200"
+          >
+            <div class="flex items-start gap-2">
+              <Icon name="lucide:alert-triangle" class="h-5 w-5 flex-shrink-0" />
+              <div>
+                <h4 class="font-medium">Browser limitation detected</h4>
+                <p class="text-sm">
+                  Google sign-in doesn't work in Facebook/Instagram browsers. Please use email
+                  sign-in or open this site in Chrome/Safari.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div>
             <form @submit="submit">
               <fieldset :disabled="isSubmitting" class="grid gap-4">
@@ -243,6 +294,7 @@
                   type="button"
                   class="w-full"
                   variant="outline"
+                  :disabled="isInFacebookBrowser"
                 >
                   <Icon name="logos:google-icon" /> Sign in with Google
                 </UiButton>

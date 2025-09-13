@@ -89,6 +89,7 @@ export default defineNuxtConfig({
     firebasePrivateKey: process.env.FIREBASE_PRIVATE_KEY,
     apiSecretKey: process.env.API_SECRET_KEY,
     public: {
+      allowedBrowsers: true,
       firebaseProjectId: process.env.FIREBASE_PROJECT_ID,
       firebaseClientEmail: process.env.FIREBASE_CLIENT_EMAIL,
       adminEmails: process.env.NUXT_PUBLIC_ADMIN_EMAILS || "",
