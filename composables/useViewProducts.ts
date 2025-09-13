@@ -40,7 +40,7 @@ export const useViewProducts = () => {
       const cache = cachedData ? JSON.parse(cachedData) : {};
 
       if (cache[cacheKey]) {
-        console.log("Loaded products from cache:", cache[cacheKey]);
+        // console.log("Loaded products from cache:", cache[cacheKey]);
         products.value = cache[cacheKey].products;
         return cache[cacheKey];
       }
@@ -142,7 +142,7 @@ export const useViewProducts = () => {
       localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
 
       products.value = enhancedProducts;
-      console.log("Fetched products:", enhancedProducts);
+      // console.log("Fetched products:", enhancedProducts);
       return { products: enhancedProducts, totalProducts };
     } catch (error) {
       console.error("Error fetching products:", error);

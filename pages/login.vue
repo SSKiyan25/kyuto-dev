@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import { signInWithGoogle } from "~/composables/auth/useGoogle";
+  import { handleGoogleRedirectResult, signInWithGoogle } from "~/composables/auth/useGoogle";
   import { useAuthStore } from "~/stores/auth";
   import { getRedirectResult, signInWithEmailAndPassword, signOut } from "firebase/auth";
   import { doc, getDoc, updateDoc } from "firebase/firestore";
@@ -84,21 +84,18 @@
   onMounted(async () => {
     authStore.user = null; // Clear user from store
 
-    // Handle Google redirect result if we're returning from a redirect
-    if (localStorage.getItem("authInProgress") === "true") {
-      localStorage.removeItem("authInProgress");
-      try {
-        const result = await getRedirectResult(auth!);
-        if (result) {
-          // User successfully signed in via redirect
-          await checkConsentStatus();
-        }
-      } catch (error) {
-        console.error("Error with redirect sign-in:", error);
+    try {
+      // First check for any pending redirect result
+      const redirectResult = await handleGoogleRedirectResult(auth);
+      if (redirectResult.success) {
+        await checkConsentStatus();
       }
-    } else {
-      await checkConsentStatus();
+    } catch (error) {
+      console.error("Error handling redirect result:", error);
     }
+
+    // Check consent status for already logged-in users
+    await checkConsentStatus();
 
     // Check if user is in Facebook browser
     const ua = navigator.userAgent.toLowerCase();
