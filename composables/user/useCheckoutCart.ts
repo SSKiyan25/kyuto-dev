@@ -1,3 +1,4 @@
+import { useCartStore } from "~/stores/cart";
 import {
   addDoc,
   collection,
@@ -15,25 +16,25 @@ import type { Product, Variation } from "~/types/models/Product";
 
 export const useCheckoutCart = () => {
   const db = useFirestore();
-  const userCart = ref<(Cart & { id: string })[]>([]);
   const loading = ref(false);
+  const cartStore = useCartStore();
 
   const removeCartItem = async (userID: string, cartItemID: string) => {
     loading.value = true;
-    // console.log(`Removing cart item in composable ${cartItemID}...`);
-    // console.log(`User ID: ${userID}`);
     try {
       const cartItemDocRef = doc(db, `accounts/${userID}/cart/${cartItemID}`);
       await deleteDoc(cartItemDocRef);
-      userCart.value = userCart.value.filter((item) => item.id !== cartItemID);
-      // console.log(`Cart item ${cartItemID} removed successfully`);
+
+      // Update store - no need to filter manually as onSnapshot will update
+      cartStore.removeCartItem(cartItemID);
+
+      console.log(`Cart item ${cartItemID} removed successfully`);
     } catch (error) {
       console.error("Error removing cart item:", error);
     } finally {
       setTimeout(() => {
         loading.value = false;
-        console.log(`Cart item ${cartItemID} removed successfully`);
-      }, 2000);
+      }, 1000);
     }
   };
 
@@ -48,9 +49,22 @@ export const useCheckoutCart = () => {
   ) => {
     loading.value = true;
     let uniqRefNumber = "";
+
     try {
       // Generate unique reference number
       uniqRefNumber = await generateUniqueRefNumber();
+
+      for (const item of selectedItems) {
+        if (!cartStore.productDetails[item.productID]) {
+          // Fetch product details if not in cache
+          const productRef = doc(db, `products/${item.productID}`);
+          const productDoc = await getDoc(productRef);
+          if (productDoc.exists()) {
+            const productData = productDoc.data() as Product;
+            cartStore.addProductDetail(item.productID, productData.organizationID);
+          }
+        }
+      }
 
       const comissionAmount = await selectedItems.reduce(async (totalPromise, item) => {
         const total = await totalPromise;
@@ -157,8 +171,6 @@ export const useCheckoutCart = () => {
         // Remove cart item from user's cart
         await removeCartItem(userID, item.id);
       }
-
-      // console.log("Order created successfully");
     } catch (error) {
       console.error("Error creating order:", error);
     } finally {
@@ -184,7 +196,6 @@ export const useCheckoutCart = () => {
   };
 
   return {
-    userCart,
     createOrder,
     removeCartItem,
     generateUniqueRefNumber,
