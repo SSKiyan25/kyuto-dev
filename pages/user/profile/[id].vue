@@ -128,7 +128,7 @@
                   <UiVeeInput
                     name="phoneNumber"
                     label="Phone Number"
-                    :placeholder="userData?.phoneNumber || '09123456789'"
+                    :placeholder="userData?.phoneNumber || '+639123456789'"
                     class="mb-4"
                   />
                 </fieldset>
